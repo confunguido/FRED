@@ -645,6 +645,12 @@ void Health::become_case_fatality(int disease_id, int day) {
 			   "HEALTH CHART: %s person %d is CASE_FATALITY for disease %d\n",
 			   Date::get_date_string().c_str(),
 			   myself->get_id(), disease_id);
+
+  /* EDIT: We have to TERMINATE a fatality case before become_removed() because 
+     become removed cleans all the disease information...
+   */
+  Global::Diseases.get_disease(disease_id)->terminate_person(myself, day);
+  
   become_removed(disease_id, day);
 
   // update household counts
@@ -1086,7 +1092,7 @@ void Health::terminate(int day) {
       become_removed(disease_id, day);
     }
     if(this->health_condition[disease_id].state == 0) {
-      Global::Diseases.get_disease(disease_id)->terminate_person(myself, day);;
+      Global::Diseases.get_disease(disease_id)->terminate_person(myself, day);
     }
   }
   this->alive = false;
