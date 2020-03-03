@@ -1625,6 +1625,9 @@ void Epidemic::process_infectious_end_events(int day) {
     if(-1 < symptoms_end_date && symptoms_end_date < day) {
       recover(person, day);
     }
+    if(symptoms_end_date == -1){
+      recover(person, day);
+    }
   }
   this->infectious_end_event_queue->clear_events(day);
 }
