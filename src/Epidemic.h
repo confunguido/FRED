@@ -322,6 +322,7 @@ protected:
 
   int daily_case_fatality_count;
   int total_case_fatality_count;
+  int daily_case_fatality_nursing;
 
   // used for computing reproductive rate:
   double RR;

@@ -146,6 +146,7 @@ Epidemic::Epidemic(Disease* dis) {
   this->RR = 0.0;
 
   this->daily_case_fatality_count = 0;
+  this->daily_case_fatality_nursing = 0;
   this->total_case_fatality_count = 0;
 
   this->daily_infections_list.reserve(Global::Pop.get_pop_size());
@@ -499,6 +500,8 @@ void Epidemic::print_stats(int day) {
   track_value(day, (char*)"R", this->removed_people);
   if(this->disease->get_natural_history()->is_case_fatality_enabled()) {
     track_value(day, (char*)"CF", this->daily_case_fatality_count);
+    // Nursing home deaths    
+    track_value(day, (char*)"Nursing_Home_CF", this->daily_case_fatality_nursing);
     track_value(day, (char*)"TCF", this->total_case_fatality_count);
     track_value(day, (char*)"CFR", case_fatality_rate);
   }
@@ -585,6 +588,7 @@ void Epidemic::print_stats(int day) {
   this->people_becoming_infected_today = 0;
   this->people_becoming_symptomatic_today = 0;
   this->daily_case_fatality_count = 0;
+  this->daily_case_fatality_nursing = 0;
   this->daily_infections_list.clear();
   this->daily_symptomatic_list.clear();
 }
@@ -975,7 +979,7 @@ void Epidemic::report_group_quarters_incidence(int day) {
   int J = 0;
   int L = 0;
   int B = 0;
-
+  
   for(int i = 0; i < this->people_becoming_infected_today; ++i) {
     Person* infectee = this->daily_infections_list[i];
     // record infections occurring in group quarters
@@ -995,7 +999,7 @@ void Epidemic::report_group_quarters_incidence(int day) {
         }
         if(place->is_nursing_home()) {
           L++;
-        }
+	}
         if(place->is_military_base()) {
           B++;
         }
@@ -1013,7 +1017,7 @@ void Epidemic::report_group_quarters_incidence(int day) {
   track_value(day, (char*)"College", D);
   track_value(day, (char*)"Prison", J);
   track_value(day, (char*)"Nursing_Home", L);
-  track_value(day, (char*)"Military", B);
+  track_value(day, (char*)"Military", B);  
 }
 
 void Epidemic::report_place_of_infection(int day) {
@@ -1808,6 +1812,13 @@ void Epidemic::update(int day) {
       // update epidemic fatality counters
       this->daily_case_fatality_count++;
       this->total_case_fatality_count++;
+      Mixing_Group* mixing_group = person->get_infected_mixing_group(this->id);
+      if(dynamic_cast<Place*>(mixing_group) != NULL) {
+	Place* place = dynamic_cast<Place*>(mixing_group) ;
+        if(place->is_nursing_home()) {
+	  this->daily_case_fatality_nursing++;
+	}
+      }
       // record removed person
       this->removed_people++;
     }

@@ -4,3 +4,4 @@ bin/FRED
 src/FRED
 src/DEPENDS
 *~
+\#*
