@@ -5,3 +5,4 @@ src/FRED
 src/DEPENDS
 *~
 \#*
+.results.lck

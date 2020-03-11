@@ -47,7 +47,7 @@ using namespace std::chrono;
 #endif
 
 // Size of strings (usually file names)
-#define FRED_STRING_SIZE 256
+#define FRED_STRING_SIZE 512
 #define FRED_FIPS_LIST_SIZE 1000
 
 class Population;
