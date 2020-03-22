@@ -139,7 +139,7 @@ int Classroom::enroll(Person* person) {
   int grade = ((age < GRADES) ? age : GRADES - 1);
   assert(grade > 0);
 
-  FRED_VERBOSE(1, "Enrolled person %d age %d in classroom %d grade %d %s\n",
+  FRED_VERBOSE(0, "Enrolled person %d age %d in classroom %d grade %d %s\n",
 	       person->get_id(), person->get_age(), this->get_id(), this->age_level, this->get_label());
   if(this->age_level == -1) {
     this->age_level = age;

@@ -1872,11 +1872,18 @@ void Epidemic::update(int day) {
     st_network->clear_infectious_people(this->id);
   } else {
     // spread infection in places attended by actually infectious people
-    for(int type = 0; type < 7; ++type) {
-      find_active_places_of_type(day, type);
-      spread_infection_in_active_places(day);
+    // HERE!!! Don't spread the infection if epidemic_offset > day
+    if(day >= Global::Epidemic_offset){
+      for(int type = 0; type < 7; ++type) {
+	find_active_places_of_type(day, type);
+	spread_infection_in_active_places(day);
+	char msg[80];
+	sprintf(msg, "spread_infection for type %d", type);
+	Utils::fred_print_epidemic_timer(msg);
+      }
+    }else{
       char msg[80];
-      sprintf(msg, "spread_infection for type %d", type);
+      sprintf(msg,"Not spreading: day[%d] is < offset [%d]", day, Global::Epidemic_offset);
       Utils::fred_print_epidemic_timer(msg);
     }
   }
