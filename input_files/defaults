@@ -606,6 +606,7 @@ influenza_symptoms_duration_dispersion = 1.5
 influenza_infectious_distributions = offset_from_symptoms
 influenza_infectious_start_offset = 0
 influenza_infectious_end_offset = 0
+influenza_infectious_enable_cdf_offset_from_start_of_symptoms = 0
 
 #### default: binary symptoms and infectivity
 influenza_full_symptoms_start = 0.0

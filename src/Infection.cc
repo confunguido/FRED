@@ -97,7 +97,7 @@ Infection* Infection::get_new_infection(Disease* disease, Person* infector, Pers
 
 
 void Infection::setup() {
-
+  
   FRED_VERBOSE(1, "infection::setup entered\n");
 
   // decide if this host will develop symptoms
@@ -115,13 +115,12 @@ void Infection::setup() {
 
   double incubation_period = 0.0;
   double symptoms_duration = 0.0;
-
+  
   // determine dates for symptoms
   int symptoms_distribution_type = this->disease->get_natural_history()->get_symptoms_distribution_type();
   if(symptoms_distribution_type == Natural_History::LOGNORMAL) {
     incubation_period = this->disease->get_natural_history()->get_real_incubation_period(this->host);
     symptoms_duration = this->disease->get_natural_history()->get_symptoms_duration(this->host);
-
     // find symptoms dates (assuming symptoms will occur)
     this->symptoms_start_date = this->exposure_date + round(incubation_period);
     this->symptoms_end_date = this->exposure_date + round(incubation_period + symptoms_duration);
@@ -143,7 +142,7 @@ void Infection::setup() {
   // determine dates for infectiousness
   int infectious_distribution_type = this->disease->get_natural_history()->get_infectious_distribution_type();
   if(infectious_distribution_type == Natural_History::OFFSET_FROM_START_OF_SYMPTOMS ||
-     infectious_distribution_type == Natural_History::OFFSET_FROM_SYMPTOMS) {
+     infectious_distribution_type == Natural_History::OFFSET_FROM_SYMPTOMS || infectious_distribution_type == Natural_History::OFFSET_FROM_START_OF_SYMPTOMS_CDF) {
     // set infectious dates based on offset
     double infectious_start_offset = this->disease->get_natural_history()->get_infectious_start_offset(this->host);
     double infectious_end_offset = this->disease->get_natural_history()->get_infectious_end_offset(this->host);
@@ -152,6 +151,13 @@ void Infection::setup() {
     this->infectious_start_date = this->symptoms_start_date + round(infectious_start_offset);
     if(infectious_distribution_type == Natural_History::OFFSET_FROM_START_OF_SYMPTOMS) {
       this->infectious_end_date = this->symptoms_start_date + round(infectious_end_offset);
+    } else if(infectious_distribution_type == Natural_History::OFFSET_FROM_START_OF_SYMPTOMS_CDF) {
+      int my_duration_of_infectiousness = this->disease->get_natural_history()->get_duration_of_infectiousness(this->host);
+      if(my_duration_of_infectiousness > 0) {
+	      this->infectious_end_date = this->infectious_start_date + my_duration_of_infectiousness;
+      } else {
+	      this->infectious_end_date = Natural_History::NEVER;
+      }
     } else {
       this->infectious_end_date = this->symptoms_end_date + round(infectious_end_offset);
     }

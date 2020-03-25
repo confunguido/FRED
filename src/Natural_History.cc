@@ -186,7 +186,16 @@ void Natural_History::get_parameters() {
     else if (strcmp(this->infectious_distributions, "offset_from_start_of_symptoms")==0) {
       Params::get_indexed_param(disease_name, "infectious_start_offset", &(this->infectious_start_offset));
       Params::get_indexed_param(disease_name, "infectious_end_offset", &(this->infectious_end_offset));
-      this->infectious_distribution_type = OFFSET_FROM_START_OF_SYMPTOMS;
+      int enable_cdf_offset_from_start = 0;
+      Params::get_indexed_param(disease_name,"infectious_enable_cdf_offset_from_start_of_symptoms",&enable_cdf_offset_from_start);
+      if (enable_cdf_offset_from_start > 0){
+	Params::get_indexed_param(disease_name,"days_infectious",&n);
+	this->days_infectious = new double [n];
+	this->max_days_infectious = Params::get_indexed_param_vector(disease_name, "days_infectious", this->days_infectious) -1;
+	this->infectious_distribution_type = OFFSET_FROM_START_OF_SYMPTOMS_CDF;
+      }else{
+	this->infectious_distribution_type = OFFSET_FROM_START_OF_SYMPTOMS;
+      }
     }
     else if (strcmp(this->infectious_distributions, "lognormal")==0) {
       Params::get_indexed_param(disease_name, "latent_period_median", &(this->latent_period_median));

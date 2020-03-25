@@ -446,7 +446,6 @@ void Health::become_exposed(int disease_id, Person* infector, Mixing_Group* mixi
 
    FRED_VERBOSE(0, "become_exposed: person %d is exposed to disease %d day %d\n",
 		            myself->get_id(), disease_id, day);
-
   if(this->infection[disease_id] != NULL) {
     Utils::fred_abort("DOUBLE EXPOSURE: person %d dis_id %d day %d\n", myself->get_id(), disease_id, day);
   }

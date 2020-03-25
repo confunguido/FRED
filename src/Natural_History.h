@@ -29,7 +29,8 @@ public:
   static const int LOGNORMAL = 0;
   static const int OFFSET_FROM_START_OF_SYMPTOMS = 1;
   static const int OFFSET_FROM_SYMPTOMS = 2;
-  static const int CDF = 3;
+  static const int OFFSET_FROM_START_OF_SYMPTOMS_CDF = 3;
+  static const int CDF = 4;
 
   virtual ~Natural_History();
 
