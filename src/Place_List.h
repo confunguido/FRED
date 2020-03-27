@@ -417,6 +417,18 @@ private:
   static double Early_shelter_rate;
   static double Shelter_decay_rate;
 
+  static int Shelter_by_age_duration_mean;
+  static int Shelter_by_age_duration_std;
+  static int Shelter_by_age_delay_mean;
+  static int Shelter_by_age_delay_std;
+  static double Pct_households_sheltering_by_age;
+  static double Early_shelter_by_age_rate;
+  static double Shelter_by_age_decay_rate;
+  static int Shelter_by_age_min_age;
+  static int Shelter_by_age_max_age;
+  static bool Shelter_students;
+
+  
   // Hospital support
   static bool Household_hospital_map_file_exists;
   static int Hospital_fixed_staff;
@@ -453,6 +465,8 @@ private:
   void report_household_incomes();
   void select_households_for_shelter();
   void shelter_household(Household* h);
+  void select_households_for_shelter_by_age();
+  void shelter_household_by_age(Household* h);
   void select_households_for_evacuation();
   void evacuate_household(Household* h);
 

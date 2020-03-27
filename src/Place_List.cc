@@ -82,6 +82,18 @@ double Place_List::Pct_households_sheltering = 0;
 bool Place_List::High_income_households_sheltering = 0;
 double Place_List::Early_shelter_rate = 0.0;
 double Place_List::Shelter_decay_rate = 0.0;
+
+int Place_List::Shelter_by_age_duration_mean = 0;
+int Place_List::Shelter_by_age_duration_std = 0;
+int Place_List::Shelter_by_age_delay_mean = 0;
+int Place_List::Shelter_by_age_delay_std = 0;
+double Place_List::Pct_households_sheltering_by_age = 0;
+double Place_List::Early_shelter_by_age_rate = 0.0;
+double Place_List::Shelter_by_age_decay_rate = 0.0;
+int Place_List::Shelter_by_age_min_age = 0;
+int Place_List::Shelter_by_age_max_age = 120;
+bool Place_List::Shelter_students = false;
+
 bool Place_List::Household_hospital_map_file_exists = false;
 int Place_List::Hospital_fixed_staff = 1.0;
 double Place_List::Hospital_worker_to_bed_ratio = 1.0;
@@ -183,10 +195,45 @@ void Place_List::get_parameters() {
     int temp_int;
     Params::get_param_from_string("shelter_in_place_by_income", &temp_int);
     Place_List::High_income_households_sheltering = (temp_int == 0 ? false : true);
+
+    Params::get_param_from_string("shelter_in_place_students", &temp_int);
+    Place_List::Shelter_students = (temp_int == 0 ? false : true);
+    
+    Params::get_param_from_string("shelter_in_place_by_income", &temp_int);
+    Place_List::High_income_households_sheltering = (temp_int == 0 ? false : true);
+
     Params::get_param_from_string("shelter_in_place_early_rate", &Place_List::Early_shelter_rate);
     Params::get_param_from_string("shelter_in_place_decay_rate", &Place_List::Shelter_decay_rate);
   }
 
+  // household shelter by age parameters
+  if(Global::Enable_Household_Shelter_By_Age) {
+    Params::get_param_from_string("shelter_in_place_by_age_duration_mean", &Place_List::Shelter_by_age_duration_mean);
+    Params::get_param_from_string("shelter_in_place_by_age_duration_std", &Place_List::Shelter_by_age_duration_std);
+    Params::get_param_from_string("shelter_in_place_by_age_delay_mean", &Place_List::Shelter_by_age_delay_mean);
+    Params::get_param_from_string("shelter_in_place_by_age_delay_std", &Place_List::Shelter_by_age_delay_std);
+    Params::get_param_from_string("shelter_in_place_by_age_compliance", &Place_List::Pct_households_sheltering_by_age);
+    int temp_int;
+
+    Params::get_param_from_string("shelter_in_place_students", &temp_int);
+    Place_List::Shelter_students = (temp_int == 0 ? false : true);
+    
+    Params::get_param_from_string("shelter_in_place_by_age_early_rate", &Place_List::Early_shelter_by_age_rate);
+    Params::get_param_from_string("shelter_in_place_by_age_decay_rate", &Place_List::Shelter_by_age_decay_rate);
+    Params::get_param_from_string("shelter_in_place_by_age_min_age", &Place_List::Shelter_by_age_min_age);
+    Params::get_param_from_string("shelter_in_place_by_age_max_age", &Place_List::Shelter_by_age_max_age);
+    if(Place_List::Shelter_by_age_min_age < 0 ){
+      Place_List::Shelter_by_age_min_age = 0;
+    }
+    if(Place_List::Shelter_by_age_max_age < 0){
+      Place_List::Shelter_by_age_max_age = 120;
+    }
+    if(Place_List::Shelter_by_age_min_age > Place_List::Shelter_by_age_max_age){
+      Utils::fred_abort("Min Age %d cannot be higher than Max Age %d\n", Place_List::Shelter_by_age_min_age, Place_List::Shelter_by_age_max_age);
+    }
+  }
+
+  
   // household evacuation parameters
   if(Global::Enable_HAZEL) {
     Params::get_param_from_string("HAZEL_disaster_start_sim_day", &Place_List::HAZEL_disaster_start_sim_day);
@@ -620,6 +667,8 @@ void Place_List::read_all_places(const std::vector<Utils::Tokens> &Demes) {
       h->set_county_index((*itr).county);
       h->set_census_tract_index((*itr).census_tract_index);
       h->set_shelter(false);
+      h->set_shelter_by_age(false);
+      h->set_shelter_students(false);
       this->households.push_back(h);
       //FRED_VERBOSE(9, "pushing household %s\n", s);
       this->counties[(*itr).county]->add_household(h);
@@ -1616,11 +1665,17 @@ void Place_List::setup_households() {
 
   report_household_incomes();
 
-  if(Global::Enable_Household_Shelter) {
-    select_households_for_shelter();
-  } else if(Global::Enable_HAZEL) {
+  if(Global::Enable_HAZEL) {
     select_households_for_evacuation();
+  }else{
+    if(Global::Enable_Household_Shelter) {
+      select_households_for_shelter();
+    }
+    if(Global::Enable_Household_Shelter_By_Age){
+      select_households_for_shelter_by_age();
+    }
   }
+  
 
   // add household list to visualization layer if needed
   if(Global::Enable_Visualization_Layer) {
@@ -2390,6 +2445,10 @@ void Place_List::select_households_for_shelter() {
 void Place_List::shelter_household(Household* h) {
   h->set_shelter(true);
 
+  if(Place_List::Shelter_students){
+    h->set_shelter_students(true);
+  }
+  
   // set shelter delay
   int shelter_start_day = 0.4999999
       + Random::draw_normal(Place_List::Shelter_delay_mean, Place_List::Shelter_delay_std);
@@ -2429,6 +2488,78 @@ void Place_List::shelter_household(Household* h) {
   FRED_VERBOSE(1, "start_day %d end_day %d duration %d ", h->get_shelter_start_day(), h->get_shelter_end_day(),
       h->get_shelter_end_day()-h->get_shelter_start_day());
 }
+
+void Place_List::select_households_for_shelter_by_age() {
+  FRED_VERBOSE(0, "select_households_for_shelter_by_age entered.\n");
+  FRED_VERBOSE(0, "pct_households_sheltering_by_age = %f\n", Place_List::Pct_households_sheltering_by_age);
+  FRED_VERBOSE(0, "num_households = %d\n", this->households.size());
+  int num_sheltering = 0.5 + Place_List::Pct_households_sheltering_by_age * this->households.size();
+  FRED_VERBOSE(0, "num_sheltering = %d\n", num_sheltering);
+
+  int num_households = this->households.size();
+  
+  // select households randomly
+  vector<Household*> tmp;
+  tmp.clear();
+  for(int i = 0; i < this->households.size(); ++i) {
+    tmp.push_back(this->get_household_ptr(i));
+  }
+  // randomly shuffle households
+  FYShuffle<Household*>(tmp);
+  for(int i = 0; i < num_sheltering; ++i) {
+    this->shelter_household_by_age(tmp[i]);
+  }
+  FRED_VERBOSE(0, "select_households_for_shelter_by_age finished.\n");
+}
+
+void Place_List::shelter_household_by_age(Household* h) {
+  h->set_shelter_by_age(true);
+  h->set_shelter_by_age_ages(Place_List::Shelter_by_age_min_age, Place_List::Shelter_by_age_max_age);
+
+  if(Place_List::Shelter_students){
+    h->set_shelter_students(true);
+  }
+    
+  // set shelter delay
+  int shelter_start_day = 0.4999999
+      + Random::draw_normal(Place_List::Shelter_by_age_delay_mean, Place_List::Shelter_by_age_delay_std);
+  if(Place_List::Early_shelter_by_age_rate > 0.0) {
+    double r = Random::draw_random();
+    while(shelter_start_day > 0 && r < Place_List::Early_shelter_by_age_rate) {
+      shelter_start_day--;
+      r = Random::draw_random();
+    }
+  }
+  if(shelter_start_day < 0) {
+    shelter_start_day = 0;
+  }
+  h->set_shelter_by_age_start_day(shelter_start_day);
+
+  // set shelter duration
+  int shelter_duration = 0.4999999
+      + Random::draw_normal(Place_List::Shelter_by_age_duration_mean, Place_List::Shelter_by_age_duration_std);
+  if(shelter_duration < 1) {
+    shelter_duration = 1;
+  }
+
+  if(Place_List::Shelter_by_age_decay_rate > 0.0) {
+    double r = Random::draw_random();
+    if(r < 0.5) {
+      shelter_duration = 1;
+      r = Random::draw_random();
+      while(shelter_duration < Place_List::Shelter_by_age_duration_mean && Place_List::Shelter_by_age_decay_rate < r) {
+        shelter_duration++;
+        r = Random::draw_random();
+      }
+    }
+  }
+  h->set_shelter_by_age_end_day(shelter_start_day + shelter_duration);
+
+  FRED_VERBOSE(1, "ISOLATE by AGE household %s size %d income %d ", h->get_label(), h->get_size(), h->get_household_income());
+  FRED_VERBOSE(1, "start_day %d end_day %d duration %d min age %d max age %d", h->get_shelter_by_age_start_day(), h->get_shelter_by_age_end_day(),
+	       h->get_shelter_by_age_end_day()-h->get_shelter_by_age_start_day(), Place_List::Shelter_by_age_min_age, Place_List::Shelter_by_age_max_age);
+}
+
 
 void Place_List::select_households_for_evacuation() {
   if(!Global::Enable_HAZEL) {

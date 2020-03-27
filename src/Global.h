@@ -268,6 +268,7 @@ public:
   static bool Report_County_Demographic_Information;
   static bool Assign_Teachers;
   static bool Enable_Household_Shelter;
+  static bool Enable_Household_Shelter_By_Age;
   static bool Enable_Isolation;
   static int Isolation_Delay;
   static double Isolation_Rate;

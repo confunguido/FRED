@@ -265,10 +265,31 @@ public:
     this->sheltering = _sheltering;
   }
 
+  void set_shelter_by_age(bool _sheltering){
+    this->sheltering_by_age = _sheltering;    
+  }
+
+  void set_shelter_by_age_ages(int age_shelter_min_, int age_shelter_max_) {
+    this->shelter_age_min = age_shelter_min_;
+    this->shelter_age_max = age_shelter_max_;
+  }
+  
+  void set_shelter_students(bool _sheltering_students){
+    this->sheltering_students = _sheltering_students;
+  }
+  
   bool is_sheltering() {
     return this->sheltering;
   }
 
+  bool is_sheltering_by_age() {
+    return this->sheltering_by_age;
+  }
+
+  bool is_sheltering_students(){
+    return this->sheltering_students;
+  }
+  
   bool is_sheltering_today(int day) {
     return (this->shelter_start_day <= day && day < this->shelter_end_day);
   }
@@ -289,6 +310,26 @@ public:
     return this->shelter_end_day;
   }
 
+  bool is_sheltering_today_by_age(int day, int age) {
+    return (this->shelter_by_age_start_day <= day && day < this->shelter_by_age_end_day && age <= shelter_age_max && age >= shelter_age_min);
+  }
+
+  void set_shelter_by_age_start_day(int start_day) {
+    this->shelter_by_age_start_day = start_day;
+  }
+
+  void set_shelter_by_age_end_day(int end_day) {
+    this->shelter_by_age_end_day = end_day;
+  }
+
+  int get_shelter_by_age_start_day() {
+    return this->shelter_by_age_start_day;
+  }
+
+  int get_shelter_by_age_end_day() {
+    return this->shelter_end_day;
+  }
+    
   void set_seeking_healthcare(bool _seeking_healthcare) {
     this->seeking_healthcare = _seeking_healthcare;
   }
@@ -455,6 +496,8 @@ private:
 
   Place* group_quarters_workplace;
   bool sheltering;
+  bool sheltering_students;
+  bool sheltering_by_age;
   bool primary_healthcare_available;
   bool other_healthcare_location_that_accepts_insurance_available;
   bool healthcare_available;
@@ -462,7 +505,9 @@ private:
   int count_seeking_hc;
   int count_primary_hc_unav;
   int count_hc_accept_ins_unav;
-
+  int shelter_age_min;
+  int shelter_age_max;
+  
   bool hh_schl_aged_chld_unemplyd_adlt_chng;
   bool hh_schl_aged_chld;
   bool hh_schl_aged_chld_unemplyd_adlt;
@@ -473,6 +518,10 @@ private:
   int group_quarters_units;
   int shelter_start_day;
   int shelter_end_day;
+
+  int shelter_by_age_start_day;
+  int shelter_by_age_end_day;
+  
   int household_income;
   int household_income_code;
   int income_quartile;

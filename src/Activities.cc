@@ -520,12 +520,26 @@ void Activities::update_schedule(int sim_day) {
     this->on_schedule[Activity_index::HOUSEHOLD_ACTIVITY] = true;
 
     // decide if my household is sheltering
-    if(Global::Enable_Household_Shelter || Global::Enable_HAZEL) {
+    if(Global::Enable_Household_Shelter || Global::Enable_Household_Shelter_By_Age || Global::Enable_HAZEL) {
       Household* h = static_cast<Household*>(this->myself->get_household());
+      // Allow students to check school if shelter without closing schools
       if(h->is_sheltering_today(sim_day)) {
-        FRED_STATUS(1, "update_schedule on day %d\n%s\n", sim_day,
-                    schedule_to_string(sim_day).c_str());
-        return;
+	if(h->is_sheltering_students() || get_school() == NULL){
+	  FRED_STATUS(1, "update_schedule on day %d\n%s\n", sim_day,
+		      schedule_to_string(sim_day).c_str());
+	  return;
+	}
+      }
+      
+      // If shelter by age, then check age
+      if(h->is_sheltering_by_age()){
+	if(h->is_sheltering_today_by_age(sim_day, this->myself->get_age())){
+	  if(h->is_sheltering_students() || get_school() == NULL){	    
+	    FRED_STATUS(1, "update_schedule on day %d\n%s\n", sim_day,
+			schedule_to_string(sim_day).c_str());
+	    return;
+	  }
+	}
       }
     }
 

@@ -57,6 +57,10 @@ Household::Household() : Place() {
   this->set_type(Place::TYPE_HOUSEHOLD);
   this->set_subtype(Place::SUBTYPE_NONE);
   this->sheltering = false;
+  this->sheltering_students = false;
+  this->sheltering_by_age = false;
+  this->shelter_age_min = 0;
+  this->shelter_age_max = 120;
   this->hh_schl_aged_chld_unemplyd_adlt_chng = false;
   this->hh_schl_aged_chld = false;
   this->hh_schl_aged_chld_unemplyd_adlt = false;
@@ -69,8 +73,10 @@ Household::Household() : Place() {
   this->count_seeking_hc = 0;
   this->count_primary_hc_unav = 0;
   this->count_hc_accept_ins_unav = 0;
-  this->shelter_start_day = 0;
+  this->shelter_start_day = 0;  
   this->shelter_end_day = 0;
+  this->shelter_by_age_end_day = 0;
+  this->shelter_by_age_start_day = 0;
   this->deme_id = ' ';
   this->group_quarters_units = 0;
   this->group_quarters_workplace = NULL;
@@ -83,6 +89,10 @@ Household::Household(const char* lab, char _subtype, fred::geo lon, fred::geo la
   this->set_type(Place::TYPE_HOUSEHOLD);
   this->set_subtype(_subtype);
   this->sheltering = false;
+  this->sheltering_students = false;
+  this->sheltering_by_age = false;
+  this->shelter_age_min = 0;
+  this->shelter_age_max = 120;
   this->hh_schl_aged_chld_unemplyd_adlt_chng = false;
   this->hh_schl_aged_chld = false;
   this->hh_schl_aged_chld_unemplyd_adlt = false;
@@ -97,6 +107,8 @@ Household::Household(const char* lab, char _subtype, fred::geo lon, fred::geo la
   this->count_hc_accept_ins_unav = 0;
   this->shelter_start_day = 0;
   this->shelter_end_day = 0;
+  this->shelter_by_age_end_day = 0;
+  this->shelter_by_age_start_day = 0;
   this->deme_id = ' ';
   this->intimacy = 1.0;
   this->group_quarters_units = 0;

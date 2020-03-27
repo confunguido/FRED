@@ -112,6 +112,7 @@ bool Global::Report_Symptomatic_Incidence_By_Census_Tract = false;
 bool Global::Report_County_Demographic_Information = false;
 bool Global::Assign_Teachers = false;
 bool Global::Enable_Household_Shelter = 0;
+bool Global::Enable_Household_Shelter_By_Age = 0;
 bool Global::Enable_Isolation = 0;
 int Global::Isolation_Delay = 1;
 double Global::Isolation_Rate = 0.0;
@@ -283,6 +284,8 @@ void Global::get_global_parameters() {
   Global::Report_County_Demographic_Information = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_shelter_in_place", &temp_int);
   Global::Enable_Household_Shelter = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_shelter_in_place_by_age", &temp_int);
+  Global::Enable_Household_Shelter_By_Age = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_isolation", &temp_int);
   Global::Enable_Isolation = (temp_int == 0 ? false : true);
   Params::get_param_from_string("isolation_delay", &Global::Isolation_Delay);

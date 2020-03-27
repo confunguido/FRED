@@ -841,6 +841,19 @@ shelter_in_place_early_rate = 0.0
 shelter_in_place_decay_rate = 0.0
 shelter_in_place_by_income = 0
 
+shelter_in_place_students = 1
+
+enable_shelter_in_place_by_age = 0
+shelter_in_place_by_age_duration_mean = 0
+shelter_in_place_by_age_duration_std = 0.0
+shelter_in_place_by_age_delay_mean = 0
+shelter_in_place_by_age_delay_std = 0.0
+shelter_in_place_by_age_compliance = 0.0
+shelter_in_place_by_age_early_rate = 0.0
+shelter_in_place_by_age_decay_rate = 0.0
+shelter_in_place_by_age_min_age = 0
+shelter_in_place_by_age_max_age = 120
+
 ##########################################################
 #
 # POPULATION DYNAMICS (OPTIONAL)
