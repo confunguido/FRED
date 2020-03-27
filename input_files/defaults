@@ -841,6 +841,7 @@ shelter_in_place_early_rate = 0.0
 shelter_in_place_decay_rate = 0.0
 shelter_in_place_by_income = 0
 
+shelter_in_place_compliance_end = 0.0
 shelter_in_place_students = 1
 
 enable_shelter_in_place_by_age = 0

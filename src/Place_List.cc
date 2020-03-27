@@ -82,6 +82,7 @@ double Place_List::Pct_households_sheltering = 0;
 bool Place_List::High_income_households_sheltering = 0;
 double Place_List::Early_shelter_rate = 0.0;
 double Place_List::Shelter_decay_rate = 0.0;
+double Place_List::Pct_households_sheltering_end = 0.0;
 
 int Place_List::Shelter_by_age_duration_mean = 0;
 int Place_List::Shelter_by_age_duration_std = 0;
@@ -192,6 +193,8 @@ void Place_List::get_parameters() {
     Params::get_param_from_string("shelter_in_place_delay_mean", &Place_List::Shelter_delay_mean);
     Params::get_param_from_string("shelter_in_place_delay_std", &Place_List::Shelter_delay_std);
     Params::get_param_from_string("shelter_in_place_compliance", &Place_List::Pct_households_sheltering);
+    Params::get_param_from_string("shelter_in_place_compliance_end", &Place_List::Pct_households_sheltering_end);
+    
     int temp_int;
     Params::get_param_from_string("shelter_in_place_by_income", &temp_int);
     Place_List::High_income_households_sheltering = (temp_int == 0 ? false : true);
@@ -2470,7 +2473,7 @@ void Place_List::shelter_household(Household* h) {
   if(shelter_duration < 1) {
     shelter_duration = 1;
   }
-
+  
   if(Place_List::Shelter_decay_rate > 0.0) {
     double r = Random::draw_random();
     if(r < 0.5) {
@@ -2482,6 +2485,16 @@ void Place_List::shelter_household(Household* h) {
       }
     }
   }
+
+  // Check if the household will shelter forever
+  if(Place_List::Pct_households_sheltering_end > 0){
+    double r = Random::draw_random();
+    if(Place_List::Pct_households_sheltering_end < r){
+      //Shelter forever
+      shelter_duration = 9999999;
+    }
+  }
+  
   h->set_shelter_end_day(shelter_start_day + shelter_duration);
 
   FRED_VERBOSE(1, "ISOLATE household %s size %d income %d ", h->get_label(), h->get_size(), h->get_household_income());

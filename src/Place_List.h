@@ -413,6 +413,7 @@ private:
   static int Shelter_delay_mean;
   static int Shelter_delay_std;
   static double Pct_households_sheltering;
+  static double Pct_households_sheltering_end;
   static bool High_income_households_sheltering;
   static double Early_shelter_rate;
   static double Shelter_decay_rate;
