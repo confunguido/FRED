@@ -418,6 +418,10 @@ private:
   static double Early_shelter_rate;
   static double Shelter_decay_rate;
 
+  static bool Shelter_enable_stepwise;
+  static std::vector<double> Shelter_stepwise_compliance;
+  static std::vector<int> Shelter_stepwise_duration;
+  
   static int Shelter_by_age_duration_mean;
   static int Shelter_by_age_duration_std;
   static int Shelter_by_age_delay_mean;
@@ -428,7 +432,7 @@ private:
   static int Shelter_by_age_min_age;
   static int Shelter_by_age_max_age;
   static bool Shelter_students;
-
+  
   
   // Hospital support
   static bool Household_hospital_map_file_exists;

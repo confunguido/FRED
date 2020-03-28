@@ -84,6 +84,10 @@ double Place_List::Early_shelter_rate = 0.0;
 double Place_List::Shelter_decay_rate = 0.0;
 double Place_List::Pct_households_sheltering_end = 0.0;
 
+bool Place_List::Shelter_enable_stepwise = false;
+std::vector<double> Place_List::Shelter_stepwise_compliance;
+std::vector<int> Place_List::Shelter_stepwise_duration;
+
 int Place_List::Shelter_by_age_duration_mean = 0;
 int Place_List::Shelter_by_age_duration_std = 0;
 int Place_List::Shelter_by_age_delay_mean = 0;
@@ -207,6 +211,16 @@ void Place_List::get_parameters() {
 
     Params::get_param_from_string("shelter_in_place_early_rate", &Place_List::Early_shelter_rate);
     Params::get_param_from_string("shelter_in_place_decay_rate", &Place_List::Shelter_decay_rate);
+
+    Params::get_param_from_string("shelter_in_place_enable_stepwise", &temp_int);
+    Place_List::Shelter_enable_stepwise = (temp_int == 0 ? false : true);
+    
+    if(Place_List::Shelter_enable_stepwise == true){
+      Params::get_param_vector((char*)"shelter_in_place_stepwise_compliance", Place_List::Shelter_stepwise_compliance);
+      Params::get_param_vector((char*)"shelter_in_place_stepwise_duration", Place_List::Shelter_stepwise_duration);
+      Place_List::Shelter_duration_mean = Place_List::Shelter_stepwise_duration[0];
+      Place_List::Pct_households_sheltering = Place_List::Shelter_stepwise_compliance[0];
+    }
   }
 
   // household shelter by age parameters
@@ -2486,6 +2500,22 @@ void Place_List::shelter_household(Household* h) {
     }
   }
 
+  // Apply stepwise if enabled
+  if(Place_List::Shelter_enable_stepwise){
+    // Simply go through the vector of durations and add them to the current shelter duration
+    // Start in i = 1 because i = 0 is the baseline duration    
+    if(Place_List::Shelter_stepwise_duration.size() > 1){
+      for(int i = 1; i < Place_List::Shelter_stepwise_duration.size(); i++){
+	double r = Random::draw_random();
+	if(r < Place_List::Shelter_stepwise_compliance[i] / Place_List::Shelter_stepwise_compliance[i-1]){	  
+	  shelter_duration += Place_List::Shelter_stepwise_duration[i];
+	}else{
+	  break;
+	}
+      }
+    }
+  }
+  
   // Check if the household will shelter forever
   if(Place_List::Pct_households_sheltering_end > 0){
     double r = Random::draw_random();

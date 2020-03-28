@@ -828,7 +828,7 @@ influenza_seasonality_multiplier_Ka = -180
 ##########################################################
 #
 # SHELTER IN PLACE (OPTIONAL)
-#
+# To enable stepwise, shelter_in_place needs to be active
 ##########################################################
 
 enable_shelter_in_place = 0
@@ -842,6 +842,10 @@ shelter_in_place_decay_rate = 0.0
 shelter_in_place_by_income = 0
 
 shelter_in_place_compliance_end = 0.0
+shelter_in_place_enable_stepwise = 0
+shelter_in_place_stepwise_compliance = 2 0.5 0.1 
+shelter_in_place_stepwise_duration = 2 10 9999
+
 shelter_in_place_students = 1
 
 enable_shelter_in_place_by_age = 0
