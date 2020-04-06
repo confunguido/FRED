@@ -138,6 +138,14 @@ void Utils::fred_open_output_files(){
       Utils::fred_abort("Can't open %s\n", filename);
     }
   }
+  Global::InfectionCFfp = NULL;
+  if(Global::Track_fatality_events == true) {
+    sprintf(filename, "%s/infectionsCF%d.txt", directory, run);
+    Global::InfectionCFfp = fopen(filename, "w");
+    if(Global::InfectionCFfp == NULL) {
+      Utils::fred_abort("Can't open %s\n", filename);
+    }
+  }
   Global::VaccineTracefp = NULL;
   if(strcmp(Global::VaccineTracefilebase, "none") != 0) {
     sprintf(filename, "%s/vacctr%d.txt", directory, run);
@@ -223,6 +231,9 @@ void Utils::fred_end(void){
   }
   if(Global::Infectionfp != NULL) {
     fclose(Global::Infectionfp);
+  }
+  if(Global::InfectionCFfp != NULL) {
+    fclose(Global::InfectionCFfp);
   }
   if(Global::VaccineTracefp != NULL) {
     fclose(Global::VaccineTracefp);

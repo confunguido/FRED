@@ -357,7 +357,7 @@ void Infection::report_infection(int day) {
     }
   }
   infStrS << "\n";
-  fprintf(Global::Infectionfp, "%s", infStrS.str().c_str());
+  fprintf(Global::Infectionfp, "%s", infStrS.str().c_str());  
 }
 
 void Infection::update(int today) {
@@ -366,12 +366,41 @@ void Infection::update(int today) {
   if(this->disease->is_case_fatality_enabled() && is_symptomatic(today)) {
     int days_symptomatic = today - this->symptoms_start_date;
     if(Global::Enable_Chronic_Condition) {
-      if(this->disease->is_fatal(this->host, get_symptoms(today), days_symptomatic)) {
-	      set_fatal_infection();
+      if(this->disease->is_fatal(this->host, get_symptoms(today), days_symptomatic)) {	
+	set_fatal_infection();
+	// If CF report is enabled, then print stats on case fatalities
+	if(Global::Track_fatality_events == true && Global::InfectionCFfp != NULL ){	      
+	  std::stringstream infCFStrS;
+	  infCFStrS.precision(3);
+	  
+	  infCFStrS << fixed << "day " << today << " dis " << this->disease->get_disease_name() << " host " << this->host->get_id()
+		    << " age " << this->host->get_real_age()
+		    << " | DATES exp " << this->exposure_date
+		    << " inf " << get_infectious_start_date() << " " << get_infectious_end_date()
+		    << " symp " << get_symptoms_start_date() << " " << get_symptoms_end_date()
+		    << " dead " << today;
+	  infCFStrS << "\n";
+	  fprintf(Global::InfectionCFfp, "%s", infCFStrS.str().c_str()); 
+	}
       }
     } else {
       if(this->disease->is_fatal(this->host->get_real_age(), get_symptoms(today), days_symptomatic)) {
-	      set_fatal_infection();
+	set_fatal_infection();
+	
+	// If CF report is enabled, then print stats on case fatalities
+	if(Global::Track_fatality_events == true && Global::InfectionCFfp != NULL ){	      
+	  std::stringstream infCFStrS;
+	  infCFStrS.precision(3);
+	  
+	  infCFStrS << fixed << "day " << today << " dis " << this->disease->get_disease_name() << " host " << this->host->get_id()
+		    << " age " << this->host->get_real_age()
+		    << " | DATES exp " << this->exposure_date
+		    << " inf " << get_infectious_start_date() << " " << get_infectious_end_date()
+		    << " symp " << get_symptoms_start_date() << " " << get_symptoms_end_date()
+		    << " dead " << today;
+	  infCFStrS << "\n";
+	  fprintf(Global::InfectionCFfp, "%s", infCFStrS.str().c_str()); 
+	}
       }
     }
   }

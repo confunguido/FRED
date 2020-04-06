@@ -40,6 +40,7 @@ int Global::Rotate_start_date = 0;
 int Global::Quality_control = 0;
 int Global::RR_delay = 0;
 int Global::Track_infection_events = 0;
+bool Global::Track_fatality_events = 0;
 char Global::Prevfilebase[FRED_STRING_SIZE];
 char Global::Incfilebase[FRED_STRING_SIZE];
 char Global::Immunityfilebase[FRED_STRING_SIZE];
@@ -151,6 +152,7 @@ FILE* Global::Statusfp = NULL;
 FILE* Global::Outfp = NULL;
 FILE* Global::Tracefp = NULL;
 FILE* Global::Infectionfp = NULL;
+FILE* Global::InfectionCFfp = NULL;
 FILE* Global::VaccineTracefp = NULL;
 FILE* Global::Birthfp = NULL;
 FILE* Global::Deathfp = NULL;
@@ -191,6 +193,8 @@ void Global::get_global_parameters() {
 
   Params::get_param_from_string("enable_behaviors", &temp_int);
   Global::Enable_Behaviors = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("track_fatality_events", &temp_int);
+  Global::Track_fatality_events = (temp_int == 0 ? false : true);
   Params::get_param_from_string("track_age_distribution", &temp_int);
   Global::Track_age_distribution = (temp_int == 0 ? false : true);
   Params::get_param_from_string("track_household_distribution", &temp_int);

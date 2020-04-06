@@ -487,6 +487,7 @@ void fred_step(int day) {
     {
       // flush infections file buffer
       fflush(Global::Infectionfp);
+      fflush(Global::InfectionCFfp);
     }
   }
 
@@ -504,6 +505,7 @@ void fred_step(int day) {
 void fred_finish() {
   //Global::Daily_Tracker->create_full_log(10,cout);
   fflush(Global::Infectionfp);
+  fflush(Global::InfectionCFfp);
   
   // final reports
   if(Global::Report_Mean_Household_Stats_Per_Income_Category && Global::Report_Epidemic_Data_By_Census_Tract) {
