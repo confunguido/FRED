@@ -84,6 +84,8 @@ double Place_List::Early_shelter_rate = 0.0;
 double Place_List::Shelter_decay_rate = 0.0;
 double Place_List::Pct_households_sheltering_end = 0.0;
 
+bool Place_List::Enable_early_shelter_linear_rate = false;
+bool Place_List::Enable_shelter_fixed_end = false;
 bool Place_List::Shelter_enable_stepwise = false;
 std::vector<double> Place_List::Shelter_stepwise_compliance;
 std::vector<int> Place_List::Shelter_stepwise_duration;
@@ -214,7 +216,13 @@ void Place_List::get_parameters() {
 
     Params::get_param_from_string("shelter_in_place_enable_stepwise", &temp_int);
     Place_List::Shelter_enable_stepwise = (temp_int == 0 ? false : true);
-    
+
+    Params::get_param_from_string("shelter_in_place_enable_linear_early_rate", &temp_int);
+    Place_List::Enable_early_shelter_linear_rate = (temp_int == 0 ? false : true);
+
+    Params::get_param_from_string("shelter_in_place_enable_fixed_end", &temp_int);
+    Place_List::Enable_shelter_fixed_end = (temp_int == 0 ? false : true);   
+
     if(Place_List::Shelter_enable_stepwise == true){
       Params::get_param_vector((char*)"shelter_in_place_stepwise_compliance", Place_List::Shelter_stepwise_compliance);
       Params::get_param_vector((char*)"shelter_in_place_stepwise_duration", Place_List::Shelter_stepwise_duration);
@@ -2469,13 +2477,21 @@ void Place_List::shelter_household(Household* h) {
   // set shelter delay
   int shelter_start_day = 0.4999999
       + Random::draw_normal(Place_List::Shelter_delay_mean, Place_List::Shelter_delay_std);
+  int shelter_initial_start_day = shelter_start_day;
+  
   if(Place_List::Early_shelter_rate > 0.0) {
-    double r = Random::draw_random();
-    while(shelter_start_day > 0 && r < Place_List::Early_shelter_rate) {
-      shelter_start_day--;
-      r = Random::draw_random();
+    if(Place_List::Enable_early_shelter_linear_rate == false){
+      double r = Random::draw_random();
+      while(shelter_start_day > 0 && r < Place_List::Early_shelter_rate) {
+	shelter_start_day--;
+	r = Random::draw_random();
+      }
+    }else{
+      int early_days = floor(1.0/Place_List::Early_shelter_rate);
+      shelter_start_day -= Random::draw_random_int(0,early_days);
     }
   }
+  
   if(shelter_start_day < 0) {
     shelter_start_day = 0;
   }
@@ -2524,9 +2540,14 @@ void Place_List::shelter_household(Household* h) {
       shelter_duration = 9999999;
     }
   }
-  
-  h->set_shelter_end_day(shelter_start_day + shelter_duration);
 
+  if(Place_List::Enable_shelter_fixed_end == false){
+    h->set_shelter_end_day(shelter_start_day + shelter_duration);
+  }else{
+    h->set_shelter_end_day(shelter_initial_start_day + shelter_duration);
+  }
+
+  
   FRED_VERBOSE(1, "ISOLATE household %s size %d income %d ", h->get_label(), h->get_size(), h->get_household_income());
   FRED_VERBOSE(1, "start_day %d end_day %d duration %d ", h->get_shelter_start_day(), h->get_shelter_end_day(),
       h->get_shelter_end_day()-h->get_shelter_start_day());

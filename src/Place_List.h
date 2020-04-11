@@ -418,6 +418,8 @@ private:
   static double Early_shelter_rate;
   static double Shelter_decay_rate;
 
+  static bool Enable_early_shelter_linear_rate;
+  static bool Enable_shelter_fixed_end;
   static bool Shelter_enable_stepwise;
   static std::vector<double> Shelter_stepwise_compliance;
   static std::vector<int> Shelter_stepwise_duration;

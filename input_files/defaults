@@ -842,6 +842,8 @@ shelter_in_place_early_rate = 0.0
 shelter_in_place_decay_rate = 0.0
 shelter_in_place_by_income = 0
 
+shelter_in_place_enable_linear_early_rate = 0
+shelter_in_place_enable_fixed_end = 0
 shelter_in_place_compliance_end = 0.0
 shelter_in_place_enable_stepwise = 0
 shelter_in_place_stepwise_compliance = 2 0.5 0.1 
