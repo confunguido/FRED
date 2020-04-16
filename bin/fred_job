@@ -71,7 +71,7 @@ my $using_pbs;
 # if using parallel mode, determine how many cpus to use for parallel runs
 if ($parallel) {
   # are we running in the context of a PBS batch job?
-  my $using_pbs = (exists $ENV{PBS_RUNID}) ? 1 : 0;
+  my $using_pbs = (exists $ENV{PBS_JOBID}) ? 1 : 0;
 
   # intialize cpu count
   $cpus = 0;
@@ -109,7 +109,7 @@ chdir $FRED or die "Can't change to FRED directory $FRED\n";
 # system "cd src; make -s";
 
 # set locking semaphore
-my $SEMAPHORE = ".results.lck";
+my $SEMAPHORE = ($ENV{SEMAPHORE} || ".results.lck");
 open(SEM, ">$SEMAPHORE") || die "fred_job failed to obtain semaphore: ($!)\n";
 flock(SEM, LOCK_EX);
 

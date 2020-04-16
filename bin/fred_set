@@ -50,7 +50,7 @@ my $line = `grep '^$x' $defaults`;
 die "$0: $param not a valid parameter\n" if (not $line and not $nocheck);
 
 # set locking semaphore
-my $SEMAPHORE = ".params.lck";
+my $SEMAPHORE = ($ENV{SEMAPHORE_PARAMS} || ".params.lck");
 open(S, ">$SEMAPHORE") || die "$0: failed to obtain semaphore: ($!)\n";
 flock(S, LOCK_EX);
 
