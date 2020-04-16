@@ -71,7 +71,7 @@ my $using_pbs;
 # if using parallel mode, determine how many cpus to use for parallel runs
 if ($parallel) {
   # are we running in the context of a PBS batch job?
-  my $using_pbs = (exists $ENV{PBS_RUNID}) ? 1 : 0;
+  my $using_pbs = (exists $ENV{PBS_JOBID}) ? 1 : 0;
 
   # intialize cpu count
   $cpus = 0;
