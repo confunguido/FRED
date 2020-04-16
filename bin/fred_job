@@ -109,7 +109,7 @@ chdir $FRED or die "Can't change to FRED directory $FRED\n";
 # system "cd src; make -s";
 
 # set locking semaphore
-my $SEMAPHORE = ".results.lck";
+my $SEMAPHORE = ($ENV{SEMAPHORE} || ".results.lck");
 open(SEM, ">$SEMAPHORE") || die "fred_job failed to obtain semaphore: ($!)\n";
 flock(SEM, LOCK_EX);
 
