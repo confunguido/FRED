@@ -89,6 +89,10 @@ bool Place_List::Enable_shelter_fixed_end = false;
 bool Place_List::Shelter_enable_stepwise = false;
 std::vector<double> Place_List::Shelter_stepwise_compliance;
 std::vector<int> Place_List::Shelter_stepwise_duration;
+bool Place_List::Shelter_enable_workplace_release_by_size = false;
+std::vector<int> Place_List::Shelter_workplace_sizes;
+std::vector<int> Place_List::Shelter_workplace_release_days;
+std::vector<double> Place_List::Shelter_workplace_release_prop;
 
 int Place_List::Shelter_by_age_duration_mean = 0;
 int Place_List::Shelter_by_age_duration_std = 0;
@@ -217,6 +221,9 @@ void Place_List::get_parameters() {
     Params::get_param_from_string("shelter_in_place_enable_stepwise", &temp_int);
     Place_List::Shelter_enable_stepwise = (temp_int == 0 ? false : true);
 
+    Params::get_param_from_string("shelter_in_place_enable_workplace_release_by_size", &temp_int);
+    Place_List::Shelter_enable_workplace_release_by_size = (temp_int == 0 ? false : true);
+    
     Params::get_param_from_string("shelter_in_place_enable_linear_early_rate", &temp_int);
     Place_List::Enable_early_shelter_linear_rate = (temp_int == 0 ? false : true);
 
@@ -228,6 +235,12 @@ void Place_List::get_parameters() {
       Params::get_param_vector((char*)"shelter_in_place_stepwise_duration", Place_List::Shelter_stepwise_duration);
       Place_List::Shelter_duration_mean = Place_List::Shelter_stepwise_duration[0];
       Place_List::Pct_households_sheltering = Place_List::Shelter_stepwise_compliance[0];
+    }
+
+    if(Place_List::Shelter_enable_workplace_release_by_size == true){
+      Params::get_param_vector((char*)"shelter_in_place_workplace_sizes", Place_List::Shelter_workplace_sizes);
+      Params::get_param_vector((char*)"shelter_in_place_workplace_release_days", Place_List::Shelter_workplace_release_days);
+      Params::get_param_vector((char*)"shelter_in_place_workplace_release_prop", Place_List::Shelter_workplace_release_prop);      
     }
   }
 
@@ -1289,6 +1302,31 @@ void Place_List::prepare() {
     }
   }
 
+  // Release workplaces by size if enabled
+  if(Global::Enable_Household_Shelter && Place_List::Shelter_enable_workplace_release_by_size == true){
+    if(Place_List::Shelter_workplace_sizes.size() != Place_List::Shelter_workplace_release_days.size()){
+      printf("SHELTER WORKPLACE RELEASE DAY IS NOT THE SAME AS THE SIZE CATEGORIES\n");
+      abort();
+    }
+    printf("PLACE_LIST::SETTING UP EARLY RELEASE\n");
+    if(Place_List::Shelter_workplace_sizes.size() > 0){
+      int n_workplaces = this->workplaces.size();
+      for(int i = 0; i < n_workplaces; i++){
+	Workplace* tmpwork = get_workplace_ptr(i);
+	printf("WORKPLACE SIZE: %d",tmpwork->get_size());
+	for(int j = 0; j < Place_List::Shelter_workplace_sizes.size(); j++){	  
+	  if(tmpwork->get_size() <= Place_List::Shelter_workplace_sizes[j]){
+	    double r = Random::draw_random();
+	    if(r < Place_List::Shelter_workplace_release_prop[j]){
+	      printf("WORKPLACE RELEASE DATE SET TO: %d\n",Place_List::Shelter_workplace_release_days[j]);
+	      tmpwork->set_shelter_release_day(Place_List::Shelter_workplace_release_days[j]);
+	    }
+	  }
+	}
+      }
+    }
+    
+  }
 
   if(Global::Verbose > 1) {
     // check the schools by grade lists
@@ -2496,7 +2534,7 @@ void Place_List::shelter_household(Household* h) {
     shelter_start_day = 0;
   }
   h->set_shelter_start_day(shelter_start_day);
-
+  
   // set shelter duration
   int shelter_duration = 0.4999999
       + Random::draw_normal(Place_List::Shelter_duration_mean, Place_List::Shelter_duration_std);

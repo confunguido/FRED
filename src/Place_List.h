@@ -423,6 +423,11 @@ private:
   static bool Shelter_enable_stepwise;
   static std::vector<double> Shelter_stepwise_compliance;
   static std::vector<int> Shelter_stepwise_duration;
+  static bool Shelter_enable_workplace_release_by_size;
+  static std::vector<int> Shelter_workplace_sizes;
+  static std::vector<int> Shelter_workplace_release_days;
+  static std::vector<double> Shelter_workplace_release_prop;
+
   
   static int Shelter_by_age_duration_mean;
   static int Shelter_by_age_duration_std;

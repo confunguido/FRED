@@ -54,6 +54,14 @@ public:
     return 0;
   }
 
+  void set_shelter_release_day(int day_in){
+    this->shelter_release_day = day_in;
+  }
+
+  int get_shelter_release_day(){
+    return(this->shelter_release_day);
+  }
+  
   /**
    * @see Place::get_transmission_prob(int disease, Person* i, Person* s)
    *
@@ -147,7 +155,7 @@ private:
   static int Office_size;
 
   static int total_workers;
-  
+  static int shelter_release_day;
   static std::vector<int> workplace_size_max; // vector to hold the upper limit for each workplace size group
   static std::vector<int> workers_by_workplace_size; // vector to hold the counts of workers in each group (plus, the "greater than" group)
   static int workplace_size_group_count;

@@ -524,6 +524,18 @@ void Activities::update_schedule(int sim_day) {
       Household* h = static_cast<Household*>(this->myself->get_household());
       // Allow students to check school if shelter without closing schools
       if(h->is_sheltering_today(sim_day)) {
+	/*
+	  1. If person works, then get capacity of workplace
+	  2. Check if capacity is allowed to work today
+	 */
+	Workplace* tmpwork = static_cast<Workplace*>(get_workplace());
+	if(tmpwork != NULL){
+	  if(tmpwork->get_shelter_release_day() <= sim_day){
+	    FRED_STATUS(1, "update_schedule on day %d\n%s\n", sim_day,
+			schedule_to_string(sim_day).c_str());
+	    return;
+	  }
+	}
 	if(h->is_sheltering_students() || get_school() == NULL){
 	  FRED_STATUS(1, "update_schedule on day %d\n%s\n", sim_day,
 		      schedule_to_string(sim_day).c_str());

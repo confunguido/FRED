@@ -34,7 +34,7 @@ int Workplace::Office_size = 0;
 
 //Private static variables for population level statistics
 int Workplace::total_workers = 0;
-
+int Workplace::shelter_release_day = -1;
 vector<int> Workplace::workplace_size_max;
 vector<int> Workplace::workers_by_workplace_size;
 int Workplace::workplace_size_group_count = 0;
