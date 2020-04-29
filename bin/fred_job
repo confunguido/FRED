@@ -35,6 +35,7 @@ my $zip = "";
 my $parallel = "";
 my $start_run = "";
 my $end_run = "";
+my $force_id = "";
 my $threads = 1;
 my $multiple_cpus = 1;
 my $opt_result = GetOptions(
@@ -50,6 +51,7 @@ my $opt_result = GetOptions(
 			    "s=i" => \$start_run,
 			    "t=i" => \$threads,
 			    "M=i" => \$multiple_cpus,
+                            "I=i" => \$force_id, 
 			    "z" => \$zip
 );
 die $usage if $help;
@@ -184,11 +186,24 @@ if ($key and $cache) {
 
 # set the job id
 my $id = "";
-if ($old_id > -1) {
+if($force_id){
+    if($force_id < 1){
+	close SEM and close FH and die "fred_job: forcing $key to $force_id failed. Specify id at least of 1.\n";
+    }
+    # get id for this job and update counter
+    $id = $force_id;
+    my $new_id = $id + 1;
+    open FH, ">$fred_results/ID";
+    print FH "$new_id\n";
+    close FH;
+    # use job id as key unless given command line key
+    $key = $id if $key eq "";
+    # add key-id pair
+    `echo $key $id >> $fred_results/KEY`;
+}elsif ($old_id > -1) {
   # use old id
   $id = $old_id;
-}
-else {
+}else {
   # get id for this job and update counter
   open FH, "$fred_results/ID";
   $id = <FH>;
