@@ -492,6 +492,7 @@ private:
   int median_household_income;
   int first_quartile_household_income;
   int third_quartile_household_income;
+
   void report_household_incomes();
   void select_households_for_shelter();
   void shelter_household(Household* h);
@@ -499,7 +500,8 @@ private:
   void shelter_household_by_age(Household* h);
   void select_households_for_evacuation();
   void evacuate_household(Household* h);
-
+  
+  double previous_shelter_compliance;
   // For hospitalization
   HouseholdHospitalIDMapT household_hospital_map;
 

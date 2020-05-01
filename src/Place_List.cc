@@ -278,6 +278,7 @@ void Place_List::get_parameters() {
 	printf("%s\n", ss.c_str());
       }
     }
+    this->previous_shelter_compliance = 0.0;
     printf("Finished with reading shelter-in-place file\n");
   }
 
@@ -2794,7 +2795,7 @@ void Place_List::update_shelter_households(int day) {
   double sheltering_ar = 0.0;
   double non_sheltering_ar = 0.0;
   double shelter_compliance = 0.0;
-      
+  double shelter_compliance_diff = 0.0;    
   // Decide if sheltering needs to be updated
   /*
     Right now shelter is homogeneous across counties or any geographical area
@@ -2807,19 +2808,57 @@ void Place_List::update_shelter_households(int day) {
     Time_Step_Map_Shelter* tmap = this->shelter_households_timestep[i];
     if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
       shelter_compliance = tmap->shelter_compliance;
+      if(shelter_compliance < 0.0){
+	shelter_compliance = 0.0;
+      }else if(shelter_compliance > 1.0){
+	shelter_compliance = 1.0;
+      }      
       printf("Updating shelter for line: %s\n",tmap->to_string().c_str()); // tmap->print();
     }
   }
-  printf("Place_List::update_shelter_households -> day %d compliance: %.2f\n", day, shelter_compliance);
-  
+
+  shelter_compliance_diff = shelter_compliance - this->previous_shelter_compliance;
+
+  printf("Place_List::update_shelter_households -> day %d compliance: %.2f, previous: %.2f diff: %.2f\n", day, shelter_compliance, this->previous_shelter_compliance, shelter_compliance_diff);
+
+  if(shelter_compliance_diff != 0.0){
+    if(shelter_compliance_diff < 0.0){
+      if(this->previous_shelter_compliance > 0.0){
+	shelter_compliance_diff = shelter_compliance_diff / this->previous_shelter_compliance;
+	if(shelter_compliance == 0.0){
+	  shelter_compliance_diff = -1.0;
+	}
+      }
+    }else{
+      if(this->previous_shelter_compliance > 0.0){
+	shelter_compliance_diff = shelter_compliance_diff / (1.0 - this->previous_shelter_compliance);
+      }
+    }
+  }
+      
   for(int i = 0; i < num_households; ++i) {
     Household* h = this->get_household_ptr(i);    
     // Draw a random number and decide whether to shelter or not
-    double r = Random::draw_random();
-    if(shelter_compliance < r){
-      h->set_shelter(true);
-      h->set_shelter_start_day(day);
-      h->set_shelter_end_day(day + 1);
+    // Remove houses alredy sheltered if going down
+    // keep houses already shelter if going up
+    if(shelter_compliance_diff != 0.0){  
+      if((shelter_compliance_diff < 0.0) && (this->previous_shelter_compliance > 0.0)){
+	if(h->is_sheltering_today(day) == true) {
+	  double r = Random::draw_random();
+	  if(r < (-1 * shelter_compliance_diff)){
+	    h->set_shelter_end_day(day);
+	  }
+	}
+      }else{
+	if(h->is_sheltering_today(day) == false) {
+	  double r = Random::draw_random();
+	  if(r < shelter_compliance_diff){
+	    h->set_shelter(true);
+	    h->set_shelter_start_day(day);
+	    h->set_shelter_end_day(9999999);
+	  }
+	}
+      }      
     }
     if(h->is_sheltering_today(day)) {
       sheltering_households++;
@@ -2833,6 +2872,9 @@ void Place_List::update_shelter_households(int day) {
       non_sheltering_total_infections += h->get_total_infections(0);
     }    
   }
+  
+  this->previous_shelter_compliance = shelter_compliance;
+    
   if(sheltering_total_pop > 0) {
     sheltering_ar = 100.0 * (double)sheltering_total_infections / static_cast<double>(sheltering_total_pop);
   }
