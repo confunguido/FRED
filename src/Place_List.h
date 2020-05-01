@@ -42,6 +42,27 @@ class Office;
 
 typedef std::unordered_map<std::string, int> LabelMapT;
 
+struct Time_Step_Map_Shelter {
+  int sim_day_start;
+  int sim_day_end;
+  double shelter_compliance;
+  double lat;
+  double lon;
+  double radius;
+  const std::string to_string() const {
+    std::stringstream ss;
+    ss << "Time Step Map ";
+    ss << " sim_day_start " << sim_day_start;
+    ss << " sim_day_end " << sim_day_end;
+    ss << " shelter_compliance " << shelter_compliance;
+    ss << " lat " << lat;
+    ss << " lon " << lon;
+    ss << " radius " << radius;
+    ss << std::endl;
+    return ss.str();
+  }
+};
+
 // Helper class used during read_all_places/read_places; definition
 // after Place_List class
 class Place_Init_Data;
@@ -129,6 +150,7 @@ public:
   Hospital* get_random_primary_care_facility_matching_criteria(Person* per, bool check_insurance, bool use_search_radius_limit);
   void print_household_size_distribution(char* dir, char* date_string, int run);
   void report_shelter_stats(int day);
+  void update_shelter_households(int day);
   void end_of_run();
 
   int get_number_of_demes() {
@@ -423,6 +445,7 @@ private:
   static bool Shelter_enable_stepwise;
   static std::vector<double> Shelter_stepwise_compliance;
   static std::vector<int> Shelter_stepwise_duration;
+  static std::vector<Time_Step_Map_Shelter*> shelter_households_timestep;
   
   static int Shelter_by_age_duration_mean;
   static int Shelter_by_age_duration_std;

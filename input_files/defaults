@@ -849,6 +849,12 @@ shelter_in_place_enable_stepwise = 0
 shelter_in_place_stepwise_compliance = 2 0.5 0.1 
 shelter_in_place_stepwise_duration = 2 10 9999
 
+#######################################################
+# if shelter_in_place_time_series is enabled, then a file is needed
+# with a similar format than the primary cases file
+#######################################################
+enable_shelter_in_place_timeseries = 0
+shelter_in_place_file = none
 shelter_in_place_students = 1
 
 enable_shelter_in_place_by_age = 0

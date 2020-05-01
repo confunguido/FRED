@@ -89,7 +89,8 @@ bool Place_List::Enable_shelter_fixed_end = false;
 bool Place_List::Shelter_enable_stepwise = false;
 std::vector<double> Place_List::Shelter_stepwise_compliance;
 std::vector<int> Place_List::Shelter_stepwise_duration;
-
+std::vector<Time_Step_Map_Shelter*> Place_List::shelter_households_timestep;
+  
 int Place_List::Shelter_by_age_duration_mean = 0;
 int Place_List::Shelter_by_age_duration_std = 0;
 int Place_List::Shelter_by_age_delay_mean = 0;
@@ -100,6 +101,7 @@ double Place_List::Shelter_by_age_decay_rate = 0.0;
 int Place_List::Shelter_by_age_min_age = 0;
 int Place_List::Shelter_by_age_max_age = 120;
 bool Place_List::Shelter_students = false;
+
 
 bool Place_List::Household_hospital_map_file_exists = false;
 int Place_List::Hospital_fixed_staff = 1.0;
@@ -121,6 +123,7 @@ int Place_List::HAZEL_disaster_return_end_offset = 0;
 double Place_List::HAZEL_disaster_evac_prob_per_day = 0.0;
 double Place_List::HAZEL_disaster_return_prob_per_day = 0.0;
 int Place_List::HAZEL_mobile_van_max = 0;
+
 
 HospitalIDCountMapT Place_List::Hospital_ID_total_assigned_size_map;
 HospitalIDCountMapT Place_List::Hospital_ID_current_assigned_size_map;
@@ -193,7 +196,7 @@ void Place_List::get_parameters() {
   }
 
   // household shelter parameters
-  if(Global::Enable_Household_Shelter) {
+  if(Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File == false) {
     Params::get_param_from_string("shelter_in_place_duration_mean", &Place_List::Shelter_duration_mean);
     Params::get_param_from_string("shelter_in_place_duration_std", &Place_List::Shelter_duration_std);
     Params::get_param_from_string("shelter_in_place_delay_mean", &Place_List::Shelter_delay_mean);
@@ -231,6 +234,54 @@ void Place_List::get_parameters() {
     }
   }
 
+  // If reading sheltering compliance from a file
+  if(Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File == true) {
+    char map_file_name[FRED_STRING_SIZE];
+    Params::get_param_from_string("shelter_in_place_file", map_file_name);
+    // If this parameter is "none", then there is no map
+    if(strncmp(map_file_name, "none", 4) != 0){
+      Utils::get_fred_file_name(map_file_name);
+      printf("READING: shelter in place households file: %s\n", map_file_name);
+      ifstream* ts_input = new ifstream(map_file_name);
+      if(!ts_input->is_open()) {
+	Utils::fred_abort("Help!  Can't read %s Timestep Map\n", map_file_name);
+	abort();
+      }
+      string line;
+      while(getline(*ts_input,line)){
+	if(line[0] == '\n' || line[0] == '#') { // empty line or comment
+	  continue;
+	}
+	char cstr[FRED_STRING_SIZE];
+	std::strcpy(cstr, line.c_str());
+	Time_Step_Map_Shelter * tmap = new Time_Step_Map_Shelter;
+	int n = sscanf(cstr,
+		       "%d %d %lf %lf %lf %lf",
+		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->shelter_compliance, 
+		       &tmap->lat, &tmap->lon, &tmap->radius);
+	printf("LINES: %d\n",n);
+	if(n < 3) {
+	  Utils::fred_abort("Need to specify at least SimulationDayStart, SimulationDayEnd and shelter compliance for Time_Step_Map of sheltering in place. ");
+	}
+	if(n < 6) {
+	  tmap->lat = 0.0;
+	  tmap->lon = 0.0;
+	  tmap->radius = -1;
+	}
+	this->shelter_households_timestep.push_back(tmap);
+      }
+      ts_input->close();
+    }
+    if (Global::Verbose > -1) {
+      for(int i = 0; i < this->shelter_households_timestep.size(); ++i) {
+	string ss = this->shelter_households_timestep[i]->to_string();
+	printf("%s\n", ss.c_str());
+      }
+    }
+    printf("Finished with reading shelter-in-place file\n");
+  }
+
+  
   // household shelter by age parameters
   if(Global::Enable_Household_Shelter_By_Age) {
     Params::get_param_from_string("shelter_in_place_by_age_duration_mean", &Place_List::Shelter_by_age_duration_mean);
@@ -1693,7 +1744,7 @@ void Place_List::setup_households() {
   if(Global::Enable_HAZEL) {
     select_households_for_evacuation();
   }else{
-    if(Global::Enable_Household_Shelter) {
+    if(Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File == false){ 
       select_households_for_shelter();
     }
     if(Global::Enable_Household_Shelter_By_Age){
@@ -2714,6 +2765,73 @@ void Place_List::report_shelter_stats(int day) {
       sheltering_households++;
       sheltering_pop += h->get_size();
     }
+  }
+  if(sheltering_total_pop > 0) {
+    sheltering_ar = 100.0 * (double)sheltering_total_infections / static_cast<double>(sheltering_total_pop);
+  }
+  if(non_sheltering_pop > 0) {
+    non_sheltering_ar = 100.0 * (double)non_sheltering_total_infections / static_cast<double>(non_sheltering_pop);
+  }
+  Global::Daily_Tracker->set_index_key_pair(day, "H_sheltering", sheltering_households);
+  Global::Daily_Tracker->set_index_key_pair(day, "N_sheltering", sheltering_pop);
+  Global::Daily_Tracker->set_index_key_pair(day, "C_sheltering", sheltering_new_infections);
+  Global::Daily_Tracker->set_index_key_pair(day, "AR_sheltering", sheltering_ar);
+  Global::Daily_Tracker->set_index_key_pair(day, "N_noniso", non_sheltering_pop);
+  Global::Daily_Tracker->set_index_key_pair(day, "C_noniso", non_sheltering_new_infections);
+  Global::Daily_Tracker->set_index_key_pair(day, "AR_noniso", non_sheltering_ar);
+}
+
+void Place_List::update_shelter_households(int day) {
+  int sheltering_households = 0;
+  int sheltering_pop = 0;
+  int sheltering_total_pop = 0;
+  int sheltering_new_infections = 0;
+  int sheltering_total_infections = 0;
+  int non_sheltering_total_infections = 0;
+  int non_sheltering_pop = 0;
+  int non_sheltering_new_infections = 0;
+  int num_households = this->households.size();
+  double sheltering_ar = 0.0;
+  double non_sheltering_ar = 0.0;
+  double shelter_compliance = 0.0;
+      
+  // Decide if sheltering needs to be updated
+  /*
+    Right now shelter is homogeneous across counties or any geographical area
+    This needs to update so that a radius or zipcode can be used
+    Maybe create a map or vector with the necessary updates and then go through households
+    Also, update to shelter by workplace type from NAICS code
+  */
+  
+  for(int i = 0; i < this->shelter_households_timestep.size(); ++i) {
+    Time_Step_Map_Shelter* tmap = this->shelter_households_timestep[i];
+    if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
+      shelter_compliance = tmap->shelter_compliance;
+      printf("Updating shelter for line: %s\n",tmap->to_string().c_str()); // tmap->print();
+    }
+  }
+  printf("Place_List::update_shelter_households -> day %d compliance: %.2f\n", day, shelter_compliance);
+  
+  for(int i = 0; i < num_households; ++i) {
+    Household* h = this->get_household_ptr(i);    
+    // Draw a random number and decide whether to shelter or not
+    double r = Random::draw_random();
+    if(shelter_compliance < r){
+      h->set_shelter(true);
+      h->set_shelter_start_day(day);
+      h->set_shelter_end_day(day + 1);
+    }
+    if(h->is_sheltering_today(day)) {
+      sheltering_households++;
+      sheltering_pop += h->get_size();
+      sheltering_new_infections += h->get_new_infections(day,0);
+      sheltering_total_infections += h->get_total_infections(0);
+      sheltering_total_pop += h->get_size();
+    } else {
+      non_sheltering_pop += h->get_size();
+      non_sheltering_new_infections += h->get_new_infections(day,0);
+      non_sheltering_total_infections += h->get_total_infections(0);
+    }    
   }
   if(sheltering_total_pop > 0) {
     sheltering_ar = 100.0 * (double)sheltering_total_infections / static_cast<double>(sheltering_total_pop);

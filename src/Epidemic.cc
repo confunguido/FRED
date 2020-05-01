@@ -563,7 +563,7 @@ void Epidemic::print_stats(int day) {
     report_household_income_stratified_results(day);
   }
 
-  if (Global::Enable_Household_Shelter) {
+  if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File == false) {
     Global::Places.report_shelter_stats(day);
   }
 
@@ -1799,6 +1799,11 @@ void Epidemic::update(int day) {
   // transition to susceptible
   process_immunity_end_events(day);
 
+  //Update sheltering houses
+  if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
+    Global::Places.update_shelter_households(day);
+  }
+  
   // Utils::fred_print_epidemic_timer("transition events");
 
   // update list of infected people

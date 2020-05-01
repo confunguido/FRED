@@ -184,6 +184,7 @@ if ($key and $cache) {
   close FH;
 }
 
+
 # set the job id
 my $id = "";
 if($force_id){
@@ -565,7 +566,9 @@ sub copy_file_parameters {
 	print OUT "$par = $file_base\n";
 	
 	# copy the actual file to the working directory
+	print "copying $file to $work/$file_base\n";
 	`cp $file "$work/$file_base"`;
+	
       }
     }
     else {
