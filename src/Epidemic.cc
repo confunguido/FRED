@@ -625,7 +625,7 @@ void Epidemic::report_age_of_infection(int day) {
   
   for(int i = 0; i < this->people_becoming_infected_today; ++i) {
     Person* infectee = this->daily_infections_list[i];
-    int age = infectee->get_age();    
+    int age = infectee->get_age();
     mean_age += age;
     count_infections++;
     
@@ -639,8 +639,8 @@ void Epidemic::report_age_of_infection(int day) {
         age_group = Demographics::MAX_AGE;
       }
     }
-
     age_count[age_group]++;
+    
     double real_age = infectee->get_real_age();
     if(Global::Report_Age_Of_Infection == 1) {
       if(real_age < 0.5) {
@@ -692,12 +692,12 @@ void Epidemic::report_age_of_infection(int day) {
       }
     }
   }
-
-
-  for(int i = 0; i < this->people_becoming_symptomatic_today; ++i) {
+  
+  printf("Epidemic.cc::report_age_of_infection -> There are %d symptomatics, %lu\n", this->people_becoming_symptomatic_today, this->daily_symptomatic_list.size());
+  for(int i = 0; i < this->people_becoming_symptomatic_today; ++i) {    
     Person* infectee = this->daily_symptomatic_list[i];
-    int age = infectee->get_age();    
-    mean_age += age;
+    
+    int age = infectee->get_age();
     count_symptomatics++;
     
     int age_group = age / 5;
@@ -762,7 +762,7 @@ void Epidemic::report_age_of_infection(int day) {
         elderly_Cs++;
       }
     }
-  }    
+  }
   
   if(count_infections > 0) {
     mean_age /= count_infections;
@@ -1818,10 +1818,10 @@ void Epidemic::process_symptoms_start_events(int day) {
 	      }
       }
     }
-
+    
     // update person's health chart
     person->become_symptomatic(this->disease);
-
+    this->daily_symptomatic_list.push_back(person);
   }
   this->symptoms_start_event_queue->clear_events(day);
 }
