@@ -839,6 +839,10 @@ void Epidemic::report_age_of_infection(int day) {
       track_value(day, temp_str,
 		  Global::Popsize_by_age[i] ?
 		  (100000.0 * age_count[i] / static_cast<double>(Global::Popsize_by_age[i])) : 0.0);
+      sprintf(temp_str, "AgeN%d", i);
+      track_value(day, temp_str,
+		  Global::Popsize_by_age[i] ?
+		  Global::Popsize_by_age[i] : 0.0);
     }
     break;
   default:
