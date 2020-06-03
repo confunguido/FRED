@@ -293,6 +293,10 @@ void Global::get_global_parameters() {
   Global::Enable_Household_Shelter_File = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_shelter_in_place_by_age", &temp_int);
   Global::Enable_Household_Shelter_By_Age = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_shelter_in_place_relax_post_peak_period", &temp_int);
+  Global::Enable_Household_Shelter_Relax_Post_Peak_Period = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_shelter_in_place_relax_post_peak_threshold", &temp_int);
+  Global::Enable_Household_Shelter_Relax_Post_Peak_Threshold = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_isolation", &temp_int);
   Global::Enable_Isolation = (temp_int == 0 ? false : true);
   Params::get_param_from_string("isolation_delay", &Global::Isolation_Delay);

@@ -181,6 +181,9 @@ Epidemic::Epidemic(Disease* dis) {
 
   this->actually_infectious_people.reserve(Global::Pop.get_pop_size());
   this->actually_infectious_people.clear();
+
+  this->peak_incidence = 0;
+  this->peak_day = 0;
 }
 
 
@@ -484,6 +487,12 @@ void Epidemic::print_stats(int day) {
       / static_cast<double>(this->population_infection_counts.tot_ppl_evr_sympt);
   }
 
+  //update peak if exceeded
+  if (this->peak_incidence < this->people_becoming_symptomatic_today) {
+    this->peak_incidence = this->people_becoming_symptomatic_today;
+    this->peak_day = day;
+  }
+
   if(this->id == 0) {
     Global::Daily_Tracker->set_index_key_pair(day,"Date", Date::get_date_string());
     Global::Daily_Tracker->set_index_key_pair(day,"WkDay", Date::get_day_of_week_string());
@@ -512,7 +521,9 @@ void Epidemic::print_stats(int day) {
   track_value(day, (char*)"AR", this->attack_rate);
   track_value(day, (char*)"ARs", this->symptomatic_attack_rate);
   track_value(day, (char*)"RR", this->RR);
-
+  track_value(day, (char*)"PkDay", this->peak_day);
+  track_value(day, (char*)"PkInc", this->peak_incidence);
+  
   if (Global::Enable_Vector_Layer && Global::Report_Vector_Population) {
     Global::Vectors->report(day, this);
   }
@@ -582,7 +593,7 @@ void Epidemic::print_stats(int day) {
   if(Global::Verbose) {
     fprintf(Global::Statusfp, "\n");
     fflush(Global::Statusfp);
-  }
+  }			  
 
   // prepare for next day
   this->people_becoming_infected_today = 0;
@@ -1919,7 +1930,8 @@ void Epidemic::update(int day) {
 
   //Update sheltering houses
   if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
-    Global::Places.update_shelter_households(day);
+    Global::Places.update_shelter_households(day, this->peak_day,
+					     1.0*this->symptomatic_incidence/this->peak_incidence);
   }
   
   // Utils::fred_print_epidemic_timer("transition events");

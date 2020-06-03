@@ -353,6 +353,10 @@ protected:
   int* census_tract_incidence;
   int* census_tract_symp_incidence;
 
+  // peak-day so far, and incidence
+  int peak_incidence;
+  int peak_day;
+  
 };
 
 #endif // _FRED_EPIDEMIC_H

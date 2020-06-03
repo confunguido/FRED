@@ -150,7 +150,7 @@ public:
   Hospital* get_random_primary_care_facility_matching_criteria(Person* per, bool check_insurance, bool use_search_radius_limit);
   void print_household_size_distribution(char* dir, char* date_string, int run);
   void report_shelter_stats(int day);
-  void update_shelter_households(int day);
+  void update_shelter_households(int day, int, double);
   void end_of_run();
 
   int get_number_of_demes() {
@@ -458,6 +458,10 @@ private:
   static int Shelter_by_age_max_age;
   static bool Shelter_students;
   
+  static double Shelter_relax_post_peak_threshold;
+  static int Shelter_relax_post_peak_min_peak_day;
+  static int  Shelter_relax_post_peak_period;
+  static bool Shelter_relaxed;
   
   // Hospital support
   static bool Household_hospital_map_file_exists;

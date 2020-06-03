@@ -868,6 +868,12 @@ shelter_in_place_by_age_decay_rate = 0.0
 shelter_in_place_by_age_min_age = 0
 shelter_in_place_by_age_max_age = 120
 
+enable_shelter_in_place_relax_post_peak_period = 0
+enable_shelter_in_place_relax_post_peak_threshold = 0
+shelter_in_place_relax_post_peak_min_peak_day = 135
+shelter_in_place_relax_post_peak_period = 14
+shelter_in_place_relax_post_peak_threshold = 0.01
+
 ##########################################################
 #
 # POPULATION DYNAMICS (OPTIONAL)
