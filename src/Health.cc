@@ -879,6 +879,15 @@ double Health::get_symptoms(int disease_id, int day) const {
 }
 
 //Modify Operators
+
+double Health::get_susceptibility_modifier_due_to_person_age(int disease_id, int int_age) {
+  Disease* disease = Global::Diseases.get_disease(disease_id);
+  if(Global::Enable_Age_Specific_Susceptibility){
+    return (disease->get_age_specific_susceptibility_efficacy(int_age));
+  }
+  return 1.0;
+}
+
 double Health::get_transmission_modifier_due_to_hygiene(int disease_id) {
   Disease* disease = Global::Diseases.get_disease(disease_id);
   if(this->is_wearing_face_mask() && this->is_washing_hands()) {

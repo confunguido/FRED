@@ -591,6 +591,12 @@ influenza_probability_of_symptoms = 0.67
 influenza_prob_symptoms_age_groups = 0
 influenza_prob_symptoms_values = 0
 
+### optional susceptibility by aged
+enable_age_specific_susceptibility = 0
+influenza_susceptibility_by_age_rate = 0.0
+influenza_susceptibility_by_age_offset = 0.0
+
+
 ### multiplier for asymptomatic infectivity
 influenza_asymp_infectivity = 0.5
 

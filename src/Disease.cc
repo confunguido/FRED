@@ -65,7 +65,11 @@ Disease::Disease() {
   this->hand_washing_susceptibility_efficacy = -1.0;
   this->face_mask_plus_hand_washing_transmission_efficacy = -1.0;
   this->face_mask_plus_hand_washing_susceptibility_efficacy = -1.0;
+  this->enable_face_mask_usage = 0;
+  this->susceptibility_by_age_offset = 0.0;
+  this->susceptibility_by_age_rate = 0.0;
   this->make_all_susceptible = true;
+  this->age_susceptibility.clear();
 }
 
 Disease::~Disease() {
@@ -174,6 +178,25 @@ void Disease::get_parameters(int disease_id, string name) {
 			      &(this->face_mask_plus_hand_washing_susceptibility_efficacy));
   }
 
+  //Susceptibility by age
+  if(Global::Enable_Age_Specific_Susceptibility){
+    Params::get_indexed_param(this->disease_name, "susceptibility_by_age_rate",
+			      &(this->susceptibility_by_age_rate));
+    Params::get_indexed_param(this->disease_name, "susceptibility_by_age_offset",
+			      &(this->susceptibility_by_age_offset));
+    /*
+      1. Create a vector of N positions representing each age
+      2. Calculate susceptibility by age for each age
+     */
+    for(int i = 0; i < 101; ++i){
+      double susceptibility_ = this->susceptibility_by_age_offset + (1 - this->susceptibility_by_age_offset)*(1 - exp(-(this->susceptibility_by_age_rate * (double) i)));
+      this->age_susceptibility.push_back(susceptibility_);
+    }
+    for(int i = 0; i < 101; ++i){
+      printf("SUSCEPTIBILITY_AGE DISEASE: %s - AGE: %d SUSCEPTIBILITY %.2f\n", this->disease_name, i, this->age_susceptibility[i]);
+    }
+  }
+  
   // Define residual immunity
   this->residual_immunity = new Age_Map("Residual Immunity");
   sprintf(paramstr, "%s_residual_immunity", this->disease_name);

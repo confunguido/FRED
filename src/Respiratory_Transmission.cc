@@ -147,6 +147,10 @@ bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Pe
   assert(infectee->is_susceptible(disease_id));
   FRED_STATUS(1, "infector %d -- infectee %d is susceptible\n", infector->get_id(), infectee->get_id());
 
+  /*
+    Add susceptibility by age here. If susceptibility by age is enabled
+    then get infectee susceptibility
+  */
   double susceptibility = infectee->get_susceptibility(disease_id);
 
   // reduce transmission probability due to infector's hygiene (face masks or hand washing)
@@ -154,7 +158,14 @@ bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Pe
 
   // reduce susceptibility due to infectee's hygiene (face masks or hand washing)
   susceptibility *= infectee->get_susceptibility_modifier_due_to_hygiene(disease_id);
-    
+
+  //printf("ATTEMPTING TRANSMISSION: age %d susceptibility %.2f ", infectee->get_age(), susceptibility);
+  
+  // reduce susceptibility due to age factors; if enabled
+  susceptibility *= infectee->get_susceptibility_modifier_due_to_person_age(disease_id);
+  
+  //printf("reduced susceptibility %.2f\n", susceptibility);
+  
   if(Global::Enable_hh_income_based_susc_mod) {
     int hh_income = Household::get_max_hh_income(); //Default to max (no modifier)
     Household* hh = static_cast<Household*>(infectee->get_household());
@@ -164,7 +175,7 @@ bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Pe
     susceptibility *= infectee->get_health()->get_susceptibility_modifier_due_to_household_income(hh_income);
     //Utils::fred_log("SUSC Modifier [%.4f] for HH Income [%i] modified suscepitibility to [%.4f]\n", hh_income, infectee->get_health()->get_susceptibility_modifier_due_to_household_income(hh_income), susceptibility);
   }
-
+	      
   FRED_VERBOSE(2, "susceptibility = %f\n", susceptibility);
 
   // reduce transmissibility due to seasonality
@@ -343,6 +354,7 @@ void Respiratory_Transmission::pairwise_transmission_model(int day, int disease_
 	        transmission_prob = place->get_transmission_prob(disease_id, infector, infectee);
 	      }
 	      double infectivity = infector->get_infectivity(disease_id, day);
+	      
 	      // scale transmission prob by infectivity and contact prob
 	      transmission_prob *= infectivity * contact_prob;
 	      attempt_transmission(transmission_prob, infector, infectee, disease_id, day, place);

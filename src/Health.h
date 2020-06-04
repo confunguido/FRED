@@ -159,6 +159,7 @@ public:
   double get_transmission_modifier_due_to_hygiene(int disease_id);
   double get_susceptibility_modifier_due_to_hygiene(int disease_id);
   double get_susceptibility_modifier_due_to_household_income(int disease_id);
+  double get_susceptibility_modifier_due_to_person_age(int disease_id, int int_age);
   int get_num_past_infections(int disease) {
     return this->past_infections[disease].size();
   }

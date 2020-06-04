@@ -703,6 +703,10 @@ public:
     return this->health.get_susceptibility_modifier_due_to_hygiene(disease_id);
   }
 
+  double get_susceptibility_modifier_due_to_person_age(int disease_id) {
+    return this->health.get_susceptibility_modifier_due_to_person_age(disease_id, this->demographics.get_age());
+  }
+
   bool is_case_fatality(int disease_id) {
     return this->health.is_case_fatality(disease_id);
   }

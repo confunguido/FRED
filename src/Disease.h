@@ -125,6 +125,16 @@ public:
     return this->face_mask_transmission_efficacy;
   }
 
+  double get_age_specific_susceptibility_efficacy(int age_){
+    if(age_ > 100){
+      age_ = 100;
+    }
+    if(age_ < 0){
+      age_ = 0;
+    }
+    return(this->age_susceptibility[age_]);
+  }
+
   double get_face_mask_susceptibility_efficacy() {
     return this->face_mask_susceptibility_efficacy;
   }
@@ -220,6 +230,7 @@ private:
   Epidemic* epidemic;
   Age_Map* at_risk;
   Age_Map* residual_immunity;
+  
   std::map<int, vector<double> > residual_immunity_by_FIPS;
 
   // variation over time of year
@@ -231,6 +242,12 @@ private:
   double face_mask_transmission_efficacy;
   double face_mask_susceptibility_efficacy;
 
+  // Age specific susceptibility
+  int enable_age_specific_susceptibility;
+  double susceptibility_by_age_offset;
+  double susceptibility_by_age_rate;
+  std::vector<double> age_susceptibility;
+  
   int enable_hand_washing;
   double hand_washing_transmission_efficacy;
   double hand_washing_susceptibility_efficacy;
