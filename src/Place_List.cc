@@ -2843,7 +2843,7 @@ void Place_List::update_shelter_households(int day, int peak_day_, double propor
 	  Shelter_relaxed = true;
 	}
       }
-      if(Global::Enable_Household_Shelter_Relax_Post_Peak_Period) {
+      if(Global::Enable_Household_Shelter_Relax_Post_Peak_Threshold) {
 	if(this->Shelter_relax_post_peak_threshold > proportion_peak_incidence) {
 	  shelter_compliance = 0.0;
 	  Shelter_relaxed = true;
