@@ -102,6 +102,10 @@ int Place_List::Shelter_by_age_min_age = 0;
 int Place_List::Shelter_by_age_max_age = 120;
 bool Place_List::Shelter_students = false;
 
+double Place_List::Shelter_relax_post_peak_threshold = 0.0;
+int Place_List::Shelter_relax_post_peak_min_peak_day = 9999999;
+int Place_List::Shelter_relax_post_peak_period = 9999999;
+bool Place_List::Shelter_relaxed = false;
 
 bool Place_List::Household_hospital_map_file_exists = false;
 int Place_List::Hospital_fixed_staff = 1.0;
@@ -282,6 +286,20 @@ void Place_List::get_parameters() {
     printf("Finished with reading shelter-in-place file\n");
   }
 
+  if (Global::Enable_Household_Shelter) {
+    if(Global::Enable_Household_Shelter_Relax_Post_Peak_Period) {
+      Params::get_param_from_string("shelter_in_place_relax_post_peak_min_peak_day",
+				    &Place_List::Shelter_relax_post_peak_min_peak_day);
+      Params::get_param_from_string("shelter_in_place_relax_post_peak_period",
+				    &Place_List::Shelter_relax_post_peak_period);
+    }
+    if(Global::Enable_Household_Shelter_Relax_Post_Peak_Threshold) {
+      Params::get_param_from_string("shelter_in_place_relax_post_peak_min_peak_day",
+				    &Place_List::Shelter_relax_post_peak_min_peak_day);
+      Params::get_param_from_string("shelter_in_place_relax_post_peak_threshold",
+				    &Place_List::Shelter_relax_post_peak_threshold);
+    }
+  }
   
   // household shelter by age parameters
   if(Global::Enable_Household_Shelter_By_Age) {
@@ -2782,7 +2800,7 @@ void Place_List::report_shelter_stats(int day) {
   Global::Daily_Tracker->set_index_key_pair(day, "AR_noniso", non_sheltering_ar);
 }
 
-void Place_List::update_shelter_households(int day) {
+void Place_List::update_shelter_households(int day, int peak_day_, double proportion_peak_incidence) {
   int sheltering_households = 0;
   int sheltering_pop = 0;
   int sheltering_total_pop = 0;
@@ -2803,19 +2821,34 @@ void Place_List::update_shelter_households(int day) {
     Maybe create a map or vector with the necessary updates and then go through households
     Also, update to shelter by workplace type from NAICS code
   */
-  
-  for(int i = 0; i < this->shelter_households_timestep.size(); ++i) {
-    Time_Step_Map_Shelter* tmap = this->shelter_households_timestep[i];
-    if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
-      shelter_compliance = tmap->shelter_compliance;
-      if(shelter_compliance < 0.0){
-	shelter_compliance = 0.0;
-      }else if(shelter_compliance > 1.0){
-	shelter_compliance = 1.0;
-      }      
-      printf("Updating shelter for line: %s\n",tmap->to_string().c_str()); // tmap->print();
+
+  if (!this->Shelter_relaxed) {
+    for(int i = 0; i < this->shelter_households_timestep.size(); ++i) {
+      Time_Step_Map_Shelter* tmap = this->shelter_households_timestep[i];
+      if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
+	shelter_compliance = tmap->shelter_compliance;
+	if(shelter_compliance < 0.0){
+	  shelter_compliance = 0.0;
+	}else if(shelter_compliance > 1.0){
+	  shelter_compliance = 1.0;
+	}      
+	printf("Updating shelter for line: %s\n",tmap->to_string().c_str()); // tmap->print();
+      }
     }
-  }
+
+    if(day >= this->Shelter_relax_post_peak_min_peak_day) {
+      if(Global::Enable_Household_Shelter_Relax_Post_Peak_Period) {
+	if(day >= peak_day_ + this->Shelter_relax_post_peak_period) {
+	  shelter_compliance = 0.0;
+	  Shelter_relaxed = true;
+	}
+	if(this->Shelter_relax_post_peak_threshold > proportion_peak_incidence) {
+	  shelter_compliance = 0.0;
+	  Shelter_relaxed = true;
+	}
+      }
+    }
+  }  
 
   shelter_compliance_diff = shelter_compliance - this->previous_shelter_compliance;
 
