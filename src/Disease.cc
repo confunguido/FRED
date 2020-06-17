@@ -68,6 +68,7 @@ Disease::Disease() {
   this->enable_face_mask_usage = 0;
   this->susceptibility_by_age_offset = 0.0;
   this->susceptibility_by_age_rate = 0.0;
+  this->susceptibility_by_age_cutoff = 0.0;
   this->make_all_susceptible = true;
   this->age_susceptibility.clear();
 }
@@ -184,12 +185,17 @@ void Disease::get_parameters(int disease_id, string name) {
 			      &(this->susceptibility_by_age_rate));
     Params::get_indexed_param(this->disease_name, "susceptibility_by_age_offset",
 			      &(this->susceptibility_by_age_offset));
+    Params::get_indexed_param(this->disease_name, "susceptibility_by_age_cutoff",
+			      &(this->susceptibility_by_age_cutoff));
+    if(this->susceptibility_by_age_cutoff < 0.0){
+      this->susceptibility_by_age_cutoff = 0.0;
+    }
     /*
-      1. Create a vector of N positions representing each age
-      2. Calculate susceptibility by age for each age
+      Susceptibility by age follows a logistic function with a floor -> offset
      */
     for(int i = 0; i < 101; ++i){
-      double susceptibility_ = this->susceptibility_by_age_offset + (1 - this->susceptibility_by_age_offset)*(1 - exp(-(this->susceptibility_by_age_rate * (double) i)));
+      double susceptibility_ = (this->susceptibility_by_age_offset +
+	(1 - this->susceptibility_by_age_offset)/(1 + exp(-(this->susceptibility_by_age_rate * (double) (i - this->susceptibility_by_age_cutoff)))));
       this->age_susceptibility.push_back(susceptibility_);
     }
     for(int i = 0; i < 101; ++i){
