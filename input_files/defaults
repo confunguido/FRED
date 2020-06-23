@@ -180,7 +180,7 @@ enable_copy_files = 0
 ##########################################################
 # Enable incidence based importations in nursing homes
 enable_nursing_homes_importations = 0
-
+nursing_home_incidence_importations_factor = 0.0
 
 # schedule of initial seed cases
 primary_cases_file = $FRED_HOME/input_files/primary_cases_10_on_day_0.txt
