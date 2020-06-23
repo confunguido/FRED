@@ -295,6 +295,19 @@ public:
       return NULL;
     }
   }
+
+  
+  int get_number_of_nursing_residents() {
+    return (int) this->nursing_home_residents_vector.size();
+  }
+
+  Person* get_nursing_home_resident_ptr(int i) {
+    if(0 <= i && i < get_number_of_nursing_residents()) {
+      return static_cast<Person*>(nursing_home_residents_vector[i]);
+    } else {
+      return NULL;
+    }
+  }  
   
   int get_number_of_neighborhoods() {
     return (int) this->neighborhoods.size();
@@ -418,6 +431,9 @@ private:
   static double Prison_cell_mean_size;
   static double Nursing_home_room_mean_size;
 
+  //Total number of nursing homes
+  static std::vector<Person*>nursing_home_residents_vector;
+  
   // non-resident staff for group quarters
   static int College_fixed_staff;
   static double College_resident_to_staff_ratio;

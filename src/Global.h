@@ -271,6 +271,7 @@ public:
   static bool Enable_Household_Shelter;
   static bool Enable_Household_Shelter_File;
   static bool Enable_Household_Shelter_By_Age;
+  static bool Enable_Nursing_Homes_Importations;
   static bool Enable_Age_Specific_Susceptibility;
   static bool Enable_Household_Shelter_Relax_Post_Peak_Period;
   static bool Enable_Household_Shelter_Relax_Post_Peak_Threshold;

@@ -99,6 +99,8 @@ Epidemic::Epidemic(Disease* dis) {
   this->population_infection_counts.tot_ppl_evr_inf = 0;
   this->population_infection_counts.tot_ppl_evr_sympt = 0;
 
+  this->nursing_home_incidence_importations_factor = 0.0;
+  
   if(Global::Report_Mean_Household_Stats_Per_Income_Category) {
     //Values for household income based stratification
     for(int i = 0; i < Household_income_level_code::UNCLASSIFIED; ++i) {
@@ -139,6 +141,7 @@ Epidemic::Epidemic(Disease* dis) {
 
   this->N_init = 0;
   this->N = 0;
+  this->N_nursing_homes = 0;
   this->prevalence_count = 0;
   this->incidence = 0;
   this->symptomatic_incidence = 0;
@@ -184,6 +187,7 @@ Epidemic::Epidemic(Disease* dis) {
 
   this->peak_incidence = 0;
   this->peak_day = 0;
+  this->current_nursing_home_incidence = 0;
 }
 
 
@@ -359,6 +363,10 @@ void Epidemic::setup() {
     this->fraction_seeds_infectious = fraction_infectious;
   } else {
     Utils::fred_abort("Invalid advance_seeding parameter: %s!\n", this->seeding_type_name);
+  }
+  if(Global::Enable_Nursing_Homes_Importations){
+    Params::get_param_from_string("nursing_home_incidence_importations_factor", &this->nursing_home_incidence_importations_factor);
+    printf("NURSING HOME INCIDENCE IMPORTATIONS FACTOR: %.04f", this->nursing_home_incidence_importations_factor);
   }
 }
 
@@ -1108,7 +1116,6 @@ void Epidemic::report_group_quarters_incidence(int day) {
   int J = 0;
   int L = 0;
   int B = 0;
-  
   for(int i = 0; i < this->people_becoming_infected_today; ++i) {
     Person* infectee = this->daily_infections_list[i];
     // record infections occurring in group quarters
@@ -1135,7 +1142,7 @@ void Epidemic::report_group_quarters_incidence(int day) {
       }
     }
   }
-
+  this->current_nursing_home_incidence = L;
   //Write to log file
   Utils::fred_log("\nDay %d GQ_INF: ", day);
   Utils::fred_log(" GQ %d College %d Prison %d Nursing_Home %d Military %d", G,D,J,L,B);
@@ -1593,7 +1600,37 @@ void Epidemic::report_census_tract_stratified_results(int day) {
 
 void Epidemic::get_imported_infections(int day) {
   this->N = Global::Pop.get_pop_size();
-
+  if(Global::Enable_Group_Quarters){    
+    if(Global::Enable_Nursing_Homes_Importations){
+      this->N_nursing_homes = Global::Places.get_number_of_nursing_residents();
+      printf("Day %d NURSING HOME residents %d\n", day, this->N_nursing_homes);
+      int nursing_home_importations = floor(this->nursing_home_incidence_importations_factor * (double) this->infectious_people) - this->current_nursing_home_incidence;
+      if(nursing_home_importations < 0){
+	nursing_home_importations = 0;
+      }
+      printf("Day %d NURSING HOME incidence importation factor: %.04f | current infections (I(t)) %d | Target new nursing home importations %d\n", day, this->nursing_home_incidence_importations_factor, this->infectious_people, nursing_home_importations);
+      int nh_imported_cases = 0;
+      // Choose people to infect
+      // pick a candidate without replacement
+      for(int i = 0; i < nursing_home_importations; i++){	
+	int pos_n = Random::draw_random_int(0,N_nursing_homes-1);
+	Person* infectee_nh = Global::Places.get_nursing_home_resident_ptr(pos_n);
+	if(infectee_nh->get_health()->is_susceptible(this->id)) {
+	  // infect the candidate
+	  FRED_VERBOSE(0, "infecting candidate %d id %d\n", i, infectee_nh->get_id());
+	  infectee_nh->become_exposed(this->id, NULL, NULL, day);
+	  FRED_VERBOSE(0, "exposed candidate %d id %d\n", i, infectee_nh->get_id());
+	  if(this->seeding_type != SEED_EXPOSED) {
+	    advance_seed_infection(infectee_nh);
+	  }
+	  become_exposed(infectee_nh, day);
+	  nh_imported_cases++;
+	}
+      }
+      FRED_VERBOSE(0, "NURSING HOME IMPORT SUCCESS: %d imported cases\n", nh_imported_cases);
+      printf("NURSING HOME IMPORT SUCCESS: %d imported cases\n", nh_imported_cases);
+    }
+  }
   for(int i = 0; i < this->imported_cases_map.size(); ++i) {
     Time_Step_Map* tmap = this->imported_cases_map[i];
     if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {

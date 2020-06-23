@@ -115,6 +115,7 @@ bool Global::Assign_Teachers = false;
 bool Global::Enable_Household_Shelter = false;
 bool Global::Enable_Household_Shelter_File = false;
 bool Global::Enable_Household_Shelter_By_Age = false;
+bool Global::Enable_Nursing_Homes_Importations = false;
 bool Global::Enable_Age_Specific_Susceptibility = false;
 bool Global::Enable_Household_Shelter_Relax_Post_Peak_Period = false;
 bool Global::Enable_Household_Shelter_Relax_Post_Peak_Threshold = false;
@@ -296,6 +297,8 @@ void Global::get_global_parameters() {
   Global::Enable_Household_Shelter_File = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_shelter_in_place_by_age", &temp_int);
   Global::Enable_Household_Shelter_By_Age = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_nursing_homes_importations", &temp_int);
+  Global::Enable_Nursing_Homes_Importations = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_age_specific_susceptibility", &temp_int);
   Global::Enable_Age_Specific_Susceptibility = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_shelter_in_place_relax_post_peak_period", &temp_int);

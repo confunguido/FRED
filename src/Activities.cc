@@ -529,6 +529,7 @@ void Activities::update_schedule(int sim_day) {
 		      schedule_to_string(sim_day).c_str());
 	  return;
 	}
+	// Maybe add here a statement for group quarter workers to not shelter (prinsons/nursing homes?)
       }
       
       // If shelter by age, then check age

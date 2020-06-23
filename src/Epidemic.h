@@ -255,6 +255,7 @@ protected:
   int id;
   int N;          // current population size
   int N_init;     // initial population size
+  int N_nursing_homes;
   
   bool report_generation_time;
   bool report_transmission_by_age;
@@ -356,6 +357,10 @@ protected:
   // peak-day so far, and incidence
   int peak_incidence;
   int peak_day;
+  int current_nursing_home_incidence;
+  
+  //Nursing home incidence importations factor
+  double nursing_home_incidence_importations_factor;
   
 };
 

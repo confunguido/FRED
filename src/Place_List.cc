@@ -62,6 +62,8 @@ double Place_List::Military_barracks_mean_size = 12;
 double Place_List::Prison_cell_mean_size = 1.5;
 double Place_List::Nursing_home_room_mean_size = 1.5;
 
+std::vector<Person*> Place_List::nursing_home_residents_vector;
+
 // non-resident staff for group quarters
 int Place_List::College_fixed_staff = 0;
 double Place_List::College_resident_to_staff_ratio = 0;
@@ -657,7 +659,8 @@ void Place_List::read_all_places(const std::vector<Utils::Tokens> &Demes) {
   this->hospitals.clear();
   this->counties.clear();
   this->census_tracts.clear();
-
+  this->nursing_home_residents_vector.clear();
+  
   // store the number of demes as member variable
   set_number_of_demes(Demes.size());
 
@@ -1654,6 +1657,14 @@ void Place_List::setup_group_quarters() {
       int gq_units = house->get_group_quarters_units();
       FRED_VERBOSE(0, "GQ_setup: house %d label %s subtype %c initial size %d units %d\n", p, house->get_label(),
           house->get_subtype(), gq_size, gq_units);
+      //printf("GQ_setup: house %d label %s subtype %c initial size %d units %d\n", p, house->get_label(),
+      //house->get_subtype(), gq_size, gq_units);
+      if(house->is_nursing_home()){
+	for(int j = 0; j < gq_size; ++j) {
+	  Person* nursing_person = house->get_enrollee(j);
+	  this->nursing_home_residents_vector.push_back(nursing_person);
+	}
+      }
       if(gq_units > 1) {
 	      vector<Person*> housemates;
 	      housemates.clear();
@@ -1690,9 +1701,10 @@ void Place_List::setup_group_quarters() {
           // printf("GQ size of larger unit %s = %d -- remaining in main house %d\n",
           // new_house->get_label(), new_house->get_size(), house->get_size());
         }
-      }
-    }
+      }            
+    }    
   }
+  printf("NURSING HOME VECTOR FINISHED. RESIDENTS: %d\n", this->nursing_home_residents_vector.size());
 }
 
 // Comparison used to sort households by income below (resolve ties by place id)
@@ -1908,7 +1920,7 @@ void Place_List::reassign_workers_to_group_quarters(char subtype, int fixed_staf
         continue;
       }
 
-      // target staff size
+      // target staff size      
       FRED_VERBOSE(1, "Size %d ", place->get_size());
       int staff = fixed_staff;
       if(resident_to_staff_ratio > 0.0) {
