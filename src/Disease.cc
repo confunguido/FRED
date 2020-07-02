@@ -67,7 +67,6 @@ Disease::Disease() {
   this->hand_washing_susceptibility_efficacy = -1.0;
   this->face_mask_plus_hand_washing_transmission_efficacy = -1.0;
   this->face_mask_plus_hand_washing_susceptibility_efficacy = -1.0;
-  this->enable_face_mask_usage = 0;
   this->susceptibility_by_age_offset = 0.0;
   this->susceptibility_by_age_rate = 0.0;
   this->susceptibility_by_age_cutoff = 0.0;
