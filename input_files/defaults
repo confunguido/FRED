@@ -790,14 +790,19 @@ strainsfile = none
 ##########################################################
 #
 # PERSONAL HYGIENE BEHAVIORS (OPTIONAL)
+# If odds_ratio_method is on, efficacy parameter represents the odds ratio of infection
+# If odds_ratio_method is off, efficacy parameter represents 1-reduction in probability of transmission
 #
 ##########################################################
 
-enable_face_mask_usage = 0
-face_mask_compliance = 0
-days_to_wear_face_masks = 2
-influenza_face_mask_transmission_efficacy = 0.26
-influenza_face_mask_susceptibility_efficacy = 0.26
+enable_face_mask_usage = 1
+face_mask_symptomatics_only = 0
+face_mask_odds_ratio_method = 1
+face_mask_compliance = 0.5
+day_start_wearing_face_masks = 0
+days_to_wear_face_masks = 100
+influenza_face_mask_transmission_efficacy = 0.15
+influenza_face_mask_susceptibility_efficacy = 1
 
 enable_hand_washing = 0
 hand_washing_compliance = 0
