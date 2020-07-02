@@ -74,6 +74,7 @@ bool Health::is_initialized = false;
 
 // health protective behavior parameters
 int Health::Days_to_wear_face_masks = 0;
+int Health::Day_start_wearing_face_masks = 0;
 double Health::Face_mask_compliance = 0.0;
 double Health::Hand_washing_compliance = 0.0;
 
@@ -89,6 +90,8 @@ void Health::initialize_static_variables() {
   if(!Health::is_initialized) {
 
     Params::get_param_from_string("days_to_wear_face_masks", &(Health::Days_to_wear_face_masks));
+    Params::get_param_from_string("day_start_wearing_face_masks",
+				  &(Health::Day_start_wearing_face_masks));
     Params::get_param_from_string("face_mask_compliance", &(Health::Face_mask_compliance));
     Params::get_param_from_string("hand_washing_compliance", &(Health::Hand_washing_compliance));
 
@@ -286,7 +289,7 @@ void Health::setup(Person* self) {
     this->washes_hands = (Random::draw_random() < Health::Hand_washing_compliance);
   }
 
-  // Determine if the agent will wear a face mask if sick
+  // Determine if the agent will wear a face mask
   this->has_face_mask_behavior = false;
   this->wears_face_mask_today = false;
   this->days_wearing_face_mask = 0;
@@ -671,7 +674,7 @@ void Health::become_case_fatality(int disease_id, int day) {
 void Health::update_infection(int day, int disease_id) {
 
   if(this->has_face_mask_behavior) {
-    update_face_mask_decision(day);
+    update_face_mask_decision(day, disease_id);
   }
   
   if(this->infection[disease_id] == NULL) {
@@ -700,18 +703,22 @@ void Health::update_infection(int day, int disease_id) {
 } // end Health::update_infection //
 
 
-void Health::update_face_mask_decision(int day) {
+void Health::update_face_mask_decision(int day, int disease_id) {
   // printf("update_face_mask_decision entered on day %d for person %d\n", day, myself->get_id());
+  Disease* disease = Global::Diseases.get_disease(disease_id);
 
   // should we start use face mask?
-  if(this->is_symptomatic(day) && this->days_wearing_face_mask == 0) {
+  if((!disease->get_face_mask_symptomatic_only() || this->is_symptomatic(day))
+     && this->days_wearing_face_mask == 0
+     && this->Day_start_wearing_face_masks <= day) {
     FRED_VERBOSE(1, "FACEMASK: person %d starts wearing face mask on day %d\n", myself->get_id(), day);
     this->start_wearing_face_mask();
   }
 
   // should we stop using face mask?
   if(this->is_wearing_face_mask()) {
-    if (this->is_symptomatic(day) && this->days_wearing_face_mask < Health::Days_to_wear_face_masks) {
+    if ((!disease->get_face_mask_symptomatic_only() || this->is_symptomatic(day))
+	&& this->days_wearing_face_mask < Health::Days_to_wear_face_masks) {
       this->days_wearing_face_mask++;
     } else {
       FRED_VERBOSE(1, "FACEMASK: person %d stops wearing face mask on day %d\n", myself->get_id(), day);
@@ -885,7 +892,9 @@ double Health::get_transmission_modifier_due_to_hygiene(int disease_id) {
     return (1.0 - disease->get_face_mask_plus_hand_washing_transmission_efficacy());
   }
   if(this->is_wearing_face_mask()) {
-    return (1.0 - disease->get_face_mask_transmission_efficacy());
+    if(!disease->get_face_mask_odds_ratio_method()) {
+      return (1.0 - disease->get_face_mask_transmission_efficacy());
+    }
   }
   if(this->is_washing_hands()) {
     return (1.0 - disease->get_hand_washing_transmission_efficacy());
@@ -908,6 +917,15 @@ double Health::get_susceptibility_modifier_due_to_hygiene(int disease_id) {
   }
   return 1.0;
 }
+
+double Health::get_infection_modifier_face_masks_odds_ratio(int disease_id, double infection_prob) {
+  Disease* disease = Global::Diseases.get_disease(disease_id);
+  if(this->is_wearing_face_mask()) {
+    return (1/((1-infection_prob)/disease->get_face_mask_transmission_efficacy() + infection_prob));
+  }
+  return 1.0;
+}
+
 
 double Health::get_susceptibility_modifier_due_to_household_income(int hh_income) {
 

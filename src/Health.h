@@ -94,7 +94,7 @@ public:
   // UPDATE THE PERSON'S HEALTH CONDITIONS
 
   void update_infection(int day, int disease_id);
-  void update_face_mask_decision(int day);
+  void update_face_mask_decision(int day, int disease_id);
   void update_interventions(int day);
   void become_exposed(int disease_id, Person* infector, Mixing_Group* mixing_group, int day);
   void become_susceptible(int disease_id);
@@ -157,6 +157,7 @@ public:
     return this->infection[disease_id];
   }
   double get_transmission_modifier_due_to_hygiene(int disease_id);
+  double get_infection_modifier_face_masks_odds_ratio(int disease_id, double infection_prob);
   double get_susceptibility_modifier_due_to_hygiene(int disease_id);
   double get_susceptibility_modifier_due_to_household_income(int disease_id);
   int get_num_past_infections(int disease) {
@@ -784,6 +785,7 @@ private:
 
   // health protective behavior parameters
   static int Days_to_wear_face_masks;
+  static int Day_start_wearing_face_masks;
   static double Face_mask_compliance;
   static double Hand_washing_compliance;
 

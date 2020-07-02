@@ -141,8 +141,11 @@ void Respiratory_Transmission::spread_infection(int day, int disease_id, Place* 
 /////////////////////////////////////////
 
 
-bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Person* infector, Person* infectee,
-					int disease_id, int day, Place* place) {
+bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Person* infector,
+						    Person* infectee,int disease_id,
+						    int day, Place* place) {
+
+  Disease* disease = Global::Diseases.get_disease(disease_id);
 
   assert(infectee->is_susceptible(disease_id));
   FRED_STATUS(1, "infector %d -- infectee %d is susceptible\n", infector->get_id(), infectee->get_id());
@@ -175,7 +178,10 @@ bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Pe
 
   double r = Random::draw_random();
   double infection_prob = transmission_prob * susceptibility;
-
+  if(disease->get_face_mask_odds_ratio_method()) {
+    infection_prob *= infector->get_infection_modifier_face_masks_odds_ratio(disease_id,
+									     infection_prob);
+  }
   if(r < infection_prob) {
     // successful transmission; create a new infection in infectee
     infector->infect(infectee, disease_id, place, day);
@@ -189,7 +195,7 @@ bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Pe
     FRED_CONDITIONAL_VERBOSE(0, infection_prob > 1, "infection_prob exceeded unity!\n");
 
     // notify the epidemic
-    Global::Diseases.get_disease(disease_id)->get_epidemic()->become_exposed(infectee, day);
+    disease->get_epidemic()->become_exposed(infectee, day);
 
     return true;
   } else {
