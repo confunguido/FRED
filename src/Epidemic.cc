@@ -185,8 +185,14 @@ Epidemic::Epidemic(Disease* dis) {
   this->actually_infectious_people.reserve(Global::Pop.get_pop_size());
   this->actually_infectious_people.clear();
 
+  for (std::size_t i = 0; i < max(max(1, Global::Places.get_shelter_moving_average_days()),
+				  Global::Places.get_shelter_post_peak_period()+1); ++i) {
+    this->recent_incidence.push_back(0);
+  }
   this->peak_incidence = 0;
   this->peak_day = 0;
+  this->average_incidence = 0;
+  this->days_of_decline = 0;
   this->current_nursing_home_incidence = 0;
 }
 
@@ -496,9 +502,30 @@ void Epidemic::print_stats(int day) {
   }
 
   //update peak if exceeded
-  if (this->peak_incidence < this->people_becoming_symptomatic_today) {
-    this->peak_incidence = this->people_becoming_symptomatic_today;
+  this->recent_incidence.pop_front();
+  this->recent_incidence.push_back(this->people_becoming_symptomatic_today);
+  this->average_incidence = accumulate(recent_incidence.end()
+				       - Global::Places.get_shelter_moving_average_days(),
+				       recent_incidence.end(),
+				       0)*1.0/Global::Places.get_shelter_moving_average_days(); 
+  if (this->peak_incidence < this->average_incidence) {
+    this->peak_incidence = this->average_incidence;
     this->peak_day = day;
+  }
+
+  // Count numbers of days of declining incidence in post_peak_period
+  if (this->average_incidence < 1e-2) {
+    this->days_of_decline = Global::Places.get_shelter_post_peak_period();
+  } else {
+    int baseline = *(recent_incidence.begin() - Global::Places.get_shelter_post_peak_period() - 1);
+    this->days_of_decline = 0;
+    for (auto it = recent_incidence.begin()-Global::Places.get_shelter_post_peak_period();
+	 it != recent_incidence.end(); ++it) {
+      if (*it < baseline) {
+	++(this->days_of_decline);
+      }
+      baseline = *it;
+    }
   }
 
   if(this->id == 0) {
@@ -1968,7 +1995,8 @@ void Epidemic::update(int day) {
   //Update sheltering houses
   if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
     Global::Places.update_shelter_households(day, this->peak_day,
-					     1.0*this->symptomatic_incidence/this->peak_incidence);
+					     1.0*this->symptomatic_incidence/this->peak_incidence,
+					     this->days_of_decline);
   }
   
   // Utils::fred_print_epidemic_timer("transition events");

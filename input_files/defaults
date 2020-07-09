@@ -881,8 +881,10 @@ shelter_in_place_by_age_max_age = 120
 enable_shelter_in_place_relax_post_peak_period = 0
 enable_shelter_in_place_relax_post_peak_threshold = 0
 shelter_in_place_relax_post_peak_min_peak_day = 135
+shelter_in_place_relax_post_peak_moving_average_days = 7
+shelter_in_place_relax_post_peak_days_with_decline = 10
 shelter_in_place_relax_post_peak_period = 14
-shelter_in_place_relax_post_peak_threshold = 0.01
+shelter_in_place_relax_post_peak_threshold = 0.05
 
 ##########################################################
 #

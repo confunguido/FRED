@@ -21,6 +21,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <deque>
 
 using namespace std;
 
@@ -356,7 +357,10 @@ protected:
 
   // peak-day so far, and incidence
   int peak_incidence;
+  deque<int> recent_incidence;
   int peak_day;
+  double average_incidence;
+  int days_of_decline;
   int current_nursing_home_incidence;
   
   //Nursing home incidence importations factor

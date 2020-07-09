@@ -107,6 +107,8 @@ bool Place_List::Shelter_students = false;
 double Place_List::Shelter_relax_post_peak_threshold = 0.0;
 int Place_List::Shelter_relax_post_peak_min_peak_day = 9999999;
 int Place_List::Shelter_relax_post_peak_period = 9999999;
+int Place_List::Shelter_relax_post_peak_moving_average_days = 1;
+int Place_List::Shelter_relax_post_peak_days_with_decline = 0;
 bool Place_List::Shelter_relaxed = false;
 
 bool Place_List::Household_hospital_map_file_exists = false;
@@ -294,12 +296,20 @@ void Place_List::get_parameters() {
 				    &Place_List::Shelter_relax_post_peak_min_peak_day);
       Params::get_param_from_string("shelter_in_place_relax_post_peak_period",
 				    &Place_List::Shelter_relax_post_peak_period);
+      Params::get_param_from_string("shelter_in_place_relax_post_peak_moving_average_days",
+				    &Place_List::Shelter_relax_post_peak_moving_average_days);
+      Params::get_param_from_string("shelter_in_place_relax_post_peak_days_with_decline",
+				    &Place_List::Shelter_relax_post_peak_days_with_decline);
     }
     if(Global::Enable_Household_Shelter_Relax_Post_Peak_Threshold) {
       Params::get_param_from_string("shelter_in_place_relax_post_peak_min_peak_day",
 				    &Place_List::Shelter_relax_post_peak_min_peak_day);
       Params::get_param_from_string("shelter_in_place_relax_post_peak_threshold",
 				    &Place_List::Shelter_relax_post_peak_threshold);
+      Params::get_param_from_string("shelter_in_place_relax_post_peak_moving_average_days",
+				    &Place_List::Shelter_relax_post_peak_moving_average_days);
+      Params::get_param_from_string("shelter_in_place_relax_post_peak_days_with_decline",
+				    &Place_List::Shelter_relax_post_peak_days_with_decline);
     }
   }
   
@@ -2812,7 +2822,8 @@ void Place_List::report_shelter_stats(int day) {
   Global::Daily_Tracker->set_index_key_pair(day, "AR_noniso", non_sheltering_ar);
 }
 
-void Place_List::update_shelter_households(int day, int peak_day_, double proportion_peak_incidence) {
+void Place_List::update_shelter_households(int day, int peak_day_, double proportion_peak_incidence,
+					   int days_of_decline) {
   int sheltering_households = 0;
   int sheltering_pop = 0;
   int sheltering_total_pop = 0;
@@ -2850,7 +2861,8 @@ void Place_List::update_shelter_households(int day, int peak_day_, double propor
 
     if(day >= this->Shelter_relax_post_peak_min_peak_day) {
       if(Global::Enable_Household_Shelter_Relax_Post_Peak_Period) {
-	if(day >= peak_day_ + this->Shelter_relax_post_peak_period) {
+	if((day >= peak_day_ + this->Shelter_relax_post_peak_period)
+	   & (days_of_decline >= this->Shelter_relax_post_peak_days_with_decline)){
 	  shelter_compliance = 0.0;
 	  Shelter_relaxed = true;
 	}
