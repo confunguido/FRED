@@ -185,8 +185,13 @@ Epidemic::Epidemic(Disease* dis) {
   this->actually_infectious_people.reserve(Global::Pop.get_pop_size());
   this->actually_infectious_people.clear();
 
-  for (std::size_t i = 0; i < max(max(1, Global::Places.get_shelter_moving_average_days()),
+  int test = max(max(1, Global::Places.get_shelter_moving_average_days()),
+		 Global::Places.get_shelter_post_peak_period()+1);
+  printf("Epidemic:: Max(max()) = %d. Shelter moving average days: %d, postpeak period: %d\n", test, Global::Places.get_shelter_moving_average_days(), Global::Places.get_shelter_post_peak_period());
+  
+  for (int i = 0; i < max(max(1, Global::Places.get_shelter_moving_average_days()),
 				  Global::Places.get_shelter_post_peak_period()+1); ++i) {
+    printf("Epidemic::Initializing recent_incidence[%d] = 0\n", i);
     this->recent_incidence.push_back(0);
   }
   this->peak_incidence = 0;
@@ -501,33 +506,42 @@ void Epidemic::print_stats(int day) {
       / static_cast<double>(this->population_infection_counts.tot_ppl_evr_sympt);
   }
 
+  printf("Epidemic.cc::Size of recent_incidence %lu. People becoming symptomatic today: %d\n", this->recent_incidence.size(), this->people_becoming_symptomatic_today);
+  
   //update peak if exceeded
+  
+  if(recent_incidence.end() - Global::Places.get_shelter_moving_average_days() < recent_incidence.begin()){
+    printf("Epidemic.cc:: The size of shelter_moving_average_days is larger than recent_incidence. Can't calculate moving average\n");
+    abort();
+  }
   this->recent_incidence.pop_front();
   this->recent_incidence.push_back(this->people_becoming_symptomatic_today);
   this->average_incidence = accumulate(recent_incidence.end()
 				       - Global::Places.get_shelter_moving_average_days(),
 				       recent_incidence.end(),
-				       0)*1.0/Global::Places.get_shelter_moving_average_days(); 
+				       0)*1.0/Global::Places.get_shelter_moving_average_days();
+
   if (this->peak_incidence < this->average_incidence) {
     this->peak_incidence = this->average_incidence;
     this->peak_day = day;
   }
 
-  // Count numbers of days of declining incidence in post_peak_period
-  if (this->average_incidence < 1e-2) {
-    this->days_of_decline = Global::Places.get_shelter_post_peak_period();
-  } else {
-    int baseline = *(recent_incidence.begin() - Global::Places.get_shelter_post_peak_period() - 1);
-    this->days_of_decline = 0;
-    for (auto it = recent_incidence.begin()-Global::Places.get_shelter_post_peak_period();
-	 it != recent_incidence.end(); ++it) {
-      if (*it < baseline) {
-	++(this->days_of_decline);
-      }
-      baseline = *it;
-    }
+  if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
+     // Count numbers of days of declining incidence in post_peak_period
+     if (this->average_incidence < 1e-2) {
+       this->days_of_decline = Global::Places.get_shelter_post_peak_period();
+     } else {
+       int baseline = *(recent_incidence.end() - Global::Places.get_shelter_post_peak_period() - 1);
+       this->days_of_decline = 0;
+       for (auto it = recent_incidence.end()-Global::Places.get_shelter_post_peak_period();
+	    it != recent_incidence.end(); ++it) {
+	 if (*it < baseline) {
+	   ++(this->days_of_decline);
+	 }
+	 baseline = *it;
+       }
+     }
   }
-
   if(this->id == 0) {
     Global::Daily_Tracker->set_index_key_pair(day,"Date", Date::get_date_string());
     Global::Daily_Tracker->set_index_key_pair(day,"WkDay", Date::get_day_of_week_string());

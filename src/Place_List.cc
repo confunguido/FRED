@@ -105,9 +105,9 @@ int Place_List::Shelter_by_age_max_age = 120;
 bool Place_List::Shelter_students = false;
 
 double Place_List::Shelter_relax_post_peak_threshold = 0.0;
-int Place_List::Shelter_relax_post_peak_min_peak_day = 9999999;
-int Place_List::Shelter_relax_post_peak_period = 9999999;
-int Place_List::Shelter_relax_post_peak_moving_average_days = 1;
+int Place_List::Shelter_relax_post_peak_min_peak_day = 1;
+int Place_List::Shelter_relax_post_peak_period = 1;
+int Place_List::Shelter_relax_post_peak_moving_average_days = 10;
 int Place_List::Shelter_relax_post_peak_days_with_decline = 0;
 bool Place_List::Shelter_relaxed = false;
 
