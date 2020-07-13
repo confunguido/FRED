@@ -371,3 +371,54 @@ char* Place::get_place_label(Place* p) {
 }
 
     
+string Place::get_place_type() {
+  if(this->is_household()){
+    return "household";
+  }else if(this->is_neighborhood()){
+    return "neighborhood";
+  }else if(this->is_school()){
+    return "school";
+  }else if(this->is_classroom()){
+   return "classroom";
+  }else if(this->is_workplace()){
+    return "workplace";
+  }else if(this->is_office()){
+    return "office";
+  }else if(this->is_hospital()){
+    return "hospital";
+  }else if(this->is_community()){
+    return "community";
+  } else {
+    return NULL;
+  }
+}
+
+string Place::get_place_subtype() {
+  if(this->is_college()){
+    return "college";
+  }else if(this->is_prison()){
+   return "prison";
+  }else if(this->is_nursing_home()){
+    return "nursing_home";
+  }else if(this->is_military_base()){
+    return "military_base";
+  }else if(this->is_healthcare_clinic()){
+    return "healthcare_clinic";
+  }else if(this->is_mobile_healthcare_clinic()){
+    return "mobile_healthcare_clinic";
+  } else {
+    return NULL;
+  }
+}
+
+string Place::get_household_type() {
+  if(this->is_prison_cell()){
+    return "prison_cell";
+  }else if(this->is_college_dorm()){
+    return "college_dorm";
+  }else if(this->is_military_barracks()){
+    return "military_barracks";
+  }else {
+    return NULL;
+  }
+}

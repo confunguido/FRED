@@ -75,7 +75,7 @@ bool Health::is_initialized = false;
 // health protective behavior parameters
 int Health::Days_to_wear_face_masks = 0;
 int Health::Day_start_wearing_face_masks = 0;
-double Health::Face_mask_compliance = 0.0;
+std::unordered_map<string,double> Health::Face_mask_compliance;
 double Health::Hand_washing_compliance = 0.0;
 
 double Health::Hh_income_susc_mod_floor = 0.0;
@@ -92,7 +92,26 @@ void Health::initialize_static_variables() {
     Params::get_param_from_string("days_to_wear_face_masks", &(Health::Days_to_wear_face_masks));
     Params::get_param_from_string("day_start_wearing_face_masks",
 				  &(Health::Day_start_wearing_face_masks));
-    Params::get_param_from_string("face_mask_compliance", &(Health::Face_mask_compliance));
+    //Load face mask compliance map
+    int N_face_mask_locations, N_face_mask_compliance;
+    Params::get_param_from_string("face_mask_locations", &(N_face_mask_locations));
+    Params::get_param_from_string("face_mask_compliance", &(N_face_mask_compliance));
+    if (N_face_mask_compliance != N_face_mask_locations) {
+      Utils::fred_abort("the number of locations and number of compliance levels don't match");
+    }
+    std::vector<string> face_mask_locations_arr(N_face_mask_locations);
+    std::vector<double> face_mask_compliance_arr(N_face_mask_compliance);
+    Params::get_param_vector_from_string((char*)"face_mask_locations", face_mask_locations_arr);
+    Params::get_param_vector_from_string((char*)"face_mask_compliance",
+					 face_mask_compliance_arr);
+    //Move into unordered_map
+    for (int ii = 0; ii < N_face_mask_locations; ++ii) {
+      Face_mask_compliance[face_mask_locations_arr[ii]] = face_mask_compliance_arr[ii];
+    }
+    if (Face_mask_compliance.count("other") == 0) {
+      Utils::fred_abort("there should always be a location called \"other\"");
+    }
+
     Params::get_param_from_string("hand_washing_compliance", &(Health::Hand_washing_compliance));
 
     int temp_int = 0;
@@ -249,7 +268,7 @@ Health::Health() {
   this->av_health = NULL;
   this->checked_for_av = NULL;
   this->vaccine_health = NULL;
-  this->has_face_mask_behavior = false;
+  this->has_face_mask_behavior_anywhere = false;
   this->wears_face_mask_today = false;
   this->days_wearing_face_mask = 0;
   this->washes_hands = false;
@@ -290,16 +309,18 @@ void Health::setup(Person* self) {
   }
 
   // Determine if the agent will wear a face mask
-  this->has_face_mask_behavior = false;
+  this->has_face_mask_behavior_anywhere = false;
   this->wears_face_mask_today = false;
   this->days_wearing_face_mask = 0;
-  if(Health::Face_mask_compliance > 0.0) {
-    if(Random::draw_random()<Health::Face_mask_compliance) {
-      this->has_face_mask_behavior = true;
+  for (auto it = Face_mask_compliance.begin(); it != Face_mask_compliance.end(); ++it) {  
+    if((it->second > 0.0) && Random::draw_random() < it->second) {
+      this->has_face_mask_behavior[it->first] = true;
+      this->has_face_mask_behavior_anywhere = true;
+    } else {
+      this->has_face_mask_behavior[it->first] = false;
     }
-    // printf("FACEMASK: has_face_mask_behavior = %d\n", this->has_face_mask_behavior?1:0);
   }
-
+  
   this->case_fatality = fred::disease_bitset();
   int diseases = Global::Diseases.get_number_of_diseases();
   FRED_VERBOSE(1, "Health::setup diseases %d\n", diseases);
@@ -672,8 +693,8 @@ void Health::become_case_fatality(int disease_id, int day) {
 }
 
 void Health::update_infection(int day, int disease_id) {
-
-  if(this->has_face_mask_behavior) {
+  
+  if(this->has_face_mask_behavior_anywhere) {
     update_face_mask_decision(day, disease_id);
   }
   
@@ -895,12 +916,27 @@ double Health::get_susceptibility_modifier_due_to_person_age(int disease_id, int
   return 1.0;
 }
 
-double Health::get_transmission_modifier_due_to_hygiene(int disease_id) {
+double Health::get_transmission_modifier_due_to_hygiene(int disease_id, Place* place) {
   Disease* disease = Global::Diseases.get_disease(disease_id);
-  if(this->is_wearing_face_mask() && this->is_washing_hands()) {
+  bool face_mask_here = false;
+  if (this->is_wearing_face_mask()) {
+    string loc_type(place->get_place_type());
+    string loc_subtype(place->get_place_subtype());
+    string loc_hhtype(place->get_household_type());
+    if (this->has_face_mask_behavior.count(loc_hhtype) == 1) {
+      face_mask_here = this->has_face_mask_behavior[loc_hhtype];
+    } else if (this->has_face_mask_behavior.count(loc_subtype) == 1) {
+      face_mask_here = this->has_face_mask_behavior[loc_subtype];
+    } else if (this->has_face_mask_behavior.count(loc_type) == 1) {
+      face_mask_here = this->has_face_mask_behavior[loc_type];
+    } else {
+      face_mask_here = this->has_face_mask_behavior["other"];
+    }
+  }
+  if(face_mask_here && this->is_washing_hands()) {
     return (1.0 - disease->get_face_mask_plus_hand_washing_transmission_efficacy());
   }
-  if(this->is_wearing_face_mask()) {
+  if(face_mask_here) {
     if(!disease->get_face_mask_odds_ratio_method()) {
       return (1.0 - disease->get_face_mask_transmission_efficacy());
     }
@@ -927,9 +963,98 @@ double Health::get_susceptibility_modifier_due_to_hygiene(int disease_id) {
   return 1.0;
 }
 
-double Health::get_infection_modifier_face_masks_odds_ratio(int disease_id, double infection_prob) {
+double Health::get_infection_modifier_face_masks_odds_ratio(int disease_id, double infection_prob,
+							    Place* place) {
   Disease* disease = Global::Diseases.get_disease(disease_id);
-  if(this->is_wearing_face_mask()) {
+  bool face_mask_here = false;
+  if (this->is_wearing_face_mask()) {
+    string loc_type(place->get_place_type());
+    string loc_subtype(place->get_place_subtype());
+    string loc_hhtype(place->get_household_type());
+    if (this->has_face_mask_behavior.count(loc_hhtype) == 1) {
+      face_mask_here = this->has_face_mask_behavior[loc_hhtype];
+    } else if (this->has_face_mask_behavior.count(loc_subtype) == 1) {
+      face_mask_here = this->has_face_mask_behavior[loc_subtype];
+    } else if (this->has_face_mask_behavior.count(loc_type) == 1) {
+      face_mask_here = this->has_face_mask_behavior[loc_type];
+    } else {
+      face_mask_here = this->has_face_mask_behavior["other"];
+    }
+  }
+  // if (this->is_wearing_face_mask()) {
+  //   if(place->is_prison_cell()){
+  //     if (this->has_face_mask_behavior.count("prison_cell") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["prison_cell"];
+  //     }
+  //   }else if(place->is_college_dorm()){
+  //     if (this->has_face_mask_behavior.count("college_dorm") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["college_dorm"];
+  //     }
+  //    }else if(place->is_military_barracks()){
+  //     if (this->has_face_mask_behavior.count("military_barracks") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["military_barracks"];
+  //     }
+  //    }else if(place->is_college()){
+  //     if (this->has_face_mask_behavior.count("college") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["college"];
+  //     }
+  //    }else if(place->is_prison()){
+  //     if (this->has_face_mask_behavior.count("prison") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["prison"];
+  //     }
+  //   }else if(place->is_nursing_home()){
+  //     if (this->has_face_mask_behavior.count("nursing_home") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["nursing_home"];
+  //     }
+  //   }else if(place->is_military_base()){
+  //     if (this->has_face_mask_behavior.count("military_base") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["military_base"];
+  //     }
+  //   }else if(place->is_healthcare_clinic()){
+  //     if (this->has_face_mask_behavior.count("healthcare_clinic") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["healthcare_clinic"];
+  //     }
+  //   }else if(place->is_mobile_healthcare_clinic()){
+  //     if (this->has_face_mask_behavior.count("mobile_healthcare_clinic") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["mobile_healthcare_clinic"];
+  //     }
+  //   } else if(place->is_household()){
+  //     if (this->has_face_mask_behavior.count("household") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["household"];
+  //     } 
+  //   }else if(place->is_neighborhood()){
+  //     if (this->has_face_mask_behavior.count("neighborhood") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["neighborhood"];
+  //     }
+  //   }else if(place->is_school()){
+  //     if (this->has_face_mask_behavior.count("school") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["school"];
+  //     }
+  //   }else if(place->is_classroom()){
+  //     if (this->has_face_mask_behavior.count("classroom") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["classroom"];
+  //     }
+  //   }else if(place->is_workplace()){
+  //     if (this->has_face_mask_behavior.count("workplace") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["workplace"];
+  //     }
+  //   }else if(place->is_office()){
+  //     if (this->has_face_mask_behavior.count("office") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["office"];
+  //     }
+  //   }else if(place->is_hospital()){
+  //     if (this->has_face_mask_behavior.count("hospital") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["hospital"];
+  //     }
+  //   }else if(place->is_community()){
+  //     if (this->has_face_mask_behavior.count("community") == 1) {
+  // 	face_mask_here = this->has_face_mask_behavior["community"];
+  //     }
+  //   }else {
+  //     face_mask_here = this->has_face_mask_behavior["other"];
+  //   }
+  // }	     
+  if(face_mask_here) {
     return (1/((1-infection_prob)/disease->get_face_mask_transmission_efficacy() + infection_prob));
   }
   return 1.0;

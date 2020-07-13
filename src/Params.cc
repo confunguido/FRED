@@ -489,6 +489,32 @@ int Params::get_param_vector_from_string(char *s, vector < double > &p){
   return n;
 }
 
+int Params::get_param_vector_from_string(char *s, vector < string > &p){
+  //char str[MAX_PARAM_SIZE];
+  int n;
+  char *pch;
+  string v;//string??
+  //Params::get_param(s, str);
+  pch = strtok(s," ");
+  if (sscanf(pch, "%d", &n) == 1) {
+    for (int i = 0; i < n; i++) {
+      pch = strtok (NULL, " ");
+      if (pch == NULL) {
+        Utils::fred_abort("Help! bad param vector: %s\n", s); 
+      }
+      sscanf(pch, "%s", &v);
+      p.push_back(v);
+    }
+    // for( std::vector<string>::const_iterator i = p.begin(); i != p.end(); ++i)
+    //   printf("age!! %f \n", *i); //std::cout << *i << ' ';
+    fflush(stdout);
+  }
+  else {
+    Utils::fred_abort("Incorrect format for vector %s\n", s); 
+  }
+  return n;
+}
+
 // end added
 
 

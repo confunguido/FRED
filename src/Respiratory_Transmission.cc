@@ -157,7 +157,7 @@ bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Pe
   double susceptibility = infectee->get_susceptibility(disease_id);
 
   // reduce transmission probability due to infector's hygiene (face masks or hand washing)
-  transmission_prob *= infector->get_transmission_modifier_due_to_hygiene(disease_id);
+  transmission_prob *= infector->get_transmission_modifier_due_to_hygiene(disease_id, place);
 
   // reduce susceptibility due to infectee's hygiene (face masks or hand washing)
   susceptibility *= infectee->get_susceptibility_modifier_due_to_hygiene(disease_id);
@@ -191,7 +191,8 @@ bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Pe
   double infection_prob = transmission_prob * susceptibility;
   if(disease->get_face_mask_odds_ratio_method()) {
     infection_prob *= infector->get_infection_modifier_face_masks_odds_ratio(disease_id,
-									     infection_prob);
+									     infection_prob,
+									     place);
   }
   if(r < infection_prob) {
     // successful transmission; create a new infection in infectee
