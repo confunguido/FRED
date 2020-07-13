@@ -95,17 +95,23 @@ void Health::initialize_static_variables() {
     //Load face mask compliance map
     int N_face_mask_locations, N_face_mask_compliance;
     Params::get_param_from_string("face_mask_locations", &(N_face_mask_locations));
+
     Params::get_param_from_string("face_mask_compliance", &(N_face_mask_compliance));
     if (N_face_mask_compliance != N_face_mask_locations) {
       Utils::fred_abort("the number of locations and number of compliance levels don't match");
     }
-    std::vector<string> face_mask_locations_arr(N_face_mask_locations);
-    std::vector<double> face_mask_compliance_arr(N_face_mask_compliance);
+
+    printf("N_face_mask_locations: %d and N_face_mask_compliance: %d\n", N_face_mask_locations, N_face_mask_compliance);
+    char fm_str[MAX_PARAM_SIZE];
+    Params::get_param((char*)"face_mask_compliance", fm_str);    
+    std::vector<string> face_mask_locations_arr;
+    std::vector<double> face_mask_compliance_arr;
     Params::get_param_vector_from_string((char*)"face_mask_locations", face_mask_locations_arr);
-    Params::get_param_vector_from_string((char*)"face_mask_compliance",
-					 face_mask_compliance_arr);
+    Params::get_param_vector_from_string(fm_str,face_mask_compliance_arr);
     //Move into unordered_map
     for (int ii = 0; ii < N_face_mask_locations; ++ii) {
+      printf("face_mask locations %s face_mask_compliance %lf\n", face_mask_locations_arr[ii].c_str(),
+	     face_mask_compliance_arr[ii]);
       Face_mask_compliance[face_mask_locations_arr[ii]] = face_mask_compliance_arr[ii];
     }
     if (Face_mask_compliance.count("other") == 0) {
