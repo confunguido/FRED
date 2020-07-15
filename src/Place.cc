@@ -389,7 +389,7 @@ string Place::get_place_type() {
   }else if(this->is_community()){
     return "community";
   } else {
-    return NULL;
+    return "not a type";
   }
 }
 
@@ -407,7 +407,7 @@ string Place::get_place_subtype() {
   }else if(this->is_mobile_healthcare_clinic()){
     return "mobile_healthcare_clinic";
   } else {
-    return NULL;
+    return "none";
   }
 }
 
@@ -419,6 +419,6 @@ string Place::get_household_type() {
   }else if(this->is_military_barracks()){
     return "military_barracks";
   }else {
-    return NULL;
+    return "none";
   }
 }

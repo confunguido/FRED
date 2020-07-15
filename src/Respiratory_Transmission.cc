@@ -88,9 +88,8 @@ void Respiratory_Transmission::spread_infection(int day, int disease_id, Mixing_
 }
 
 void Respiratory_Transmission::spread_infection(int day, int disease_id, Place* place) {
-
   FRED_VERBOSE(1, "spread_infection day %d disease %d place %d %s\n",
-	       day, disease_id, place->get_id(), place->get_label());
+  	       day, disease_id, place->get_id(), place->get_label());
 
   // abort if transmissibility == 0 or if place is closed
   Disease* disease = Global::Diseases.get_disease(disease_id);
@@ -130,7 +129,7 @@ void Respiratory_Transmission::spread_infection(int day, int disease_id, Place* 
   }
   */
   FRED_VERBOSE(1, "spread_infection finished day %d disease %d place %d %s\n",
-	       day, disease_id, place->get_id(), place->get_label());
+  	       day, disease_id, place->get_id(), place->get_label());
 
   return;
 }
@@ -157,8 +156,11 @@ bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Pe
   double susceptibility = infectee->get_susceptibility(disease_id);
 
   // reduce transmission probability due to infector's hygiene (face masks or hand washing)
+  // if (infector->get_transmission_modifier_due_to_hygiene(disease_id, place) > 1 + 1e-5 |
+  //     infector->get_transmission_modifier_due_to_hygiene(disease_id, place) < 1 - 1e-5){
+  //   std::cout << "transmission multiplier is too high!!: " << infector->get_transmission_modifier_due_to_hygiene(disease_id, place) <<std::endl;
+  // }
   transmission_prob *= infector->get_transmission_modifier_due_to_hygiene(disease_id, place);
-
   // reduce susceptibility due to infectee's hygiene (face masks or hand washing)
   susceptibility *= infectee->get_susceptibility_modifier_due_to_hygiene(disease_id);
 
@@ -189,6 +191,17 @@ bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Pe
 
   double r = Random::draw_random();
   double infection_prob = transmission_prob * susceptibility;
+  // if (disease->get_face_mask_odds_ratio_method() &
+  //     (infector->get_infection_modifier_face_masks_odds_ratio(disease_id,
+  // 							      infection_prob,
+  // 							      place) > 1 + 1e-5 |
+  //      infector->get_infection_modifier_face_masks_odds_ratio(disease_id,
+  // 							      infection_prob,
+  // 							      place) < 1 - 1e-5)){
+  //   std::cout << "infection multiplier is too high!!: " << infector->get_infection_modifier_face_masks_odds_ratio(disease_id,
+  // 														    infection_prob,
+  // 														    place) <<std::endl;
+  // }
   if(disease->get_face_mask_odds_ratio_method()) {
     infection_prob *= infector->get_infection_modifier_face_masks_odds_ratio(disease_id,
 									     infection_prob,

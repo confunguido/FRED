@@ -803,11 +803,11 @@ strainsfile = none
 #
 ##########################################################
 
-enable_face_mask_usage = 1
+enable_face_mask_usage = 0
 face_mask_symptomatic_only = 0
 face_mask_odds_ratio_method = 1
-face_mask_locations = 7 household school classroom workplace office hospital other
-face_mask_compliance = 7 0.0 0.5 0.95 0.7 0.7 1.0 0.3
+face_mask_locations = 6 household school classroom workplace office other
+face_mask_compliance = 6 0.0 0.5 0.95 0.7 0.7 0.3
 day_start_wearing_face_masks = 0
 days_to_wear_face_masks = 100
 influenza_face_mask_transmission_efficacy = 0.15

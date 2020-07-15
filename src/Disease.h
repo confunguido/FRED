@@ -143,6 +143,14 @@ public:
     return(this->age_susceptibility[age_]);
   }
 
+  int is_face_mask_usage_enabled(){
+    return this->enable_face_mask_usage;
+  }
+
+  int is_hand_washing_enabled(){
+    return this->enable_hand_washing;
+  }
+
   double get_face_mask_susceptibility_efficacy() {
     return this->face_mask_susceptibility_efficacy;
   }
