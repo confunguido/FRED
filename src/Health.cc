@@ -313,19 +313,11 @@ void Health::setup(Person* self) {
   if(Health::Hand_washing_compliance > 0.0) {
     this->washes_hands = (Random::draw_random() < Health::Hand_washing_compliance);
   }
-
-  // Determine if the agent will wear a face mask
+  
+  // Facemasks defaults
   this->has_face_mask_behavior_anywhere = false;
   this->wears_face_mask_today = false;
   this->days_wearing_face_mask = 0;
-  for (auto it = Face_mask_compliance.begin(); it != Face_mask_compliance.end(); ++it) {  
-    if((it->second > 0.0) && Random::draw_random() < it->second) {
-      this->has_face_mask_behavior[it->first] = true;
-      this->has_face_mask_behavior_anywhere = true;
-    } else {
-      this->has_face_mask_behavior[it->first] = false;
-    }
-  }
   
   this->case_fatality = fred::disease_bitset();
   int diseases = Global::Diseases.get_number_of_diseases();
@@ -575,6 +567,35 @@ void Health::become_infectious(Disease* disease) {
 			  "HEALTH CHART: %s person %d is INFECTIOUS for disease %d\n",
 			  Date::get_date_string().c_str(),
 			  myself->get_id(), disease_id);
+  
+  /*
+    If facemasks enabled, then decide if will wear facemasks 
+  */
+
+  // Determine if the agent will wear a face mask
+  if(Global::Enable_Face_Mask_Usage == true){
+    if(Global::Enable_Face_Mask_Timeseries_File == true){
+      for (auto it = Face_mask_compliance.begin(); it != Face_mask_compliance.end(); ++it) {
+	double tmp_compliance = Global::Places.get_face_mask_compliance_today(it->first);
+	//printf("Health.cc::BECOME_INFECTIOUS. Compliance %lf location %s\n", tmp_compliance, it->first.c_str());
+	if(tmp_compliance > 0.0 && Random::draw_random() < tmp_compliance){
+	  this->has_face_mask_behavior[it->first] = true;
+	  this->has_face_mask_behavior_anywhere = true;
+	}else{
+	  this->has_face_mask_behavior[it->first] = false;
+	}
+      }
+    }else{
+      for (auto it = Face_mask_compliance.begin(); it != Face_mask_compliance.end(); ++it) {  
+	if((it->second > 0.0) && Random::draw_random() < it->second) {
+	  this->has_face_mask_behavior[it->first] = true;
+	  this->has_face_mask_behavior_anywhere = true;
+	} else {
+	  this->has_face_mask_behavior[it->first] = false;
+	}
+      }
+    }
+  }
 }
 
 void Health::become_noninfectious(Disease* disease) {
@@ -734,6 +755,11 @@ void Health::update_face_mask_decision(int day, int disease_id) {
   // printf("update_face_mask_decision entered on day %d for person %d\n", day, myself->get_id());
   Disease* disease = Global::Diseases.get_disease(disease_id);
 
+  /*
+    IF TIMESTEP IS NOT BEING READ, then use basic model, 
+    IF TIMESTEP BEING READ, then go to Global::Places and get the daily probability
+  */
+  
   // should we start use face mask?
   if((!disease->get_face_mask_symptomatic_only() || this->is_symptomatic(day))
      && this->days_wearing_face_mask == 0

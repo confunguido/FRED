@@ -790,7 +790,7 @@ private:
   // health protective behavior parameters
   static int Days_to_wear_face_masks;
   static int Day_start_wearing_face_masks;
-  static std::unordered_map<string,double> Face_mask_compliance;
+  static std::unordered_map<string,double> Face_mask_compliance;  
   static double Hand_washing_compliance;
 
   static double Hh_income_susc_mod_floor;

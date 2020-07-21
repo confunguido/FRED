@@ -63,6 +63,23 @@ struct Time_Step_Map_Shelter {
   }
 };
 
+struct Time_Step_Map_Face_Mask {
+  int sim_day_start;
+  int sim_day_end;
+  double compliance;
+  string location_str;
+  const std::string to_string() const {
+    std::stringstream ss;
+    ss << "FACEMASK::Time Step Map ";
+    ss << " sim_day_start " << sim_day_start;
+    ss << " sim_day_end " << sim_day_end;
+    ss << " compliance " << compliance;
+    ss << " location " << location_str;
+    ss << std::endl;
+    return ss.str();
+  }
+};
+
 // Helper class used during read_all_places/read_places; definition
 // after Place_List class
 class Place_Init_Data;
@@ -151,8 +168,10 @@ public:
   void print_household_size_distribution(char* dir, char* date_string, int run);
   void report_shelter_stats(int day);
   void update_shelter_households(int day, int, double);
+  void update_face_mask_compliance(int day);
   void end_of_run();
-
+  double get_face_mask_compliance_today(string locstr);
+  
   int get_number_of_demes() {
     return this->number_of_demes;
   }
@@ -425,6 +444,8 @@ private:
   // list of census_tracts
   std::vector<long int> census_tracts;
 
+  static std::unordered_map<string,double> Face_mask_compliance;
+  
   // mean size of "household" associated with group quarters
   static double College_dorm_mean_size;
   static double Military_barracks_mean_size;
@@ -462,6 +483,7 @@ private:
   static std::vector<double> Shelter_stepwise_compliance;
   static std::vector<int> Shelter_stepwise_duration;
   static std::vector<Time_Step_Map_Shelter*> shelter_households_timestep;
+  static std::vector<Time_Step_Map_Face_Mask*> face_mask_timestep;
   
   static int Shelter_by_age_duration_mean;
   static int Shelter_by_age_duration_std;

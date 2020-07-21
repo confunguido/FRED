@@ -92,7 +92,9 @@ bool Place_List::Shelter_enable_stepwise = false;
 std::vector<double> Place_List::Shelter_stepwise_compliance;
 std::vector<int> Place_List::Shelter_stepwise_duration;
 std::vector<Time_Step_Map_Shelter*> Place_List::shelter_households_timestep;
-  
+std::vector<Time_Step_Map_Face_Mask*> Place_List::face_mask_timestep;
+std::unordered_map<string,double> Place_List::Face_mask_compliance;
+
 int Place_List::Shelter_by_age_duration_mean = 0;
 int Place_List::Shelter_by_age_duration_std = 0;
 int Place_List::Shelter_by_age_delay_mean = 0;
@@ -201,6 +203,36 @@ void Place_List::get_parameters() {
     Params::get_param_from_string("military_resident_to_staff_ratio", &Place_List::Military_resident_to_staff_ratio);
   }
 
+  // Facemask wearing parameters
+  if(Global::Enable_Face_Mask_Usage == true && Global::Enable_Face_Mask_Timeseries_File == true){
+    // Load face mask compliance map
+    int N_face_mask_locations, N_face_mask_compliance;
+    Params::get_param_from_string("face_mask_locations", &(N_face_mask_locations));
+
+    Params::get_param_from_string("face_mask_compliance", &(N_face_mask_compliance));
+    if (N_face_mask_compliance != N_face_mask_locations) {
+      Utils::fred_abort("the number of locations and number of compliance levels don't match");
+    }
+
+    printf("N_face_mask_locations: %d and N_face_mask_compliance: %d\n", N_face_mask_locations, N_face_mask_compliance);
+    char fm_str[MAX_PARAM_SIZE];
+    Params::get_param((char*)"face_mask_compliance", fm_str);
+    std::vector<string> face_mask_locations_arr;
+    std::vector<double> face_mask_compliance_arr;
+    Params::get_param_vector_from_string((char*)"face_mask_locations", face_mask_locations_arr);
+    Params::get_param_vector_from_string(fm_str,face_mask_compliance_arr);
+    //Move into unordered_map
+    for (int ii = 0; ii < N_face_mask_locations; ++ii) {
+      printf("PLACE_LIST.cc::face_mask locations %s face_mask_compliance %lf\n", face_mask_locations_arr[ii].c_str(),
+	     face_mask_compliance_arr[ii]);
+      Face_mask_compliance[face_mask_locations_arr[ii]] = face_mask_compliance_arr[ii];
+    }
+    if (Face_mask_compliance.count("other") == 0) {
+      Utils::fred_abort("there should always be a location called \"other\"");
+    }
+
+  }
+  
   // household shelter parameters
   if(Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File == false) {
     Params::get_param_from_string("shelter_in_place_duration_mean", &Place_List::Shelter_duration_mean);
@@ -239,6 +271,104 @@ void Place_List::get_parameters() {
       Place_List::Pct_households_sheltering = Place_List::Shelter_stepwise_compliance[0];
     }
   }
+
+  // If facemasks reading compliance from file
+  if(Global::Enable_Face_Mask_Timeseries_File == true) {
+    char map_file_name[FRED_STRING_SIZE];
+    Params::get_param_from_string("face_mask_timeseries_file", map_file_name);
+        printf("READING FACEMASKS %s\n", map_file_name);
+    // If this parameter is "none", then there is no map
+    if(strncmp(map_file_name, "none", 4) != 0){
+      Utils::get_fred_file_name(map_file_name);
+      printf("READING: Face mask timeseries file: %s\n", map_file_name);
+      ifstream* ts_input = new ifstream(map_file_name);
+      if(!ts_input->is_open()) {
+	Utils::fred_abort("Help!  Can't read %s Timestep Map\n", map_file_name);
+	abort();
+      }
+      string line;
+      while(getline(*ts_input,line)){
+	if(line[0] == '\n' || line[0] == '#') { // empty line or comment
+	  continue;
+	}
+	char cstr[FRED_STRING_SIZE];
+	char lstr[FRED_STRING_SIZE];
+	std::strcpy(cstr, line.c_str());
+	Time_Step_Map_Face_Mask * tmap = new Time_Step_Map_Face_Mask;
+	int n = sscanf(cstr,
+		       "%d %d %lf %s",
+		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->compliance, &lstr);
+	printf("LINES: %d\n",n);
+	if(n < 4) {
+	  Utils::fred_abort("Need to specify at least SimulationDayStart, SimulationDayEnd and shelter compliance for Time_Step_Map_Face_Mask of facemask wearing by place.");
+	}
+	if(strlen(lstr) == 0){
+	  sscanf("other", "%s", &lstr);
+	}
+	tmap->location_str = string(lstr);
+	this->face_mask_timestep.push_back(tmap);
+      }
+      ts_input->close();
+    }
+    
+    for(int i = 0; i < face_mask_timestep.size(); ++i){
+      string ss = this->face_mask_timestep[i]->to_string();
+      printf("%s\n", ss.c_str());
+    }
+    
+    if (Global::Verbose > -1) {
+      for(int i = 0; i < this->shelter_households_timestep.size(); ++i) {
+	string ss = this->shelter_households_timestep[i]->to_string();
+	printf("%s\n", ss.c_str());
+      }
+    }
+    
+    this->previous_shelter_compliance = 0.0;
+    printf("Finished with reading shelter-in-place file\n");
+  }
+
+  if (Global::Enable_Household_Shelter) {
+    if(Global::Enable_Household_Shelter_Relax_Post_Peak_Period) {
+      Params::get_param_from_string("shelter_in_place_relax_post_peak_min_peak_day",
+				    &Place_List::Shelter_relax_post_peak_min_peak_day);
+      Params::get_param_from_string("shelter_in_place_relax_post_peak_period",
+				    &Place_List::Shelter_relax_post_peak_period);
+    }
+    if(Global::Enable_Household_Shelter_Relax_Post_Peak_Threshold) {
+      Params::get_param_from_string("shelter_in_place_relax_post_peak_min_peak_day",
+				    &Place_List::Shelter_relax_post_peak_min_peak_day);
+      Params::get_param_from_string("shelter_in_place_relax_post_peak_threshold",
+				    &Place_List::Shelter_relax_post_peak_threshold);
+    }
+  }
+  
+  // household shelter by age parameters
+  if(Global::Enable_Household_Shelter_By_Age) {
+    Params::get_param_from_string("shelter_in_place_by_age_duration_mean", &Place_List::Shelter_by_age_duration_mean);
+    Params::get_param_from_string("shelter_in_place_by_age_duration_std", &Place_List::Shelter_by_age_duration_std);
+    Params::get_param_from_string("shelter_in_place_by_age_delay_mean", &Place_List::Shelter_by_age_delay_mean);
+    Params::get_param_from_string("shelter_in_place_by_age_delay_std", &Place_List::Shelter_by_age_delay_std);
+    Params::get_param_from_string("shelter_in_place_by_age_compliance", &Place_List::Pct_households_sheltering_by_age);
+    int temp_int;
+
+    Params::get_param_from_string("shelter_in_place_students", &temp_int);
+    Place_List::Shelter_students = (temp_int == 0 ? false : true);
+    
+    Params::get_param_from_string("shelter_in_place_by_age_early_rate", &Place_List::Early_shelter_by_age_rate);
+    Params::get_param_from_string("shelter_in_place_by_age_decay_rate", &Place_List::Shelter_by_age_decay_rate);
+    Params::get_param_from_string("shelter_in_place_by_age_min_age", &Place_List::Shelter_by_age_min_age);
+    Params::get_param_from_string("shelter_in_place_by_age_max_age", &Place_List::Shelter_by_age_max_age);
+    if(Place_List::Shelter_by_age_min_age < 0 ){
+      Place_List::Shelter_by_age_min_age = 0;
+    }
+    if(Place_List::Shelter_by_age_max_age < 0){
+      Place_List::Shelter_by_age_max_age = 120;
+    }
+    if(Place_List::Shelter_by_age_min_age > Place_List::Shelter_by_age_max_age){
+      Utils::fred_abort("Min Age %d cannot be higher than Max Age %d\n", Place_List::Shelter_by_age_min_age, Place_List::Shelter_by_age_max_age);
+    }
+  }
+
 
   // If reading sheltering compliance from a file
   if(Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File == true) {
@@ -286,48 +416,6 @@ void Place_List::get_parameters() {
     }
     this->previous_shelter_compliance = 0.0;
     printf("Finished with reading shelter-in-place file\n");
-  }
-
-  if (Global::Enable_Household_Shelter) {
-    if(Global::Enable_Household_Shelter_Relax_Post_Peak_Period) {
-      Params::get_param_from_string("shelter_in_place_relax_post_peak_min_peak_day",
-				    &Place_List::Shelter_relax_post_peak_min_peak_day);
-      Params::get_param_from_string("shelter_in_place_relax_post_peak_period",
-				    &Place_List::Shelter_relax_post_peak_period);
-    }
-    if(Global::Enable_Household_Shelter_Relax_Post_Peak_Threshold) {
-      Params::get_param_from_string("shelter_in_place_relax_post_peak_min_peak_day",
-				    &Place_List::Shelter_relax_post_peak_min_peak_day);
-      Params::get_param_from_string("shelter_in_place_relax_post_peak_threshold",
-				    &Place_List::Shelter_relax_post_peak_threshold);
-    }
-  }
-  
-  // household shelter by age parameters
-  if(Global::Enable_Household_Shelter_By_Age) {
-    Params::get_param_from_string("shelter_in_place_by_age_duration_mean", &Place_List::Shelter_by_age_duration_mean);
-    Params::get_param_from_string("shelter_in_place_by_age_duration_std", &Place_List::Shelter_by_age_duration_std);
-    Params::get_param_from_string("shelter_in_place_by_age_delay_mean", &Place_List::Shelter_by_age_delay_mean);
-    Params::get_param_from_string("shelter_in_place_by_age_delay_std", &Place_List::Shelter_by_age_delay_std);
-    Params::get_param_from_string("shelter_in_place_by_age_compliance", &Place_List::Pct_households_sheltering_by_age);
-    int temp_int;
-
-    Params::get_param_from_string("shelter_in_place_students", &temp_int);
-    Place_List::Shelter_students = (temp_int == 0 ? false : true);
-    
-    Params::get_param_from_string("shelter_in_place_by_age_early_rate", &Place_List::Early_shelter_by_age_rate);
-    Params::get_param_from_string("shelter_in_place_by_age_decay_rate", &Place_List::Shelter_by_age_decay_rate);
-    Params::get_param_from_string("shelter_in_place_by_age_min_age", &Place_List::Shelter_by_age_min_age);
-    Params::get_param_from_string("shelter_in_place_by_age_max_age", &Place_List::Shelter_by_age_max_age);
-    if(Place_List::Shelter_by_age_min_age < 0 ){
-      Place_List::Shelter_by_age_min_age = 0;
-    }
-    if(Place_List::Shelter_by_age_max_age < 0){
-      Place_List::Shelter_by_age_max_age = 120;
-    }
-    if(Place_List::Shelter_by_age_min_age > Place_List::Shelter_by_age_max_age){
-      Utils::fred_abort("Min Age %d cannot be higher than Max Age %d\n", Place_List::Shelter_by_age_min_age, Place_List::Shelter_by_age_max_age);
-    }
   }
 
   
@@ -2810,6 +2898,43 @@ void Place_List::report_shelter_stats(int day) {
   Global::Daily_Tracker->set_index_key_pair(day, "N_noniso", non_sheltering_pop);
   Global::Daily_Tracker->set_index_key_pair(day, "C_noniso", non_sheltering_new_infections);
   Global::Daily_Tracker->set_index_key_pair(day, "AR_noniso", non_sheltering_ar);
+}
+
+double Place_List::get_face_mask_compliance_today(string locstr){
+  if(Face_mask_compliance.count(locstr) > 0){
+    return(Face_mask_compliance[locstr]);	
+  }else{
+    return(0.0);
+  }
+}
+
+void Place_List::update_face_mask_compliance(int day){
+  // Clear all other compliances
+  for (auto it = Face_mask_compliance.begin(); it != Face_mask_compliance.end(); ++it) {  
+    Face_mask_compliance[it->first] = 0.0;
+  }
+  
+  // Read compliance for today
+  for(int i = 0; i < this->face_mask_timestep.size(); ++i) {
+    Time_Step_Map_Face_Mask* tmap = this->face_mask_timestep[i];
+    if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
+      double face_mask_tmp_compliance = tmap->compliance;
+      string locstr = tmap->location_str;
+      if(face_mask_tmp_compliance < 0.0){
+	face_mask_tmp_compliance = 0.0;
+      }else if(face_mask_tmp_compliance > 1.0){
+	face_mask_tmp_compliance = 1.0;
+      }
+      if(Face_mask_compliance.find(locstr) != Face_mask_compliance.end()){
+	Face_mask_compliance[locstr] = face_mask_tmp_compliance;
+      }	
+      printf("Updating facemask compliance for line: %s\n",tmap->to_string().c_str()); // tmap->print();
+    }
+  }
+  printf("UPDATE_FACE_MASK_COMPLIANCE, DAY :%d\n", day);
+  for (auto it = Face_mask_compliance.begin(); it != Face_mask_compliance.end(); ++it) {  
+    printf("Day %d location %s compliance %lf\n", day, it->first.c_str(), Face_mask_compliance[it->first]);
+  }
 }
 
 void Place_List::update_shelter_households(int day, int peak_day_, double proportion_peak_incidence) {

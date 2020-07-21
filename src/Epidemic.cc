@@ -1777,6 +1777,7 @@ void Epidemic::process_infectious_start_events(int day) {
 
     // update person's health chart
     person->become_infectious(this->disease);
+    
   }
   this->infectious_start_event_queue->clear_events(day);
 }
@@ -1969,6 +1970,14 @@ void Epidemic::update(int day) {
   if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
     Global::Places.update_shelter_households(day, this->peak_day,
 					     1.0*this->symptomatic_incidence/this->peak_incidence);
+  }
+
+  /*
+    UPDATE FACEMASK WEARING
+   */
+  
+  if(Global::Enable_Face_Mask_Usage && Global::Enable_Face_Mask_Timeseries_File){
+    Global::Places.update_face_mask_compliance(day);
   }
   
   // Utils::fred_print_epidemic_timer("transition events");
