@@ -498,7 +498,11 @@ void Activities::update_schedule(int sim_day) {
 
   // if isolated, visit nowhere today
   if(this->is_isolated) {
-    return;
+    if (this->myself->is_symptomatic()){
+      return;
+    } else {
+      this->is_isolated = false;
+    }
   }
 
   if(Global::Enable_Hospitals && this->is_hospitalized && !(this->sim_day_hospitalization_ends == sim_day)) {
