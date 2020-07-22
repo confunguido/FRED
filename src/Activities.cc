@@ -559,8 +559,8 @@ void Activities::update_schedule(int sim_day) {
 
     // weekday vs weekend provisional activity
     if(Activities::is_weekday) {
-      if(get_school() != NULL) {
-        this->on_schedule[Activity_index::SCHOOL_ACTIVITY] = true;
+      if(get_school() != NULL) {	
+	this->on_schedule[Activity_index::SCHOOL_ACTIVITY] = true;    
       }
       if(get_classroom() != NULL) {
         this->on_schedule[Activity_index::CLASSROOM_ACTIVITY] = true;
@@ -631,6 +631,13 @@ void Activities::update_schedule(int sim_day) {
       }
     }
 
+    // Skip school if capacity is reduced
+    if(this->on_schedule[Activity_index::SCHOOL_ACTIVITY] && Global::Enable_School_Reduced_Capacity == true && Global::School_reduced_capacity_day <= sim_day){
+      if(Random::draw_random() < Global::School_reduced_capacity) {
+	this->on_schedule[Activity_index::SCHOOL_ACTIVITY] = false;
+        this->on_schedule[Activity_index::CLASSROOM_ACTIVITY] = false;
+      }
+    }
     if(Global::Report_Childhood_Presenteeism) {
       if(this->myself->is_adult() && this->on_schedule[Activity_index::WORKPLACE_ACTIVITY]) {
         Household* my_hh = static_cast<Household*>(this->myself->get_household());
