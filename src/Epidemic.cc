@@ -82,6 +82,7 @@ Epidemic::Epidemic(Disease* dis) {
   this->susceptible_people = 0;
 
   this->exposed_people = 0;
+  this->infected_not_symp_people = 0;
   this->people_becoming_infected_today = 0;
 
   this->infectious_people = 0;
@@ -406,6 +407,7 @@ void Epidemic::become_exposed(Person* person, int day) {
   // update epidemic counters
   this->exposed_people++;
   this->people_becoming_infected_today++;
+  this->infected_not_symp_people++;
 
   if(Global::Report_Mean_Household_Stats_Per_Income_Category) {
     if(person->get_household() != NULL) {
@@ -509,12 +511,17 @@ void Epidemic::print_stats(int day) {
     Global::Daily_Tracker->set_index_key_pair(day,"N", this->N);
   }
 
-  this->susceptible_people = this->N - this->exposed_people - this->infectious_people - this->removed_people;
+  this->susceptible_people = this->N - this->infected_not_symp_people - this->people_with_current_symptoms - this->removed_people;
+
+  //this->susceptible_people = this->N - this->exposed_people - this->infectious_people - this->removed_people;
+  
   track_value(day, (char*)"S", this->susceptible_people);
   track_value(day, (char*)"E", this->exposed_people);
   track_value(day, (char*)"I", this->infectious_people);
   track_value(day, (char*)"Is", this->people_with_current_symptoms);
   track_value(day, (char*)"R", this->removed_people);
+  track_value(day, (char*)"PrevInf", this->infected_not_symp_people);
+  
   if(this->disease->get_natural_history()->is_case_fatality_enabled()) {
     track_value(day, (char*)"CF", this->daily_case_fatality_count);
     // Nursing home deaths    
@@ -1798,6 +1805,7 @@ void Epidemic::process_infectious_end_events(int day) {
     }
     if(symptoms_end_date == -1){
       recover(person, day);
+      this->infected_not_symp_people--;
     }
   }
   this->infectious_end_event_queue->clear_events(day);
@@ -1829,7 +1837,9 @@ void Epidemic::process_symptoms_start_events(int day) {
     // update epidemic counters
     this->people_with_current_symptoms++;
     this->people_becoming_symptomatic_today++;
-
+    
+    this->infected_not_symp_people--;
+    
     if(Global::Report_Mean_Household_Stats_Per_Income_Category) {
       if(person->get_household() != NULL) {
 	      int income_level = static_cast<Household*>(person->get_household())->get_household_income_code();
