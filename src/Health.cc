@@ -74,7 +74,8 @@ bool Health::is_initialized = false;
 
 // health protective behavior parameters
 int Health::Days_to_wear_face_masks = 0;
-double Health::Face_mask_compliance = 0.0;
+int Health::Day_start_wearing_face_masks = 0;
+std::unordered_map<string,double> Health::Face_mask_compliance;
 double Health::Hand_washing_compliance = 0.0;
 
 double Health::Hh_income_susc_mod_floor = 0.0;
@@ -89,7 +90,34 @@ void Health::initialize_static_variables() {
   if(!Health::is_initialized) {
 
     Params::get_param_from_string("days_to_wear_face_masks", &(Health::Days_to_wear_face_masks));
-    Params::get_param_from_string("face_mask_compliance", &(Health::Face_mask_compliance));
+    Params::get_param_from_string("day_start_wearing_face_masks",
+				  &(Health::Day_start_wearing_face_masks));
+    //Load face mask compliance map
+    int N_face_mask_locations, N_face_mask_compliance;
+    Params::get_param_from_string("face_mask_locations", &(N_face_mask_locations));
+
+    Params::get_param_from_string("face_mask_compliance", &(N_face_mask_compliance));
+    if (N_face_mask_compliance != N_face_mask_locations) {
+      Utils::fred_abort("the number of locations and number of compliance levels don't match");
+    }
+
+    printf("N_face_mask_locations: %d and N_face_mask_compliance: %d\n", N_face_mask_locations, N_face_mask_compliance);
+    char fm_str[MAX_PARAM_SIZE];
+    Params::get_param((char*)"face_mask_compliance", fm_str);    
+    std::vector<string> face_mask_locations_arr;
+    std::vector<double> face_mask_compliance_arr;
+    Params::get_param_vector_from_string((char*)"face_mask_locations", face_mask_locations_arr);
+    Params::get_param_vector_from_string(fm_str,face_mask_compliance_arr);
+    //Move into unordered_map
+    for (int ii = 0; ii < N_face_mask_locations; ++ii) {
+      printf("face_mask locations %s face_mask_compliance %lf\n", face_mask_locations_arr[ii].c_str(),
+	     face_mask_compliance_arr[ii]);
+      Face_mask_compliance[face_mask_locations_arr[ii]] = face_mask_compliance_arr[ii];
+    }
+    if (Face_mask_compliance.count("other") == 0) {
+      Utils::fred_abort("there should always be a location called \"other\"");
+    }
+
     Params::get_param_from_string("hand_washing_compliance", &(Health::Hand_washing_compliance));
 
     int temp_int = 0;
@@ -246,7 +274,7 @@ Health::Health() {
   this->av_health = NULL;
   this->checked_for_av = NULL;
   this->vaccine_health = NULL;
-  this->has_face_mask_behavior = false;
+  this->has_face_mask_behavior_anywhere = false;
   this->wears_face_mask_today = false;
   this->days_wearing_face_mask = 0;
   this->washes_hands = false;
@@ -285,18 +313,12 @@ void Health::setup(Person* self) {
   if(Health::Hand_washing_compliance > 0.0) {
     this->washes_hands = (Random::draw_random() < Health::Hand_washing_compliance);
   }
-
-  // Determine if the agent will wear a face mask if sick
-  this->has_face_mask_behavior = false;
+  
+  // Facemasks defaults
+  this->has_face_mask_behavior_anywhere = false;
   this->wears_face_mask_today = false;
   this->days_wearing_face_mask = 0;
-  if(Health::Face_mask_compliance > 0.0) {
-    if(Random::draw_random()<Health::Face_mask_compliance) {
-      this->has_face_mask_behavior = true;
-    }
-    // printf("FACEMASK: has_face_mask_behavior = %d\n", this->has_face_mask_behavior?1:0);
-  }
-
+  
   this->case_fatality = fred::disease_bitset();
   int diseases = Global::Diseases.get_number_of_diseases();
   FRED_VERBOSE(1, "Health::setup diseases %d\n", diseases);
@@ -545,6 +567,35 @@ void Health::become_infectious(Disease* disease) {
 			  "HEALTH CHART: %s person %d is INFECTIOUS for disease %d\n",
 			  Date::get_date_string().c_str(),
 			  myself->get_id(), disease_id);
+  
+  /*
+    If facemasks enabled, then decide if will wear facemasks 
+  */
+
+  // Determine if the agent will wear a face mask
+  if(Global::Enable_Face_Mask_Usage == true){
+    if(Global::Enable_Face_Mask_Timeseries_File == true){
+      for (auto it = Face_mask_compliance.begin(); it != Face_mask_compliance.end(); ++it) {
+	double tmp_compliance = Global::Places.get_face_mask_compliance_today(it->first);
+	//printf("Health.cc::BECOME_INFECTIOUS. Compliance %lf location %s\n", tmp_compliance, it->first.c_str());
+	if(tmp_compliance > 0.0 && Random::draw_random() < tmp_compliance){
+	  this->has_face_mask_behavior[it->first] = true;
+	  this->has_face_mask_behavior_anywhere = true;
+	}else{
+	  this->has_face_mask_behavior[it->first] = false;
+	}
+      }
+    }else{
+      for (auto it = Face_mask_compliance.begin(); it != Face_mask_compliance.end(); ++it) {  
+	if((it->second > 0.0) && Random::draw_random() < it->second) {
+	  this->has_face_mask_behavior[it->first] = true;
+	  this->has_face_mask_behavior_anywhere = true;
+	} else {
+	  this->has_face_mask_behavior[it->first] = false;
+	}
+      }
+    }
+  }
 }
 
 void Health::become_noninfectious(Disease* disease) {
@@ -669,9 +720,9 @@ void Health::become_case_fatality(int disease_id, int day) {
 }
 
 void Health::update_infection(int day, int disease_id) {
-
-  if(this->has_face_mask_behavior) {
-    update_face_mask_decision(day);
+  
+  if(this->has_face_mask_behavior_anywhere) {
+    update_face_mask_decision(day, disease_id);
   }
   
   if(this->infection[disease_id] == NULL) {
@@ -700,18 +751,27 @@ void Health::update_infection(int day, int disease_id) {
 } // end Health::update_infection //
 
 
-void Health::update_face_mask_decision(int day) {
+void Health::update_face_mask_decision(int day, int disease_id) {
   // printf("update_face_mask_decision entered on day %d for person %d\n", day, myself->get_id());
+  Disease* disease = Global::Diseases.get_disease(disease_id);
 
+  /*
+    IF TIMESTEP IS NOT BEING READ, then use basic model, 
+    IF TIMESTEP BEING READ, then go to Global::Places and get the daily probability
+  */
+  
   // should we start use face mask?
-  if(this->is_symptomatic(day) && this->days_wearing_face_mask == 0) {
+  if((!disease->get_face_mask_symptomatic_only() || this->is_symptomatic(day))
+     && this->days_wearing_face_mask == 0
+     && this->Day_start_wearing_face_masks <= day) {
     FRED_VERBOSE(1, "FACEMASK: person %d starts wearing face mask on day %d\n", myself->get_id(), day);
     this->start_wearing_face_mask();
   }
 
   // should we stop using face mask?
   if(this->is_wearing_face_mask()) {
-    if (this->is_symptomatic(day) && this->days_wearing_face_mask < Health::Days_to_wear_face_masks) {
+    if ((!disease->get_face_mask_symptomatic_only() || this->is_symptomatic(day))
+	&& this->days_wearing_face_mask < Health::Days_to_wear_face_masks) {
       this->days_wearing_face_mask++;
     } else {
       FRED_VERBOSE(1, "FACEMASK: person %d stops wearing face mask on day %d\n", myself->get_id(), day);
@@ -888,15 +948,34 @@ double Health::get_susceptibility_modifier_due_to_person_age(int disease_id, int
   return 1.0;
 }
 
-double Health::get_transmission_modifier_due_to_hygiene(int disease_id) {
+double Health::get_transmission_modifier_due_to_hygiene(int disease_id, Place* place) {
   Disease* disease = Global::Diseases.get_disease(disease_id);
-  if(this->is_wearing_face_mask() && this->is_washing_hands()) {
+  bool face_mask_here = false;
+  if (disease->is_face_mask_usage_enabled()) {
+    if (this->is_wearing_face_mask()) {
+      string loc_type(place->get_place_type());
+      string loc_subtype(place->get_place_subtype());
+      string loc_hhtype(place->get_household_type());
+      if (this->has_face_mask_behavior.count(loc_hhtype) == 1) {
+	face_mask_here = this->has_face_mask_behavior[loc_hhtype];
+      } else if (this->has_face_mask_behavior.count(loc_subtype) == 1) {
+	face_mask_here = this->has_face_mask_behavior[loc_subtype];
+      } else if (this->has_face_mask_behavior.count(loc_type) == 1) {
+	face_mask_here = this->has_face_mask_behavior[loc_type];
+      } else {
+	face_mask_here = this->has_face_mask_behavior["other"];
+      }
+    }
+  }
+  if(face_mask_here && disease->is_hand_washing_enabled() && this->is_washing_hands()) {
     return (1.0 - disease->get_face_mask_plus_hand_washing_transmission_efficacy());
   }
-  if(this->is_wearing_face_mask()) {
-    return (1.0 - disease->get_face_mask_transmission_efficacy());
+  if(face_mask_here) {
+    if(!disease->get_face_mask_odds_ratio_method()) {
+      return (1.0 - disease->get_face_mask_transmission_efficacy());
+    }
   }
-  if(this->is_washing_hands()) {
+  if(disease->is_hand_washing_enabled() && this->is_washing_hands()) {
     return (1.0 - disease->get_hand_washing_transmission_efficacy());
   }
   return 1.0;
@@ -904,19 +983,38 @@ double Health::get_transmission_modifier_due_to_hygiene(int disease_id) {
 
 double Health::get_susceptibility_modifier_due_to_hygiene(int disease_id) {
   Disease* disease = Global::Diseases.get_disease(disease_id);
-  /*
-    if (this->is_wearing_face_mask() && this->is_washing_hands()) {
-    return (1.0 - disease->get_face_mask_plus_hand_washing_susceptibility_efficacy());
-    }
-    if (this->is_wearing_face_mask()) {
-    return (1.0 - disease->get_face_mask_susceptibility_efficacy());
-    }
-  */
-  if(this->is_washing_hands()) {
+  if(disease->is_hand_washing_enabled() && this->is_washing_hands()) {
     return (1.0 - disease->get_hand_washing_susceptibility_efficacy());
   }
   return 1.0;
 }
+
+double Health::get_infection_modifier_face_masks_odds_ratio(int disease_id, double infection_prob,
+							    Place* place) {
+  Disease* disease = Global::Diseases.get_disease(disease_id);
+  bool face_mask_here = false;
+  if (disease->is_face_mask_usage_enabled()) {
+    if (this->is_wearing_face_mask()) {
+      string loc_type(place->get_place_type());
+      string loc_subtype(place->get_place_subtype());
+      string loc_hhtype(place->get_household_type());
+      if (this->has_face_mask_behavior.count(loc_hhtype) == 1) {
+	face_mask_here = this->has_face_mask_behavior[loc_hhtype];
+      } else if (this->has_face_mask_behavior.count(loc_subtype) == 1) {
+	face_mask_here = this->has_face_mask_behavior[loc_subtype];
+      } else if (this->has_face_mask_behavior.count(loc_type) == 1) {
+	face_mask_here = this->has_face_mask_behavior[loc_type];
+      } else {
+	face_mask_here = this->has_face_mask_behavior["other"];
+      }
+    }
+  }
+  if(face_mask_here) {
+    return (1/((1-infection_prob)/disease->get_face_mask_transmission_efficacy() + infection_prob));
+  }
+  return 1.0;
+}
+
 
 double Health::get_susceptibility_modifier_due_to_household_income(int hh_income) {
 
@@ -1041,7 +1139,7 @@ int Health::get_av_start_day(int i) const {
 
 void Health::infect(Person* infectee, int disease_id, Mixing_Group* mixing_group, int day) {
   infectee->become_exposed(disease_id, myself, mixing_group, day);
-
+  
 #pragma omp atomic
   ++(this->infectee_count[disease_id]);
   

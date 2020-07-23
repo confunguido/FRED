@@ -179,6 +179,10 @@ public:
     return is_household() && is_military_base();
   }
 
+  string get_place_type();
+  string get_place_subtype();
+  string get_household_type();
+
   /**
    * Get the latitude.
    *

@@ -469,6 +469,7 @@ int Params::get_param_vector_from_string(char *s, vector < double > &p){
   char *pch;
   double v;
   //Params::get_param(s, str);
+
   pch = strtok(s," ");
   if (sscanf(pch, "%d", &n) == 1) {
     for (int i = 0; i < n; i++) {
@@ -476,14 +477,45 @@ int Params::get_param_vector_from_string(char *s, vector < double > &p){
       if (pch == NULL) {
         Utils::fred_abort("Help! bad param vector: %s\n", s); 
       }
-      sscanf(pch, "%lf", &v);
+      sscanf(pch, "%lf", &v);      
       p.push_back(v);
+      printf("DOUBLE::p vector element %d is %lf\n", n, v); 
     }
     for( std::vector<double>::const_iterator i = p.begin(); i != p.end(); ++i)
       printf("age!! %f \n", *i); //std::cout << *i << ' ';
     fflush(stdout);
   }
   else {
+    Utils::fred_abort("Incorrect format for vector %s\n", s); 
+  }
+  return n;
+}
+
+int Params::get_param_vector_from_string(char *s, vector < string > &p){
+  char str[MAX_PARAM_SIZE];
+  int n;
+  char *pch;
+  string v;//string??
+  char vp[MAX_PARAM_SIZE];
+  
+  Params::get_param(s, str);
+  printf("Reading parameter vector: param %s = %s\n", s, str);
+  pch = strtok(str," ");
+  if (sscanf(pch, "%d", &n) == 1) {
+    for (int i = 0; i < n; i++) {
+      pch = strtok (NULL, " ");
+      if (pch == NULL) {
+        Utils::fred_abort("Help! bad param vector: %s\n", s); 
+      }
+      sscanf(pch, "%s", &vp);
+      p.push_back(string(vp));
+      printf("p vector element %d is %s\n", n, vp); 
+    }
+    // for( std::vector<string>::const_iterator i = p.begin(); i != p.end(); ++i)
+    //   printf("age!! %f \n", *i); //std::cout << *i << ' ';
+    fflush(stdout);
+  }else {
+    printf("N was read as %d\n", n);
     Utils::fred_abort("Incorrect format for vector %s\n", s); 
   }
   return n;

@@ -121,6 +121,14 @@ public:
 
   void terminate_person(Person* person, int day);
 
+  int get_face_mask_symptomatic_only() {
+    return this->face_mask_symptomatic_only;
+  }
+
+  int get_face_mask_odds_ratio_method() {
+    return this->face_mask_odds_ratio_method;
+  }
+  
   double get_face_mask_transmission_efficacy() {
     return this->face_mask_transmission_efficacy;
   }
@@ -133,6 +141,14 @@ public:
       age_ = 0;
     }
     return(this->age_susceptibility[age_]);
+  }
+
+  int is_face_mask_usage_enabled(){
+    return this->enable_face_mask_usage;
+  }
+
+  int is_hand_washing_enabled(){
+    return this->enable_hand_washing;
   }
 
   double get_face_mask_susceptibility_efficacy() {
@@ -239,6 +255,8 @@ private:
 
   // behavioral intervention efficacies
   int enable_face_mask_usage;
+  int face_mask_odds_ratio_method;
+  int face_mask_symptomatic_only;
   double face_mask_transmission_efficacy;
   double face_mask_susceptibility_efficacy;
 

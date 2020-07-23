@@ -695,8 +695,14 @@ public:
     return this->activities.is_sick_leave_available();
   }
 
-  double get_transmission_modifier_due_to_hygiene(int disease_id) {
-    return this->health.get_transmission_modifier_due_to_hygiene(disease_id);
+  double get_transmission_modifier_due_to_hygiene(int disease_id, Place* place) {
+    return this->health.get_transmission_modifier_due_to_hygiene(disease_id, place);
+  }
+
+  double get_infection_modifier_face_masks_odds_ratio(int disease_id, double infection_prob,
+						      Place* place) {
+    return this->health.get_infection_modifier_face_masks_odds_ratio(disease_id,infection_prob,
+								     place);
   }
 
   double get_susceptibility_modifier_due_to_hygiene(int disease_id) {

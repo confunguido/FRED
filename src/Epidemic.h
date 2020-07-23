@@ -308,6 +308,7 @@ protected:
   int removed_people;
   int immune_people;
   int vaccinated_people;
+  int infected_not_symp_people;
 
   int people_becoming_infected_today;
   struct Disease_Count_Info population_infection_counts;

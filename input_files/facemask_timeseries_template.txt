@@ -1,0 +1,17 @@
+# line_format
+# Format is:
+# start end facemask_compliance [location_type [ zipcode ] ]
+# Only the first three fields are mandatory.  The others are optional, but, if
+# present, must be given in the order above.  If a location is specified, then
+# all three location fields must be present (lat, lon & radius).
+# example below will: make 100 seeding attempts of disease_id 0 on day 0, 
+# each with attempt probabilty of 1, requiring a minimum of 90 successes,
+# all selected randomly from people whose households are within 20km of
+# the specified point.
+# Location types can be defined as household school classroom workplace office other
+# It should match the "face_mask_locations" parameter in the parameters file
+#
+# 0 100 0.5 workplace
+#
+50 80 0.5 workplace
+80 100 0.8 workplace

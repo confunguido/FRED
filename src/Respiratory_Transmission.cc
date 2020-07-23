@@ -88,9 +88,8 @@ void Respiratory_Transmission::spread_infection(int day, int disease_id, Mixing_
 }
 
 void Respiratory_Transmission::spread_infection(int day, int disease_id, Place* place) {
-
   FRED_VERBOSE(1, "spread_infection day %d disease %d place %d %s\n",
-	       day, disease_id, place->get_id(), place->get_label());
+  	       day, disease_id, place->get_id(), place->get_label());
 
   // abort if transmissibility == 0 or if place is closed
   Disease* disease = Global::Diseases.get_disease(disease_id);
@@ -130,7 +129,7 @@ void Respiratory_Transmission::spread_infection(int day, int disease_id, Place* 
   }
   */
   FRED_VERBOSE(1, "spread_infection finished day %d disease %d place %d %s\n",
-	       day, disease_id, place->get_id(), place->get_label());
+  	       day, disease_id, place->get_id(), place->get_label());
 
   return;
 }
@@ -141,8 +140,11 @@ void Respiratory_Transmission::spread_infection(int day, int disease_id, Place* 
 /////////////////////////////////////////
 
 
-bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Person* infector, Person* infectee,
-					int disease_id, int day, Place* place) {
+bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Person* infector,
+						    Person* infectee,int disease_id,
+						    int day, Place* place) {
+
+  Disease* disease = Global::Diseases.get_disease(disease_id);
 
   assert(infectee->is_susceptible(disease_id));
   FRED_STATUS(1, "infector %d -- infectee %d is susceptible\n", infector->get_id(), infectee->get_id());
@@ -154,8 +156,11 @@ bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Pe
   double susceptibility = infectee->get_susceptibility(disease_id);
 
   // reduce transmission probability due to infector's hygiene (face masks or hand washing)
-  transmission_prob *= infector->get_transmission_modifier_due_to_hygiene(disease_id);
-
+  // if (infector->get_transmission_modifier_due_to_hygiene(disease_id, place) > 1 + 1e-5 |
+  //     infector->get_transmission_modifier_due_to_hygiene(disease_id, place) < 1 - 1e-5){
+  //   std::cout << "transmission multiplier is too high!!: " << infector->get_transmission_modifier_due_to_hygiene(disease_id, place) <<std::endl;
+  // }
+  transmission_prob *= infector->get_transmission_modifier_due_to_hygiene(disease_id, place);
   // reduce susceptibility due to infectee's hygiene (face masks or hand washing)
   susceptibility *= infectee->get_susceptibility_modifier_due_to_hygiene(disease_id);
 
@@ -186,7 +191,22 @@ bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Pe
 
   double r = Random::draw_random();
   double infection_prob = transmission_prob * susceptibility;
-
+  // if (disease->get_face_mask_odds_ratio_method() &
+  //     (infector->get_infection_modifier_face_masks_odds_ratio(disease_id,
+  // 							      infection_prob,
+  // 							      place) > 1 + 1e-5 |
+  //      infector->get_infection_modifier_face_masks_odds_ratio(disease_id,
+  // 							      infection_prob,
+  // 							      place) < 1 - 1e-5)){
+  //   std::cout << "infection multiplier is too high!!: " << infector->get_infection_modifier_face_masks_odds_ratio(disease_id,
+  // 														    infection_prob,
+  // 														    place) <<std::endl;
+  // }
+  if(disease->get_face_mask_odds_ratio_method()) {
+    infection_prob *= infector->get_infection_modifier_face_masks_odds_ratio(disease_id,
+									     infection_prob,
+									     place);
+  }
   if(r < infection_prob) {
     // successful transmission; create a new infection in infectee
     infector->infect(infectee, disease_id, place, day);
@@ -200,7 +220,7 @@ bool Respiratory_Transmission::attempt_transmission(double transmission_prob, Pe
     FRED_CONDITIONAL_VERBOSE(0, infection_prob > 1, "infection_prob exceeded unity!\n");
 
     // notify the epidemic
-    Global::Diseases.get_disease(disease_id)->get_epidemic()->become_exposed(infectee, day);
+    disease->get_epidemic()->become_exposed(infectee, day);
 
     return true;
   } else {

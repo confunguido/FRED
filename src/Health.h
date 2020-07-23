@@ -18,6 +18,7 @@
 
 #include <bitset>
 #include <vector>
+#include <unordered_map>
 using namespace std;
 
 #include "Age_Map.h"
@@ -94,7 +95,7 @@ public:
   // UPDATE THE PERSON'S HEALTH CONDITIONS
 
   void update_infection(int day, int disease_id);
-  void update_face_mask_decision(int day);
+  void update_face_mask_decision(int day, int disease_id);
   void update_interventions(int day);
   void become_exposed(int disease_id, Person* infector, Mixing_Group* mixing_group, int day);
   void become_susceptible(int disease_id);
@@ -156,7 +157,9 @@ public:
   Infection* get_infection(int disease_id) const {
     return this->infection[disease_id];
   }
-  double get_transmission_modifier_due_to_hygiene(int disease_id);
+  double get_transmission_modifier_due_to_hygiene(int disease_id, Place* place);
+  double get_infection_modifier_face_masks_odds_ratio(int disease_id, double infection_prob,
+						      Place* place);
   double get_susceptibility_modifier_due_to_hygiene(int disease_id);
   double get_susceptibility_modifier_due_to_household_income(int disease_id);
   double get_susceptibility_modifier_due_to_person_age(int disease_id, int int_age);
@@ -732,7 +735,8 @@ private:
   typedef std::vector<Vaccine_Health*>::iterator vaccine_health_itr;
 
   // health behaviors
-  bool has_face_mask_behavior;
+  bool has_face_mask_behavior_anywhere;
+  std::unordered_map<string,bool> has_face_mask_behavior;
   bool wears_face_mask_today;
   int days_wearing_face_mask;
   bool washes_hands;				// every day
@@ -785,7 +789,8 @@ private:
 
   // health protective behavior parameters
   static int Days_to_wear_face_masks;
-  static double Face_mask_compliance;
+  static int Day_start_wearing_face_masks;
+  static std::unordered_map<string,double> Face_mask_compliance;  
   static double Hand_washing_compliance;
 
   static double Hh_income_susc_mod_floor;

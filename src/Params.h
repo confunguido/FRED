@@ -114,6 +114,8 @@ public:
    */
   static int get_param_vector_from_string(char *s, vector < double > &p);
 
+  static int get_param_vector_from_string(char *s, vector < string > &p);
+  
   static int get_param_vector(char* s, double* p);
 
   static int get_param_vector(char* s, int* p);

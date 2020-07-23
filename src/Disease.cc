@@ -57,15 +57,16 @@ Disease::Disease() {
   this->R0_a = -1.0;
   this->R0_b = -1.0;
   strcpy(this->natural_history_model,"");
-  this->enable_face_mask_usage = 0;
+  this->face_mask_odds_ratio_method = 0;
+  this->face_mask_symptomatic_only = 0;
   this->face_mask_transmission_efficacy = -1.0;
   this->face_mask_susceptibility_efficacy = -1.0;
   this->enable_hand_washing = 0;
+  this->enable_face_mask_usage = 0;
   this->hand_washing_transmission_efficacy = -1.0;
   this->hand_washing_susceptibility_efficacy = -1.0;
   this->face_mask_plus_hand_washing_transmission_efficacy = -1.0;
   this->face_mask_plus_hand_washing_susceptibility_efficacy = -1.0;
-  this->enable_face_mask_usage = 0;
   this->susceptibility_by_age_offset = 0.0;
   this->susceptibility_by_age_rate = 0.0;
   this->susceptibility_by_age_cutoff = 0.0;
@@ -157,9 +158,11 @@ void Disease::get_parameters(int disease_id, string name) {
     this->outpatient_healthcare_prob->read_from_input(paramstr);
   }
 
-  // protective behavior efficacy parameters
-  Params::get_param_from_string("enable_face_mask_usage", &(this->enable_face_mask_usage));
-  if(this->enable_face_mask_usage) {
+  // protective behavior efficacy parameters 
+  if(Global::Enable_Face_Mask_Usage) {
+    this->enable_face_mask_usage = 1;
+    Params::get_param_from_string("face_mask_symptomatic_only", &(this->face_mask_symptomatic_only));
+    Params::get_param_from_string("face_mask_odds_ratio_method", &(this->face_mask_odds_ratio_method));
     Params::get_indexed_param(this->disease_name, "face_mask_transmission_efficacy",
 			      &(this->face_mask_transmission_efficacy));
     Params::get_indexed_param(this->disease_name, "face_mask_susceptibility_efficacy",
@@ -172,7 +175,7 @@ void Disease::get_parameters(int disease_id, string name) {
     Params::get_indexed_param(this->disease_name, "hand_washing_susceptibility_efficacy",
 			      &(this->hand_washing_susceptibility_efficacy));
   }
-  if(this->enable_face_mask_usage && this->enable_hand_washing) {
+  if(Global::Enable_Face_Mask_Usage && this->enable_hand_washing) {
     Params::get_indexed_param(this->disease_name, "face_mask_plus_hand_washing_transmission_efficacy",
 			      &(this->face_mask_plus_hand_washing_transmission_efficacy));
     Params::get_indexed_param(this->disease_name, "face_mask_plus_hand_washing_susceptibility_efficacy",

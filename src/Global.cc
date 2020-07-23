@@ -114,6 +114,11 @@ bool Global::Report_County_Demographic_Information = false;
 bool Global::Assign_Teachers = false;
 bool Global::Enable_Household_Shelter = false;
 bool Global::Enable_Household_Shelter_File = false;
+bool Global::Enable_Face_Mask_Timeseries_File = false;
+bool Global::Enable_Face_Mask_Usage = false;
+bool Global::Enable_School_Reduced_Capacity = false;
+double Global::School_reduced_capacity = 1.0;
+int Global::School_reduced_capacity_day = 10000;
 bool Global::Enable_Household_Shelter_By_Age = false;
 bool Global::Enable_Nursing_Homes_Importations = false;
 bool Global::Enable_Age_Specific_Susceptibility = false;
@@ -295,6 +300,12 @@ void Global::get_global_parameters() {
   Global::Enable_Household_Shelter = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_shelter_in_place_timeseries", &temp_int);
   Global::Enable_Household_Shelter_File = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_face_mask_timeseries", &temp_int);
+  Global::Enable_Face_Mask_Timeseries_File = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_face_mask_usage", &temp_int);
+  Global::Enable_Face_Mask_Usage = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_school_reduced_capacity", &temp_int);
+  Global::Enable_School_Reduced_Capacity = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_shelter_in_place_by_age", &temp_int);
   Global::Enable_Household_Shelter_By_Age = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_nursing_homes_importations", &temp_int);
@@ -307,6 +318,8 @@ void Global::get_global_parameters() {
   Global::Enable_Household_Shelter_Relax_Post_Peak_Threshold = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_isolation", &temp_int);
   Global::Enable_Isolation = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("school_reduced_capacity", &Global::School_reduced_capacity);
+  Params::get_param_from_string("school_reduced_capacity_day", &Global::School_reduced_capacity_day);
   Params::get_param_from_string("isolation_delay", &Global::Isolation_Delay);
   Params::get_param_from_string("isolation_rate", &Global::Isolation_Rate);
   // added for residual_immunity_by_FIPS
