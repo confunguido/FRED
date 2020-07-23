@@ -414,7 +414,7 @@ double Natural_History::get_real_incubation_period(Person* host) {
 
 double Natural_History::get_symptoms_duration(Person* host) {
   double location = log(this->symptoms_duration_median);
-  double scale = log(this->symptoms_duration_dispersion);
+  double scale = 0.5*log(this->symptoms_duration_dispersion);
   double symptoms_duration = Random::draw_lognormal(location, scale);
   if (this->symptoms_duration_upper_bound > 0 && symptoms_duration > this->symptoms_duration_upper_bound) {
     symptoms_duration = Random::draw_random(0.0,this->symptoms_duration_upper_bound);
@@ -434,7 +434,7 @@ double Natural_History::get_real_latent_period(Person* host) {
 
 double Natural_History::get_infectious_duration(Person* host) {
   double location = log(this->infectious_duration_median);
-  double scale = log(this->infectious_duration_dispersion);
+  double scale = 0.5*log(this->infectious_duration_dispersion);
   double infectious_duration = Random::draw_lognormal(location, scale);
   if (this->infectious_duration_upper_bound > 0 && infectious_duration > this->infectious_duration_upper_bound) {
     infectious_duration = Random::draw_random(0.0,this->infectious_duration_upper_bound);
