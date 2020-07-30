@@ -2023,7 +2023,9 @@ void Epidemic::update(int day) {
 					     1.0*this->symptomatic_incidence/this->peak_incidence,
 					     this->days_of_decline);
   }
-
+  if(Global::Enable_School_Reduced_Capacity == true && Global::School_reduced_capacity_day <= day){
+    printf("School capacity reduced enabled to %.2f day %d\n",Global::School_reduced_capacity, day);
+  }
   /*
     UPDATE FACEMASK WEARING
    */

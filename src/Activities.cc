@@ -633,7 +633,8 @@ void Activities::update_schedule(int sim_day) {
 
     // Skip school if capacity is reduced
     if(this->on_schedule[Activity_index::SCHOOL_ACTIVITY] && Global::Enable_School_Reduced_Capacity == true && Global::School_reduced_capacity_day <= sim_day){
-      if(Random::draw_random() < Global::School_reduced_capacity) {
+      // The reduced capacity implies the new capacity: 1 -> full, 0 -> empty
+      if(Random::draw_random() < ((double)(1.0 - Global::School_reduced_capacity))) {
 	this->on_schedule[Activity_index::SCHOOL_ACTIVITY] = false;
         this->on_schedule[Activity_index::CLASSROOM_ACTIVITY] = false;
       }
