@@ -110,7 +110,8 @@ public:
 
   void read_all_places(const std::vector<Utils::Tokens> & Demes);
   void read_places(const char* pop_dir, const char* pop_id, unsigned char deme_id, InitSetT &pids);
-
+  
+  void count_teachers_and_students();
   void reassign_workers();
   void prepare();
   void print_status_of_schools(int day);
@@ -418,7 +419,7 @@ private:
   place_vector_t schools_by_grade[GRADES];
   place_vector_t workplaces;
   place_vector_t hospitals;
-
+  
   void read_household_file(unsigned char deme_id, char* location_file, InitSetT &pids);
   void read_workplace_file(unsigned char deme_id, char* location_file, InitSetT &pids);
   void read_hospital_file(unsigned char deme_id, char* location_file, InitSetT &pids);

@@ -1974,14 +1974,17 @@ void Place_List::reassign_workers_to_places_of_type(char place_type, int fixed_s
       int n = place->get_size();
       if(place_type == Place::TYPE_SCHOOL) {
         School* s = static_cast<School*>(place);
-        n = s->get_orig_number_of_students();
+        n = s->get_size();
       }
       FRED_VERBOSE(1, "Size %d\n", n);
       int staff = fixed_staff;
       if(staff_ratio > 0.0) {
         staff += (0.5 + (double)n / staff_ratio);
       }
-
+      if(place_type == Place::TYPE_SCHOOL) {
+	printf("REASSIGN_WORKERS_TO_TEACHERS: STAFF: %d, RATIO %.2f N %d\n",staff, staff_ratio,n);
+      }
+      
       Place* nearby_workplace = regional_patch->get_nearby_workplace(place, staff);
       if(nearby_workplace != NULL) {
         if(place_type == Place::TYPE_SCHOOL) {
@@ -1991,9 +1994,10 @@ void Place_List::reassign_workers_to_places_of_type(char place_type, int fixed_s
           // make all the workers in selected workplace as workers in the target place
           nearby_workplace->reassign_workers(place);
         }
-        return;
+        //return;
       } else {
         FRED_VERBOSE(0, "NO NEARBY_WORKPLACE FOUND for place at lat %f lon %f \n", lat, lon);
+	//printf("NO NEARBY_WORKPLACE FOUND for place at lat %f lon %f \n", lat, lon);
       }
     }
   }
@@ -2945,6 +2949,29 @@ void Place_List::update_face_mask_compliance(int day){
   for (auto it = Face_mask_compliance.begin(); it != Face_mask_compliance.end(); ++it) {  
     printf("Day %d location %s compliance %lf\n", day, it->first.c_str(), Face_mask_compliance[it->first]);
   }
+}
+
+void Place_List::count_teachers_and_students(){
+  int num_students = 0;
+  int num_teachers = 0;
+  for(int i = 0; i < get_number_of_schools();++i){
+    Place *place_tmp = this->get_school(i);
+    person_vec_t* school_attendees= place_tmp->get_enrollees();
+    int school_teachers = 0;
+    int school_students = 0;
+    for(int j = 0; j < school_attendees->size(); j++){
+      Person* person_tmp = (*school_attendees)[j];
+      if(person_tmp->is_teacher()){
+	school_teachers++;
+      }else{
+	school_students++;
+      }
+    }
+    num_students += school_students;
+    num_teachers += school_teachers;
+    printf("School %d Teachers %d Students %d\n", i, school_teachers, school_students);    
+  }     
+  printf("PLACE_LIST::COUNT_TEACHERS_AND_STUDENTS Teachers %d Students %d\n", num_teachers, num_students);
 }
 
 void Place_List::update_shelter_households(int day, int peak_day_, double proportion_peak_incidence,

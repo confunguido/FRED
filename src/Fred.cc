@@ -221,6 +221,7 @@ void fred_setup(int argc, char* argv[]) {
     }
   }
 
+  Global::Places.count_teachers_and_students();
   FRED_STATUS(0, "deleting place_label_map\n", "");
   Global::Places.delete_place_label_map();
   FRED_STATUS(0, "prepare places finished\n", "");
