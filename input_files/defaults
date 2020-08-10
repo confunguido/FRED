@@ -602,6 +602,7 @@ enable_age_specific_susceptibility = 0
 influenza_susceptibility_by_age_rate = 0.0
 influenza_susceptibility_by_age_offset = 0.0
 influenza_susceptibility_by_age_cutoff = 0.0
+influenza_susceptibility_by_age_high = 1.0
 
 
 ### multiplier for asymptomatic infectivity

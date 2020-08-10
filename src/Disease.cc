@@ -70,6 +70,7 @@ Disease::Disease() {
   this->susceptibility_by_age_offset = 0.0;
   this->susceptibility_by_age_rate = 0.0;
   this->susceptibility_by_age_cutoff = 0.0;
+  this->susceptibility_by_age_high = 1.0;
   this->make_all_susceptible = true;
   this->age_susceptibility.clear();
 }
@@ -190,15 +191,21 @@ void Disease::get_parameters(int disease_id, string name) {
 			      &(this->susceptibility_by_age_offset));
     Params::get_indexed_param(this->disease_name, "susceptibility_by_age_cutoff",
 			      &(this->susceptibility_by_age_cutoff));
+    Params::get_indexed_param(this->disease_name, "susceptibility_by_age_high",
+			      &(this->susceptibility_by_age_high));
     if(this->susceptibility_by_age_cutoff < 0.0){
       this->susceptibility_by_age_cutoff = 0.0;
     }
+    if(this->susceptibility_by_age_high > 1.0){
+      this->susceptibility_by_age_high = 1.0;
+    }
+    
     /*
       Susceptibility by age follows a logistic function with a floor -> offset
      */
     for(int i = 0; i < 101; ++i){
       double susceptibility_ = (this->susceptibility_by_age_offset +
-	(1 - this->susceptibility_by_age_offset)/(1 + exp(-(this->susceptibility_by_age_rate * (double) (i - this->susceptibility_by_age_cutoff)))));
+	(this->susceptibility_by_age_high - this->susceptibility_by_age_offset)/(1 + exp(-(this->susceptibility_by_age_rate * (double) (i - this->susceptibility_by_age_cutoff)))));
       this->age_susceptibility.push_back(susceptibility_);
     }
     for(int i = 0; i < 101; ++i){
