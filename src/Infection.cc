@@ -285,7 +285,7 @@ void Infection::report_infection(int day) {
 	          << (this->infector == NULL ? -1 : this->infector->is_symptomatic()) << " inf_sick_leave "
 	          << (this->infector == NULL ? -1 : this->infector->is_sick_leave_available())
 	          << " at " << mixing_group_type << " mixing_group " <<  mixing_group_id << " subtype " << mixing_group_subtype;
-    infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher();
+    infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher() << " is_student " << (int)this->host->is_student();
     
     if(dynamic_cast<Place*>(this->mixing_group) != NULL) {
       Place* place = dynamic_cast<Place*>(this->mixing_group);
