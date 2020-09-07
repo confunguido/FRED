@@ -300,8 +300,12 @@ void Infection::report_infection(int day) {
       }
       double host_lat = this->host->get_household()->get_latitude();
       double host_lon = this->host->get_household()->get_longitude();
+      string home_id(this->host->get_household()->get_label());
+      string inf_home_id(this->infector == NULL ? "H-1" : this->infector->get_household()->get_label());
       infStrS << " home_lat " << host_lat;
       infStrS << " home_lon " << host_lon;
+      infStrS << " home_host_id " << home_id;
+      infStrS << " home_inf_id " << inf_home_id;
       infStrS << " | ";
     }
   }
