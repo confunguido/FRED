@@ -71,6 +71,8 @@ Disease::Disease() {
   this->susceptibility_by_age_rate = 0.0;
   this->susceptibility_by_age_cutoff = 0.0;
   this->susceptibility_by_age_high = 1.0;
+  this->susceptibility_by_age_minvalue = 1.0;
+  this->susceptibility_by_age_minage = 0.0;
   this->make_all_susceptible = true;
   this->age_susceptibility.clear();
 }
@@ -193,19 +195,40 @@ void Disease::get_parameters(int disease_id, string name) {
 			      &(this->susceptibility_by_age_cutoff));
     Params::get_indexed_param(this->disease_name, "susceptibility_by_age_high",
 			      &(this->susceptibility_by_age_high));
+    
     if(this->susceptibility_by_age_cutoff < 0.0){
       this->susceptibility_by_age_cutoff = 0.0;
     }
     if(this->susceptibility_by_age_high > 1.0){
       this->susceptibility_by_age_high = 1.0;
     }
-    
+    int temp_int = 0;
+    Params::get_param_from_string("enable_age_specific_susceptibility_min", &temp_int);
+    bool Enable_Age_Specific_Susceptibility_Min = (temp_int == 0 ? false : true);
+    if(Enable_Age_Specific_Susceptibility_Min){
+      Params::get_indexed_param(this->disease_name, "susceptibility_by_age_minage",
+				&(this->susceptibility_by_age_minage));
+      Params::get_indexed_param(this->disease_name, "susceptibility_by_age_minvalue",
+				&(this->susceptibility_by_age_minvalue));
+    }
+
+    if(this->susceptibility_by_age_minvalue < 0.0){
+      this->susceptibility_by_age_minvalue = 0.0;
+    }else if(this->susceptibility_by_age_minvalue > 1.0){
+      this->susceptibility_by_age_minvalue = 1.0;
+    }
+
     /*
       Susceptibility by age follows a logistic function with a floor -> offset
-     */
+    */
     for(int i = 0; i < 101; ++i){
       double susceptibility_ = (this->susceptibility_by_age_offset +
 	(this->susceptibility_by_age_high - this->susceptibility_by_age_offset)/(1 + exp(-(this->susceptibility_by_age_rate * (double) (i - this->susceptibility_by_age_cutoff)))));
+      if(Enable_Age_Specific_Susceptibility_Min){
+	if((double) i < this->susceptibility_by_age_minage){
+	  susceptibility_ = this->susceptibility_by_age_minvalue;
+	}
+      }
       this->age_susceptibility.push_back(susceptibility_);
     }
     for(int i = 0; i < 101; ++i){

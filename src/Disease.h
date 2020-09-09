@@ -266,6 +266,8 @@ private:
   double susceptibility_by_age_rate;
   double susceptibility_by_age_cutoff;
   double susceptibility_by_age_high;
+  double susceptibility_by_age_minvalue;
+  double susceptibility_by_age_minage;
   std::vector<double> age_susceptibility;
   
   int enable_hand_washing;
