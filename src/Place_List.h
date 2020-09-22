@@ -46,18 +46,18 @@ struct Time_Step_Map_Shelter {
   int sim_day_start;
   int sim_day_end;
   double shelter_compliance;
-  double lat;
-  double lon;
-  double radius;
+  long int census_tract;
+  int min_age;
+  int max_age;
   const std::string to_string() const {
     std::stringstream ss;
     ss << "Time Step Map ";
     ss << " sim_day_start " << sim_day_start;
     ss << " sim_day_end " << sim_day_end;
     ss << " shelter_compliance " << shelter_compliance;
-    ss << " lat " << lat;
-    ss << " lon " << lon;
-    ss << " radius " << radius;
+    ss << " census_tract " << census_tract;
+    ss << " min age " << min_age;
+    ss << " max age " << max_age;
     ss << std::endl;
     return ss.str();
   }
