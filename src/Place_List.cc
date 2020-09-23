@@ -407,7 +407,7 @@ void Place_List::get_parameters() {
 		       "%d %d %lf %d %d %ld",
 		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->shelter_compliance, 
 		       &tmap->min_age, &tmap->max_age, &zstr);
-	printf("LINES: %d\n",n);
+	//printf("LINES: %d\n",n);
 	if(n < 3) {
 	  Utils::fred_abort("Need to specify at least SimulationDayStart, SimulationDayEnd and shelter compliance for Time_Step_Map of sheltering in place. ");
 	}
@@ -3059,6 +3059,7 @@ void Place_List::update_shelter_households(int day, int peak_day_, double propor
     }
     ++it;
   }
+
   */
   
   /*
@@ -3114,24 +3115,25 @@ void Place_List::update_shelter_households(int day, int peak_day_, double propor
 	    }
 	  }
 	}
-      }else if(daily_shelter.find(ct) != daily_shelter.end()){
-	  for(int i = 0; i < daily_shelter.find(ct)->second.size();i++){
-	    // if All doesn't exist, then check by census tract
-	    double r = Random::draw_random();
-	    double prob_shelter = daily_shelter[ct][i]->shelter_compliance;
-	    if(r < prob_shelter){
-	      if(daily_shelter[ct][i]->min_age == 0 && daily_shelter[ct][i]->max_age == 120){
-		h->set_shelter(true);
-		h->set_shelter_start_day(day);
-		h->set_shelter_end_day(9999999);
-	      }else{
-		h->set_shelter_by_age(true);
-		h->set_shelter_by_age_ages(daily_shelter[ct][i]->min_age, daily_shelter[ct][i]->max_age);
-		h->set_shelter_by_age_start_day(day);
-		h->set_shelter_by_age_end_day(9999999);
-	      }
+      }
+      if(daily_shelter.find(ct) != daily_shelter.end()){
+	for(int i = 0; i < daily_shelter.find(ct)->second.size();i++){
+	  // if All doesn't exist, then check by census tract
+	  double r = Random::draw_random();
+	  double prob_shelter = daily_shelter[ct][i]->shelter_compliance;
+	  if(r < prob_shelter){
+	    if(daily_shelter[ct][i]->min_age == 0 && daily_shelter[ct][i]->max_age == 120){
+	      h->set_shelter(true);
+	      h->set_shelter_start_day(day);
+	      h->set_shelter_end_day(9999999);
+	    }else{
+	      h->set_shelter_by_age(true);
+	      h->set_shelter_by_age_ages(daily_shelter[ct][i]->min_age, daily_shelter[ct][i]->max_age);
+	      h->set_shelter_by_age_start_day(day);
+	      h->set_shelter_by_age_end_day(9999999);
 	    }
 	  }
+	}
       }
     }
     /*
