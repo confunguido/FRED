@@ -73,6 +73,7 @@ Age_Map* Health::pregnancy_case_fatality_prob_mult = NULL;
 bool Health::is_initialized = false;
 
 // health protective behavior parameters
+int Health::Min_age_wear_face_masks = 0;
 int Health::Days_to_wear_face_masks = 0;
 int Health::Day_start_wearing_face_masks = 0;
 std::unordered_map<string,double> Health::Face_mask_compliance;
@@ -89,6 +90,7 @@ void Health::initialize_static_variables() {
   //Setup the static variables if they aren't already initialized
   if(!Health::is_initialized) {
 
+    Params::get_param_from_string("min_age_face_masks", &(Health::Min_age_wear_face_masks));
     Params::get_param_from_string("days_to_wear_face_masks", &(Health::Days_to_wear_face_masks));
     Params::get_param_from_string("day_start_wearing_face_masks",
 				  &(Health::Day_start_wearing_face_masks));
@@ -573,7 +575,7 @@ void Health::become_infectious(Disease* disease) {
   */
 
   // Determine if the agent will wear a face mask
-  if(Global::Enable_Face_Mask_Usage == true){
+  if(Global::Enable_Face_Mask_Usage == true && myself->get_age() >= Health::Min_age_wear_face_masks){
     if(Global::Enable_Face_Mask_Timeseries_File == true){
       for (auto it = Face_mask_compliance.begin(); it != Face_mask_compliance.end(); ++it) {
 	double tmp_compliance = Global::Places.get_face_mask_compliance_today(it->first);

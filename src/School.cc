@@ -361,6 +361,9 @@ int School::enroll(Person* person) {
     this->staff_size++;
   } else {
     int age = person->get_age();
+    if (age >= GRADES){
+      age == GRADES -1;
+    }
     int grade = ((age < GRADES) ? age : GRADES - 1);
     assert(grade > 0);
     this->students_in_grade[grade]++;

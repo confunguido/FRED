@@ -822,7 +822,8 @@ face_mask_locations = 6 household school classroom workplace office other
 face_mask_compliance = 6 0.0 0.5 0.95 0.7 0.7 0.3
 day_start_wearing_face_masks = 0
 days_to_wear_face_masks = 100
-influenza_face_mask_transmission_efficacy = 0.15
+min_age_face_masks = 0
+influenza_face_mask_transmission_efficacy = 0.3
 influenza_face_mask_susceptibility_efficacy = 1
 
 enable_hand_washing = 0

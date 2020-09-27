@@ -185,15 +185,17 @@ void Place_List::get_parameters() {
   Params::get_param_from_string("fips", Global::FIPS_code);
   Params::get_param_from_string("msa", Global::MSA_code);
 
+  // Student teacher ratio should not be dependent on group quarters
+  Params::get_param_from_string("school_fixed_staff", &Place_List::School_fixed_staff);
+  Params::get_param_from_string("school_student_teacher_ratio", &Place_List::School_student_teacher_ratio);
+    
   if(Global::Enable_Group_Quarters) {
     // group quarter parameters
     Params::get_param_from_string("college_dorm_mean_size", &Place_List::College_dorm_mean_size);
     Params::get_param_from_string("military_barracks_mean_size", &Place_List::Military_barracks_mean_size);
     Params::get_param_from_string("prison_cell_mean_size", &Place_List::Prison_cell_mean_size);
     Params::get_param_from_string("nursing_home_room_mean_size", &Place_List::Nursing_home_room_mean_size);
-
-    Params::get_param_from_string("school_fixed_staff", &Place_List::School_fixed_staff);
-    Params::get_param_from_string("school_student_teacher_ratio", &Place_List::School_student_teacher_ratio);
+    
     Params::get_param_from_string("college_fixed_staff", &Place_List::College_fixed_staff);
     Params::get_param_from_string("college_resident_to_staff_ratio", &Place_List::College_resident_to_staff_ratio);
     Params::get_param_from_string("prison_fixed_staff", &Place_List::Prison_fixed_staff);
