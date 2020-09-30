@@ -201,7 +201,7 @@ void School::get_parameters() {
 	std::strcpy(cstr, line.c_str());
 	Time_Step_Map_Closure * tmap = new Time_Step_Map_Closure;
 	int n = sscanf(cstr,
-		       "%d %d %d %d %f",
+		       "%d %d %d %d %lg",
 		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->grade_min, &tmap->grade_max, &tmap->capacity_open);
 	printf("SCHOOL SCHEDULE LINES: %d\n",n);
 	if(n < 5) {
