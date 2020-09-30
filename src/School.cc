@@ -54,6 +54,9 @@ int School::pop_income_Q4 = 0;
 bool School::global_closure_is_active = false;
 int School::global_close_date = 0;
 int School::global_open_date = 0;
+bool School::global_closure_schedule_is_enabled = false;
+
+std::vector<Time_Step_Map_Closure * > School::school_closure_schedule;
 
 School::School() : Place() {
   this->set_type(Place::TYPE_SCHOOL);
@@ -64,8 +67,12 @@ School::School() : Place() {
     this->orig_students_in_grade[i] = 0;
     this->next_classroom[i] = 0;
     this->classrooms[i].clear();
+    this->close_grade_date[i] = INT_MAX;
+    this->open_grade_date[i] = 0;
+    this->open_capacity_grade[i] = 1.0;
   }
   this->closure_dates_have_been_set = false;
+  this->closure_grade_dates_have_been_set = false;
   this->staff_size = 0;
   this->max_grade = -1;
   this->county_index = -1;
@@ -170,6 +177,59 @@ void School::get_parameters() {
 				&School::individual_school_closure_threshold);
   Params::get_param_from_string("school_closure_cases", &School::school_closure_cases);
 
+  // if global_schedule_file is not none, then read it
+  if(strcmp(School::school_closure_policy, "global_schedule") == 0) {
+    School::global_closure_schedule_is_enabled = true;
+    char map_file_name[FRED_STRING_SIZE];
+    Params::get_param_from_string("school_global_schedule_file", map_file_name);
+    printf("READING SCHOOL SCHEDULE %s\n", map_file_name);
+    // If this parameter is "none", then there is no map
+    if(strncmp(map_file_name, "none", 4) != 0){
+      Utils::get_fred_file_name(map_file_name);
+      printf("READING: School schedule file: %s\n", map_file_name);
+      ifstream* ts_input = new ifstream(map_file_name);
+      if(!ts_input->is_open()) {
+	Utils::fred_abort("Help!  Can't read %s School Timestep Map\n", map_file_name);
+	abort();
+      }
+      string line;
+      while(getline(*ts_input,line)){		
+	if(line[0] == ' ' || line[0] == '\n' || line[0] == '#') { // empty line or comment
+	  continue;
+	}
+	char cstr[FRED_STRING_SIZE];
+	std::strcpy(cstr, line.c_str());
+	Time_Step_Map_Closure * tmap = new Time_Step_Map_Closure;
+	int n = sscanf(cstr,
+		       "%d %d %d %d %f",
+		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->grade_min, &tmap->grade_max, &tmap->capacity_open);
+	printf("SCHOOL SCHEDULE LINES: %d\n",n);
+	if(n < 5) {
+	  Utils::fred_abort("Need to specify at least SimulationDayStart, SimulationDayEnd, Minimum grade, and Maximum Grade (0-20), capacity open");
+	}
+	if(tmap->capacity_open < 0.0){tmap->capacity_open = 0.0;}
+	if(tmap->capacity_open > 1.0){tmap->capacity_open = 1.0;}
+	if(tmap->sim_day_end > tmap->sim_day_start && tmap->grade_max > tmap->grade_min){
+	  if(tmap->grade_min > 0 && tmap->grade_min <= GRADES){
+	    if(tmap->grade_max > 0 && tmap->grade_max <= GRADES){
+	      if(tmap->grade_max > tmap->grade_min){
+		School::school_closure_schedule.push_back(tmap);
+	      }
+	    }
+	  }
+	}
+      }
+      ts_input->close();
+    }
+  }
+
+  for(int i = 0; i < School::school_closure_schedule.size(); ++i){
+    string ss = School::school_closure_schedule[i]->to_string();
+    printf("%s\n", ss.c_str());
+  }
+    
+  
+  
   // aliases for parameters
   int Weeks;
   Params::get_param_from_string("Weeks", &Weeks);
@@ -218,11 +278,48 @@ void School::close(int day, int day_to_close, int duration) {
   }
 }
 
+void School::close_by_grade(int day, int day_to_close, int duration, int min_grade, int max_grade, double capacity_in) {  
+  for(int i = min_grade - 1; i < max_grade; ++i){
+    this->close_grade_date[i] = day_to_close;
+    this->open_grade_date[i] = day_to_close + duration;
+    this->open_capacity_grade[i] = capacity_in;
+    this->closure_grade_dates_have_been_set = true;
+  }
+  
+  // log this school closure decision
+  if(Global::Verbose > 0) {
+    printf("SCHOOL %s CLOSURE GRADE decision day %d close_date %d duration %d open_date %d grades: %d-%d capacity %.2f\n",
+	   this->get_label(), day,day_to_close, duration, close_grade_date + duration, min_grade, max_grade, capacity_in);
+  }
+}
+
 
 bool School::is_open(int day) {
   bool open = (day < this->close_date || this->open_date <= day);
+  if(open == true && School::global_closure_schedule_is_enabled == true) {
+    this->closure_dates_have_been_set = false;
+  }
   if(!open) {
     FRED_VERBOSE(0, "Place %s is closed on day %d\n", this->get_label(), day);
+  }
+  return open;
+}
+
+bool School::should_be_open_grade(int day, int grade) {
+  if(School::global_closure_schedule_is_enabled == false){
+    return true;
+  }
+  if(this->open_capacity_grade[grade] == 1.0){
+    return true;
+  }
+  bool open = (day < this->close_grade_date[grade] || this->open_grade_date[grade] <= day);
+  if(!open){
+    if(Random::draw_random() < this->open_capacity_grade[grade]) {
+      open = true;
+    }
+  }
+  if(!open) {
+    FRED_VERBOSE(2, "Place %s is closed on day %d for grade %d\n", this->get_label(), day, grade);
   }
   return open;
 }
@@ -265,8 +362,33 @@ bool School::should_be_open(int day, int disease_id) {
     return is_open(day);
   }
 
+  // global school closure policy in effect
+  if(strcmp(School::school_closure_policy, "global_schedule") == 0) {
+    apply_global_schedule_school_closure_policy(day, disease_id);
+    return is_open(day);
+  }
+
   // if school_closure_policy is not recognized, then open
   return true;
+}
+
+void School::apply_global_schedule_school_closure_policy(int day, int disease_id) {
+  
+  // Every day, check is day is within school closure of time step
+  for(int i = 0; i < School::school_closure_schedule.size(); ++i) {
+    Time_Step_Map_Closure* tmap = School::school_closure_schedule[i];
+    if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
+      // if min grade = 0 and max grade = 20, then close the school, else close some grades only
+      if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0){
+	close(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start);
+      }else{
+	close_by_grade(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start, tmap->grade_min, tmap->grade_max, tmap->capacity_open);
+      }
+      if(Global::Verbose > 0) {
+	printf("GLOBAL SCHEDULE SCHOOL CLOSURE %s\n", tmap->to_string().c_str());
+      }
+    }
+  }
 }
 
 void School::apply_global_school_closure_policy(int day, int disease_id) {

@@ -23,6 +23,26 @@
 
 #define GRADES 20
 
+struct Time_Step_Map_Closure {
+  int sim_day_start;
+  int sim_day_end;
+  int grade_min;
+  int grade_max;
+  double capacity_open;
+  const std::string to_string() const {
+    std::stringstream ss;
+    ss << "School closure Time Step Map ";
+    ss << " sim_day_start " << sim_day_start;
+    ss << " sim_day_end " << sim_day_end;
+    ss << " grade_min " << grade_min;
+    ss << " grade_max " << grade_max;
+    ss << " capacity_open " << capacity_open; 
+    ss << std::endl;
+    return ss.str();
+  }
+};
+
+
 class Classroom;
 
 class School : public Place {
@@ -46,10 +66,14 @@ public:
   int get_group(int disease_id, Person* per);
   double get_transmission_prob(int disease_id, Person* i, Person* s);
   void close(int day, int day_to_close, int duration);
+  void close_by_grade(int day, int day_to_close, int duration, int min_grade, int max_grade, double capacity_in);
   bool is_open(int day);
   bool should_be_open(int day, int disease_id);
+  bool should_be_open_grade(int day, int grade_in);
+  static bool is_global_closure_schedule_enabled(){return School::global_closure_schedule_is_enabled;}
   void apply_global_school_closure_policy(int day, int disease_id);
   void apply_individual_school_closure_policy(int day, int disease_id);
+  void apply_global_schedule_school_closure_policy(int day, int disease_id);
   double get_contacts_per_day(int disease_id);
   int enroll(Person* per);
   void unenroll(int pos);
@@ -190,6 +214,7 @@ private:
   static int summer_end_day;
   static int school_classroom_size;
   static bool global_closure_is_active;
+  static bool global_closure_schedule_is_enabled;
   static int global_close_date;
   static int global_open_date;
 
@@ -198,15 +223,21 @@ private:
   static int pop_income_Q2;
   static int pop_income_Q3;
   static int pop_income_Q4;
-
+  static std::vector<Time_Step_Map_Closure * > school_closure_schedule;
   int students_in_grade[GRADES];
+
   int orig_students_in_grade[GRADES];
   int next_classroom[GRADES];
   vector<Classroom*> classrooms[GRADES];
   bool closure_dates_have_been_set;
+  bool closure_grade_dates_have_been_set;
   int max_grade;
   int county_index;
   int income_quartile;
+  int close_grade_date[GRADES];
+  int open_grade_date[GRADES];
+  double open_capacity_grade[GRADES];
+
 };
 
 #endif // _FRED_SCHOOL_H

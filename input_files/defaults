@@ -387,6 +387,9 @@ trips_per_day_file = $FRED_HOME/input_files/countries/usa/trips_per_day.txt
 school_closure_policy = none
 # school_closure_policy = global
 # school_closure_policy = individual
+# school_closure_policy = global_schedule
+
+school_global_schedule_file = none
 
 # number of days to keep a school closed
 school_closure_duration = 10
