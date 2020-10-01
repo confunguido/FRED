@@ -898,6 +898,7 @@ void Place_List::read_all_places(const std::vector<Utils::Tokens> &Demes) {
     } else if(place_type == Place::TYPE_SCHOOL) {
       place = new (school_allocator.get_free()) School(s, place_subtype, lon, lat);
       (static_cast<School*>(place))->set_county_index((*itr).county);
+      (static_cast<School*>(place))->set_school_income((*itr).income > 0 ? (*itr).income : 0);
     } else if(place_type == Place::TYPE_WORKPLACE) {
       place = new (workplace_allocator.get_free()) Workplace(s, place_subtype, lon, lat);
     } else if(place_type == Place::TYPE_HOSPITAL) {
@@ -1257,7 +1258,8 @@ void Place_List::read_school_file(unsigned char deme_id, char* location_file, In
     latitude = 14,
     longitude = 15,
     source = 16,
-    stco = 17
+    stco = 17,
+    sch_inc = 18
   };
 
   FILE* fp = Utils::fred_open_file(location_file);
@@ -1300,12 +1302,16 @@ void Place_List::read_school_file(unsigned char deme_id, char* location_file, In
           county = -1;
         }
       }
-
-      sprintf(s, "%c%s", place_type, tokens[school_id]);
+      string sch_income("0");
+      if(sch_inc < tokens.size()){
+	sch_income = tokens[sch_inc];
+      }
 
       SetInsertResultT result = pids.insert(
-          Place_Init_Data(s, place_type, place_subtype, tokens[latitude], tokens[longitude], deme_id, county));
-
+					    Place_Init_Data(s, place_type, place_subtype, tokens[latitude], tokens[longitude], deme_id, county, -1, sch_income.c_str()));
+      
+      sprintf(s, "%c%s", place_type, tokens[school_id]);
+      
       if(result.second) {
         ++(this->place_type_counts[place_type]);
         FRED_VERBOSE(1, "READ_SCHOOL: %s %c %f %f name |%s| county %d\n", s, place_type, result.first->lat,

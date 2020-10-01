@@ -77,6 +77,7 @@ School::School() : Place() {
   this->max_grade = -1;
   this->county_index = -1;
   this->income_quartile = -1;
+  this->school_income = 0;
 }
 
 
@@ -95,6 +96,7 @@ School::School(const char* lab, char _subtype, fred::geo lon, fred::geo lat) : P
   this->max_grade = -1;
   this->county_index = -1;
   this->income_quartile = -1;
+  this->school_income = 0;
 }
 
 void School::prepare() {
@@ -201,11 +203,14 @@ void School::get_parameters() {
 	std::strcpy(cstr, line.c_str());
 	Time_Step_Map_Closure * tmap = new Time_Step_Map_Closure;
 	int n = sscanf(cstr,
-		       "%d %d %d %d %lg",
-		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->grade_min, &tmap->grade_max, &tmap->capacity_open);
+		       "%d %d %d %d %lg %d",
+		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->grade_min, &tmap->grade_max, &tmap->capacity_open, &tmap->income_school);
 	printf("SCHOOL SCHEDULE LINES: %d\n",n);
 	if(n < 5) {
 	  Utils::fred_abort("Need to specify at least SimulationDayStart, SimulationDayEnd, Minimum grade, and Maximum Grade (0-20), capacity open");
+	}
+	if(n < 6){
+	  tmap->income_school = 0;
 	}
 	if(tmap->capacity_open < 0.0){tmap->capacity_open = 0.0;}
 	if(tmap->capacity_open > 1.0){tmap->capacity_open = 1.0;}
@@ -373,16 +378,26 @@ bool School::should_be_open(int day, int disease_id) {
 }
 
 void School::apply_global_schedule_school_closure_policy(int day, int disease_id) {
-  
+  // Should I move this to place list?
   // Every day, check is day is within school closure of time step
   for(int i = 0; i < School::school_closure_schedule.size(); ++i) {
     Time_Step_Map_Closure* tmap = School::school_closure_schedule[i];
     if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
       // if min grade = 0 and max grade = 20, then close the school, else close some grades only
-      if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0){
+      if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0 && tmap->income_school == 0){
 	close(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start);
+      }else if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0 && tmap->income_school > 0){
+	if(tmap->income_school == this->school_income){
+	  close(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start);
+	}
       }else{
-	close_by_grade(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start, tmap->grade_min, tmap->grade_max, tmap->capacity_open);
+	if(tmap->income_school > 0){
+	  if(tmap->income_school == this->school_income){
+	    close_by_grade(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start, tmap->grade_min, tmap->grade_max, tmap->capacity_open);
+	  }
+	}else{
+	  close_by_grade(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start, tmap->grade_min, tmap->grade_max, tmap->capacity_open);
+	}
       }
       if(Global::Verbose > 0) {
 	printf("GLOBAL SCHEDULE SCHOOL CLOSURE %s\n", tmap->to_string().c_str());
