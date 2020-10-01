@@ -305,7 +305,7 @@ bool School::is_open(int day) {
     this->closure_dates_have_been_set = false;
   }
   if(!open) {
-    FRED_VERBOSE(0, "Place %s is closed on day %d\n", this->get_label(), day);
+    FRED_VERBOSE(1, "Place %s is closed on day %d\n", this->get_label(), day);
   }
   return open;
 }
@@ -314,6 +314,8 @@ bool School::should_be_open_grade(int day, int grade) {
   if(School::global_closure_schedule_is_enabled == false){
     return true;
   }
+  //printf("Should school %s be open day %d grade %d\n", this->get_label(), day, grade);
+  
   if(this->open_capacity_grade[grade] == 1.0){
     return true;
   }
@@ -324,7 +326,7 @@ bool School::should_be_open_grade(int day, int grade) {
     }
   }
   if(!open) {
-    FRED_VERBOSE(2, "Place %s is closed on day %d for grade %d\n", this->get_label(), day, grade);
+    FRED_VERBOSE(2, "School Place %s is closed on day %d for grade %d\n", this->get_label(), day, grade);
   }
   return open;
 }
@@ -384,7 +386,8 @@ void School::apply_global_schedule_school_closure_policy(int day, int disease_id
     Time_Step_Map_Closure* tmap = School::school_closure_schedule[i];
     if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
       // if min grade = 0 and max grade = 20, then close the school, else close some grades only
-      if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0 && tmap->income_school == 0){
+      if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0 && tmap->income_school < 1){
+	//printf("Day: %d School closed with tmap %s\n", day, tmap->to_string().c_str());
 	close(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start);
       }else if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0 && tmap->income_school > 0){
 	if(tmap->income_school == this->school_income){
