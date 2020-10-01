@@ -1273,7 +1273,6 @@ void Place_List::read_school_file(unsigned char deme_id, char* location_file, In
     tokens = Utils::split_by_delim(line, ',', tokens, false);
     // skip header line
     if(strcmp(tokens[school_id], "school_id") != 0 && strcmp(tokens[school_id], "sp_id") != 0) {
-
       char place_type = Place::TYPE_SCHOOL;
       char place_subtype = Place::SUBTYPE_NONE;
       char s[80];
@@ -1307,15 +1306,18 @@ void Place_List::read_school_file(unsigned char deme_id, char* location_file, In
 	sch_income = tokens[sch_inc];
       }
 
-      SetInsertResultT result = pids.insert(
-					    Place_Init_Data(s, place_type, place_subtype, tokens[latitude], tokens[longitude], deme_id, county, -1, sch_income.c_str()));
-      
       sprintf(s, "%c%s", place_type, tokens[school_id]);
+      
+    
+      SetInsertResultT result = pids.insert(
+	Place_Init_Data(s, place_type, place_subtype, tokens[latitude], tokens[longitude], deme_id, county, -1, sch_income.c_str()));
       
       if(result.second) {
         ++(this->place_type_counts[place_type]);
-        FRED_VERBOSE(1, "READ_SCHOOL: %s %c %f %f name |%s| county %d\n", s, place_type, result.first->lat,
-            result.first->lon, tokens[name], get_fips_of_county_with_index(county));
+        FRED_VERBOSE(1, "READ_SCHOOL: %s %c %f %f name |%s| county %d income %s\n", s, place_type, result.first->lat,
+		     result.first->lon, tokens[name], get_fips_of_county_with_index(county), sch_income.c_str());
+      }else{
+	printf("SCHOOL %s NOT ADDED to Place_List\n", s);
       }
     }
     tokens.clear();
