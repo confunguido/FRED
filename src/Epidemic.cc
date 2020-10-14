@@ -1646,7 +1646,7 @@ void Epidemic::report_census_tract_stratified_results(int day) {
   }
 }
 
-void Epidemic::get_imported_infections(int day) {
+void Epidemic::seed_nursing_home_infections(int day){
   this->N = Global::Pop.get_pop_size();
   if(Global::Enable_Group_Quarters){    
     if(Global::Enable_Nursing_Homes_Importations){
@@ -1662,11 +1662,13 @@ void Epidemic::get_imported_infections(int day) {
       // pick a candidate without replacement
       for(int i = 0; i < nursing_home_importations; i++){	
 	int pos_n = Random::draw_random_int(0,N_nursing_homes-1);
+	int infector_n = Random::draw_random_int(0,this->infectious_people-1);
 	Person* infectee_nh = Global::Places.get_nursing_home_resident_ptr(pos_n);
+	
 	if(infectee_nh->get_health()->is_susceptible(this->id)) {
-	  // infect the candidate
+	  // infect the candidate, choose a random person to be the infector
 	  FRED_VERBOSE(0, "infecting candidate %d id %d\n", i, infectee_nh->get_id());
-	  infectee_nh->become_exposed(this->id, NULL, infectee_nh->get_household(), day);
+	  infectee_nh->become_exposed(this->id, this->actually_infectious_people[infector_n], infectee_nh->get_household(), day);
 	  FRED_VERBOSE(0, "exposed candidate %d id %d\n", i, infectee_nh->get_id());
 	  if(this->seeding_type != SEED_EXPOSED) {
 	    advance_seed_infection(infectee_nh);
@@ -1679,6 +1681,9 @@ void Epidemic::get_imported_infections(int day) {
       printf("NURSING HOME IMPORT SUCCESS: %d imported cases\n", nh_imported_cases);
     }
   }
+}
+
+void Epidemic::get_imported_infections(int day) { 
   for(int i = 0; i < this->imported_cases_map.size(); ++i) {
     Time_Step_Map* tmap = this->imported_cases_map[i];
     if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
@@ -2122,7 +2127,10 @@ void Epidemic::update(int day) {
       Utils::fred_print_epidemic_timer(msg);
     }
   }
-
+  
+  //After updating infectious people, seed infections
+  seed_nursing_home_infections(day);
+  
   FRED_VERBOSE(0, "epidemic update finished for disease %d day %d\n", id, day);
   return;
 }

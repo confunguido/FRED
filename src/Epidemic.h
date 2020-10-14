@@ -131,6 +131,7 @@ public:
   void track_value(int day, char* key, double value);
   void track_value(int day, char* key, string value);
 
+  void seed_nursing_home_infections(int day);
   virtual void get_imported_infections(int day);
   void become_exposed(Person* person, int day);
 
