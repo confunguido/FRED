@@ -285,29 +285,7 @@ void Infection::report_infection(int day) {
 	          << (this->infector == NULL ? -1 : this->infector->is_symptomatic()) << " inf_sick_leave "
 	          << (this->infector == NULL ? -1 : this->infector->is_sick_leave_available())
 	          << " at " << mixing_group_type << " mixing_group " <<  mixing_group_id << " subtype " << mixing_group_subtype;
-    infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher() << " is_student " << (int)this->host->is_student();
-    
-    if(dynamic_cast<Place*>(this->mixing_group) != NULL) {
-      Place* place = dynamic_cast<Place*>(this->mixing_group);
-      if(mixing_group_type != 'X') {
-        fred::geo lat = place->get_latitude();
-        fred::geo lon = place->get_longitude();
-        infStrS << " lat " << lat;
-        infStrS << " lon " << lon;
-      } else {
-        infStrS << " lat " << -999;
-        infStrS << " lon " << -999;
-      }
-      double host_lat = this->host->get_household()->get_latitude();
-      double host_lon = this->host->get_household()->get_longitude();
-      string home_id(this->host->get_household()->get_label());
-      string inf_home_id(this->infector == NULL ? "H-1" : this->infector->get_household()->get_label());
-      infStrS << " home_lat " << host_lat;
-      infStrS << " home_lon " << host_lon;
-      infStrS << " home_host_id " << home_id;
-      infStrS << " home_inf_id " << inf_home_id;
-      infStrS << " | ";
-    }
+    infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher() << " is_student " << (int)this->host->is_student();        
   }
 
   if(Global::Track_infection_events > 2) {
@@ -347,6 +325,27 @@ void Infection::report_infection(int day) {
       infStrS << " host_census_tract " << census_tract;
     }
     infStrS << " | ";
+    if(dynamic_cast<Place*>(this->mixing_group) != NULL) {
+      Place* place = dynamic_cast<Place*>(this->mixing_group);
+      if(mixing_group_type != 'X') {
+        fred::geo lat = place->get_latitude();
+        fred::geo lon = place->get_longitude();
+        infStrS << " lat " << lat;
+        infStrS << " lon " << lon;
+      } else {
+        infStrS << " lat " << -999;
+        infStrS << " lon " << -999;
+      }
+      double host_lat = this->host->get_household()->get_latitude();
+      double host_lon = this->host->get_household()->get_longitude();
+      string home_id(this->host->get_household()->get_label());
+      string inf_home_id(this->infector == NULL ? "H-1" : this->infector->get_household()->get_label());
+      infStrS << " home_lat " << host_lat;
+      infStrS << " home_lon " << host_lon;
+      infStrS << " home_host_id " << home_id;
+      infStrS << " home_inf_id " << inf_home_id;
+      infStrS << " | ";
+    }    
   }
   if(Global::Track_infection_events > 3){
     Neighborhood_Patch* pt = this->host->get_household()->get_patch();

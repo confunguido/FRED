@@ -1666,7 +1666,7 @@ void Epidemic::get_imported_infections(int day) {
 	if(infectee_nh->get_health()->is_susceptible(this->id)) {
 	  // infect the candidate
 	  FRED_VERBOSE(0, "infecting candidate %d id %d\n", i, infectee_nh->get_id());
-	  infectee_nh->become_exposed(this->id, NULL, NULL, day);
+	  infectee_nh->become_exposed(this->id, NULL, infectee_nh->get_household(), day);
 	  FRED_VERBOSE(0, "exposed candidate %d id %d\n", i, infectee_nh->get_id());
 	  if(this->seeding_type != SEED_EXPOSED) {
 	    advance_seed_infection(infectee_nh);
