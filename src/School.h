@@ -219,6 +219,7 @@ private:
   static int summer_end_month;
   static int summer_end_day;
   static int school_classroom_size;
+  static int school_classroom_size_array[GRADES];
   static bool global_closure_is_active;
   static bool global_closure_schedule_is_enabled;
   static int global_close_date;

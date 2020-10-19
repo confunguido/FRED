@@ -254,6 +254,9 @@ report_epidemic_data_by_census_tract = 0
 # SCHOOL SETUP PARAMETERS 
 #
 ##########################################################
+enable_classroom_size_array = 0
+school_classroom_size_array = 20 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40
+
 enable_school_reduced_capacity = 0
 school_reduced_capacity = 1.0
 school_reduced_capacity_day = 100

@@ -117,6 +117,7 @@ bool Global::Enable_Household_Shelter_File = false;
 bool Global::Enable_Face_Mask_Timeseries_File = false;
 bool Global::Enable_Face_Mask_Usage = false;
 bool Global::Enable_School_Reduced_Capacity = false;
+bool Global::Enable_School_Classroom_Size_Array = false;
 double Global::School_reduced_capacity = 1.0;
 int Global::School_reduced_capacity_day = 10000;
 bool Global::Enable_Household_Shelter_By_Age = false;
@@ -306,6 +307,8 @@ void Global::get_global_parameters() {
   Global::Enable_Face_Mask_Usage = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_school_reduced_capacity", &temp_int);
   Global::Enable_School_Reduced_Capacity = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_classroom_size_array", &temp_int);
+  Global::Enable_School_Classroom_Size_Array = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_shelter_in_place_by_age", &temp_int);
   Global::Enable_Household_Shelter_By_Age = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_nursing_homes_importations", &temp_int);

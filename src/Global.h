@@ -274,6 +274,7 @@ public:
   static bool Enable_Face_Mask_Timeseries_File;
   static bool Enable_Face_Mask_Usage;
   static bool Enable_School_Reduced_Capacity;
+  static bool Enable_School_Classroom_Size_Array;
   static double School_reduced_capacity;
   static int School_reduced_capacity_day;
   static bool Enable_Nursing_Homes_Importations;

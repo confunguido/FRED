@@ -56,6 +56,8 @@ int School::global_close_date = 0;
 int School::global_open_date = 0;
 bool School::global_closure_schedule_is_enabled = false;
 
+int School::school_classroom_size_array[GRADES];
+
 std::vector<Time_Step_Map_Closure * > School::school_closure_schedule;
 
 School::School() : Place() {
@@ -158,9 +160,27 @@ void School::get_parameters() {
     printf("\ncontact rate: %f\n", School::contacts_per_day);
   }
   // end normalization
-
+  
   Params::get_param_from_string("school_classroom_size", &School::school_classroom_size);
 
+  // Specific classroom sizes for each grade
+  if(Global::Enable_School_Classroom_Size_Array == true){
+    char class_size_str[MAX_PARAM_SIZE];
+    std::vector<double> classroom_size_arr;
+    Params::get_param((char*)"school_classroom_size_array",class_size_str);
+    Params::get_param_vector_from_string(class_size_str,classroom_size_arr);
+    if(classroom_size_arr.size() != GRADES){
+      Utils::fred_abort("Help!  classroom sizes are not properly setup %s \n", class_size_str);
+      abort();
+    }
+    for(int cc = 0; cc < GRADES; cc++){
+      School::school_classroom_size_array[cc] = (int) classroom_size_arr[cc];
+    }
+    for(int cc = 0; cc < GRADES; cc++){
+      printf("CLASSROOM FOR GRADE %d has size %d\n", cc, school_classroom_size_array[cc]);
+    }
+  }
+    
   // summer school parameters
   Params::get_param_from_string("school_summer_schedule", &School::school_summer_schedule);
   Params::get_param_from_string("school_summer_start", School::school_summer_start);
@@ -548,16 +568,21 @@ void School::print(int disease_id) {
 
 int School::get_number_of_rooms() {
   int total_rooms = 0;
-  if(School::school_classroom_size == 0) {
-    return 0;
-  }
+
   for(int a = 0; a < GRADES; ++a) {
+    int class_size_tmp = School::school_classroom_size;
+    if(Global::Enable_School_Classroom_Size_Array){
+      class_size_tmp = School::school_classroom_size_array[a];
+    }
+    if(class_size_tmp == 0){
+      continue;
+    }
     int n = this->students_in_grade[a];
     if(n == 0) {
       continue;
     }
-    int rooms = n / School::school_classroom_size;
-    if(n % School::school_classroom_size) {
+    int rooms = n / class_size_tmp;
+    if(n % class_size_tmp) {
       rooms++;
     }
     total_rooms += rooms;
@@ -566,17 +591,20 @@ int School::get_number_of_rooms() {
 }
 
 void School::setup_classrooms(Allocator<Classroom> &classroom_allocator) {
-  if(School::school_classroom_size == 0) {
-    return;
-  }
-
   for(int a = 0; a < GRADES; ++a) {
+    int class_size_tmp = School::school_classroom_size;
+    if(Global::Enable_School_Classroom_Size_Array){
+      class_size_tmp = School::school_classroom_size_array[a];
+    }
+    if(class_size_tmp == 0){
+      continue;
+    }
     int n = this->students_in_grade[a];
     if(n == 0) {
       continue;
     }
-    int rooms = n / School::school_classroom_size;
-    if(n % School::school_classroom_size) {
+    int rooms = n / class_size_tmp;
+    if(n % class_size_tmp) {
       rooms++;
     }
 
@@ -598,7 +626,7 @@ void School::setup_classrooms(Allocator<Classroom> &classroom_allocator) {
 }
 
 Place* School::select_classroom_for_student(Person* per) {
-  if(School::school_classroom_size == 0) {
+  if(School::school_classroom_size == 0 && Global::Enable_School_Classroom_Size_Array == false) {
     return NULL;
   }
   int grade = per->get_age();
