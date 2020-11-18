@@ -1259,7 +1259,9 @@ void Place_List::read_school_file(unsigned char deme_id, char* location_file, In
     longitude = 15,
     source = 16,
     stco = 17,
-    sch_inc = 18
+    sch_inc = 18,
+    stcotrbg = 19,
+    sch_type = 20
   };
 
   FILE* fp = Utils::fred_open_file(location_file);
@@ -1306,11 +1308,34 @@ void Place_List::read_school_file(unsigned char deme_id, char* location_file, In
 	sch_income = tokens[sch_inc];
       }
 
+      string school_type_tmp("0");
+      if(sch_type < tokens.size()){
+	school_type_tmp = tokens[sch_type];
+      }
+
+      int tract_index = -1;
+      if(stcotrbg < tokens.size()){
+	char census_tract_str[12];
+	long int census_tract = 0;
+	strncpy(census_tract_str, tokens[stcotrbg], 11);
+	census_tract_str[11] = '\0';
+	sscanf(census_tract_str, "%ld", &census_tract);
+
+	int n_census_tracts = this->census_tracts.size();
+	for(tract_index = 0; tract_index < n_census_tracts; ++tract_index) {
+	  if(this->census_tracts[tract_index] == census_tract) {
+	    break;
+	  }
+	}
+	if(tract_index == n_census_tracts) {
+	  tract_index = -1; // Only read tracts already in the synthetic population of households
+	}	
+      }
       sprintf(s, "%c%s", place_type, tokens[school_id]);
       
     
       SetInsertResultT result = pids.insert(
-	Place_Init_Data(s, place_type, place_subtype, tokens[latitude], tokens[longitude], deme_id, county, -1, sch_income.c_str()));
+	Place_Init_Data(s, place_type, place_subtype, tokens[latitude], tokens[longitude], deme_id, county, tract_index, sch_income.c_str()));
       
       if(result.second) {
         ++(this->place_type_counts[place_type]);

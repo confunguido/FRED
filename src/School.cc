@@ -80,6 +80,7 @@ School::School() : Place() {
   this->county_index = -1;
   this->income_quartile = -1;
   this->school_income = 0;
+  this->school_type = 0;
 }
 
 
@@ -99,6 +100,7 @@ School::School(const char* lab, char _subtype, fred::geo lon, fred::geo lat) : P
   this->county_index = -1;
   this->income_quartile = -1;
   this->school_income = 0;
+  this->school_type = 0;
 }
 
 void School::prepare() {
@@ -223,15 +225,19 @@ void School::get_parameters() {
 	std::strcpy(cstr, line.c_str());
 	Time_Step_Map_Closure * tmap = new Time_Step_Map_Closure;
 	int n = sscanf(cstr,
-		       "%d %d %d %d %lg %d",
-		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->grade_min, &tmap->grade_max, &tmap->capacity_open, &tmap->income_school);
+		       "%d %d %d %d %lg %d %ld",
+		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->grade_min, &tmap->grade_max, &tmap->capacity_open, &tmap->income_school, &tmap->census_tract);
 	printf("SCHOOL SCHEDULE LINES: %d\n",n);
 	if(n < 5) {
 	  Utils::fred_abort("Need to specify at least SimulationDayStart, SimulationDayEnd, Minimum grade, and Maximum Grade (0-20), capacity open");
 	}
-	if(n < 6){
-	  tmap->income_school = 0;
+	if(n < 7){
+	  tmap->census_tract = 0;
+	  if(n < 6){
+	    tmap->income_school = 0;
+	  }
 	}
+
 	if(tmap->capacity_open < 0.0){tmap->capacity_open = 0.0;}
 	if(tmap->capacity_open > 1.0){tmap->capacity_open = 1.0;}
 	if(tmap->sim_day_end > tmap->sim_day_start && tmap->grade_max > tmap->grade_min){
@@ -406,17 +412,33 @@ void School::apply_global_schedule_school_closure_policy(int day, int disease_id
     Time_Step_Map_Closure* tmap = School::school_closure_schedule[i];
     if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
       // if min grade = 0 and max grade = 20, then close the school, else close some grades only
-      if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0 && tmap->income_school < 1){
-	//printf("Day: %d School closed with tmap %s\n", day, tmap->to_string().c_str());
+      if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0 && tmap->income_school < 1 && tmap->census_tract < 1){
+	printf("Day: %d School closed with tmap %s\n", day, tmap->to_string().c_str());
 	close(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start);
       }else if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0 && tmap->income_school > 0){
 	if(tmap->income_school == this->school_income){
 	  close(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start);
 	}
+      }else if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0 && tmap->census_tract > 0){
+	int sch_census_tract_index = this->get_census_tract_index();
+	if(sch_census_tract_index > 0){
+	  long int sch_census_tract = Global::Places.get_census_tract_with_index(sch_census_tract_index);
+	  if(tmap->census_tract == sch_census_tract){
+	    close(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start);
+	  }
+	}
       }else{
 	if(tmap->income_school > 0){
 	  if(tmap->income_school == this->school_income){
 	    close_by_grade(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start, tmap->grade_min, tmap->grade_max, tmap->capacity_open);
+	  }
+	}else if(tmap->census_tract > 0){
+	  int sch_census_tract_index = this->get_census_tract_index();
+	  if(sch_census_tract_index > 0){
+	    long int sch_census_tract = Global::Places.get_census_tract_with_index(sch_census_tract_index);
+	    if(tmap->census_tract == sch_census_tract){
+	      close_by_grade(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start, tmap->grade_min, tmap->grade_max, tmap->capacity_open);
+	    }
 	  }
 	}else{
 	  close_by_grade(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start, tmap->grade_min, tmap->grade_max, tmap->capacity_open);

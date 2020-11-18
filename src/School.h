@@ -30,6 +30,8 @@ struct Time_Step_Map_Closure {
   int grade_max;
   double capacity_open;
   int income_school;
+  long int census_tract;
+  
   const std::string to_string() const {
     std::stringstream ss;
     ss << "School closure Time Step Map ";
@@ -38,7 +40,8 @@ struct Time_Step_Map_Closure {
     ss << " grade_min " << grade_min;
     ss << " grade_max " << grade_max;
     ss << " capacity_open " << capacity_open;
-    ss << " income_school " << income_school; 
+    ss << " income_school " << income_school;
+    ss << " census_tract " << census_tract; 
     ss << std::endl;
     return ss.str();
   }
@@ -153,6 +156,10 @@ public:
   void set_school_income(int _school_income){
     this->school_income = _school_income;
   }					   
+
+  void set_school_type(int _school_type){
+    this->school_type = _school_type;
+  }
   
   void prepare_income_quartile_pop_size() {
     if(Global::Report_Childhood_Presenteeism) {
@@ -245,7 +252,7 @@ private:
   int open_grade_date[GRADES];
   double open_capacity_grade[GRADES];
   int school_income;
-
+  int school_type;
 };
 
 #endif // _FRED_SCHOOL_H

@@ -392,6 +392,7 @@ school_closure_policy = none
 # school_closure_policy = individual
 # school_closure_policy = global_schedule
 
+# enable school closure based on schedule
 school_global_schedule_file = none
 
 # number of days to keep a school closed
