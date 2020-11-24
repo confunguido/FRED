@@ -899,6 +899,7 @@ void Place_List::read_all_places(const std::vector<Utils::Tokens> &Demes) {
       place = new (school_allocator.get_free()) School(s, place_subtype, lon, lat);
       (static_cast<School*>(place))->set_county_index((*itr).county);
       (static_cast<School*>(place))->set_school_income((*itr).income > 0 ? (*itr).income : 0);
+      (static_cast<School*>(place))->set_census_tract_index((*itr).census_tract_index);
     } else if(place_type == Place::TYPE_WORKPLACE) {
       place = new (workplace_allocator.get_free()) Workplace(s, place_subtype, lon, lat);
     } else if(place_type == Place::TYPE_HOSPITAL) {
@@ -1329,11 +1330,11 @@ void Place_List::read_school_file(unsigned char deme_id, char* location_file, In
 	}
 	if(tract_index == n_census_tracts) {
 	  tract_index = -1; // Only read tracts already in the synthetic population of households
-	}	
+	}
+	//printf("READING SCHOOL %s - CENSUS TRACT %s (%ld) - INDeX: %d (out of %d)\n", tokens[school_id], census_tract_str, census_tract, tract_index, this->census_tracts.size());
       }
       sprintf(s, "%c%s", place_type, tokens[school_id]);
       
-    
       SetInsertResultT result = pids.insert(
 	Place_Init_Data(s, place_type, place_subtype, tokens[latitude], tokens[longitude], deme_id, county, tract_index, sch_income.c_str()));
       

@@ -413,7 +413,12 @@ void School::apply_global_schedule_school_closure_policy(int day, int disease_id
     if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
       // if min grade = 0 and max grade = 20, then close the school, else close some grades only
       if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0 && tmap->income_school < 1 && tmap->census_tract < 1){
-	printf("Day: %d School closed with tmap %s\n", day, tmap->to_string().c_str());
+	int sch_census_tract_index = this->get_census_tract_index();
+	long int sch_census_tract = -1;
+	if(sch_census_tract_index > 0){
+	  sch_census_tract = Global::Places.get_census_tract_with_index(sch_census_tract_index);
+	}
+	printf("Day: %d School in census_tract %ld closed with tmap %s\n", day, sch_census_tract, tmap->to_string().c_str());
 	close(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start);
       }else if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0 && tmap->income_school > 0){
 	if(tmap->income_school == this->school_income){
