@@ -148,6 +148,10 @@ public:
       this->income_quartile = _income_quartile;
     }
   }
+  
+  int get_school_income(){
+    return this->school_income;
+  }
 
   int get_income_quartile() const {
     return this->income_quartile;
@@ -155,8 +159,9 @@ public:
 
   void set_school_income(int _school_income){
     this->school_income = _school_income;
-  }					   
+  }
 
+  
   void set_school_type(int _school_type){
     this->school_type = _school_type;
   }

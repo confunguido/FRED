@@ -859,6 +859,10 @@ seasonal_peak_day_of_year = 1
 # Note: If set to a value > 1, then transmission will be 0 for part of the year.
 seasonal_reduction = 0
 
+seasonal_increase = 0
+seasonal_start_day = 0
+seasonal_stop_day = 0
+
 #########
 # the following use a climate model to affect seasonality (experimental)
 enable_seasonality = 0

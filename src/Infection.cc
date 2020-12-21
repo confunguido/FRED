@@ -285,7 +285,13 @@ void Infection::report_infection(int day) {
 	          << (this->infector == NULL ? -1 : this->infector->is_symptomatic()) << " inf_sick_leave "
 	          << (this->infector == NULL ? -1 : this->infector->is_sick_leave_available())
 	          << " at " << mixing_group_type << " mixing_group " <<  mixing_group_id << " subtype " << mixing_group_subtype;
-    infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher() << " is_student " << (int)this->host->is_student();        
+    infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher() << " is_student " << (int)this->host->is_student();
+    int income_mixing_group = -1;
+    if(mixing_group_type == 'S'){
+      School* ss = static_cast<School*>(this->mixing_group);
+      income_mixing_group = ss->get_school_income();
+    }
+    infStrS << " income " << income_mixing_group; 
   }
 
   if(Global::Track_infection_events > 2) {
