@@ -247,6 +247,7 @@ void Infection::report_infection(int day) {
   }
 
   int mixing_group_id = (this->mixing_group == NULL ? -1 : this->mixing_group->get_id());
+  string mixing_group_label = (this->mixing_group == NULL ? "NA" : string(this->mixing_group->get_label()));
   char mixing_group_type = (this->mixing_group == NULL ? 'X' : this->mixing_group->get_type());
   char mixing_group_subtype = 'X';
   if(this->mixing_group != NULL && dynamic_cast<Place*>(this->mixing_group) != NULL) {
@@ -284,7 +285,7 @@ void Infection::report_infection(int day) {
 	          << (this->infector == NULL ? -1 : this->infector->get_real_age()) << " inf_sympt "
 	          << (this->infector == NULL ? -1 : this->infector->is_symptomatic()) << " inf_sick_leave "
 	          << (this->infector == NULL ? -1 : this->infector->is_sick_leave_available())
-	          << " at " << mixing_group_type << " mixing_group " <<  mixing_group_id << " subtype " << mixing_group_subtype;
+	    << " at " << mixing_group_type << " mixing_group " <<  mixing_group_id << " subtype " << mixing_group_subtype << " mixing_group_lbl " << mixing_group_label;
     infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher() << " is_student " << (int)this->host->is_student();
     int income_mixing_group = -1;
     if(mixing_group_type == 'S'){
