@@ -126,6 +126,11 @@ bool Global::Enable_Age_Specific_Susceptibility = false;
 bool Global::Enable_Household_Shelter_Relax_Post_Peak_Period = false;
 bool Global::Enable_Household_Shelter_Relax_Post_Peak_Threshold = false;
 bool Global::Enable_Isolation = 0;
+bool Global::Enable_Holiday_Contacts = false;
+int Global::holiday_start_month = 0;
+int Global::holiday_start_day = 0;
+int Global::holiday_end_month = 0;
+int Global::holiday_end_day = 0;
 int Global::Isolation_Delay = 1;
 double Global::Isolation_Rate = 0.0;
 char Global::PSA_Method[FRED_STRING_SIZE];
@@ -323,6 +328,18 @@ void Global::get_global_parameters() {
   Global::Enable_Isolation = (temp_int == 0 ? false : true);
   Params::get_param_from_string("school_reduced_capacity", &Global::School_reduced_capacity);
   Params::get_param_from_string("school_reduced_capacity_day", &Global::School_reduced_capacity_day);
+
+  Params::get_param_from_string("enable_holiday_contacts", &temp_int);
+  Global::Enable_Holiday_Contacts = (temp_int == 0 ? false : true);
+  if(Global::Enable_Holiday_Contacts == true){
+    char holiday_date_start[8];
+    char holiday_date_end[8];
+    Params::get_param_from_string("holiday_start", holiday_date_start);
+    Params::get_param_from_string("holiday_end", holiday_date_end);
+    sscanf(holiday_date_start, "%d-%d", &Global::holiday_start_month, &Global::holiday_start_day);
+    sscanf(holiday_date_end, "%d-%d", &Global::holiday_end_month, &Global::holiday_end_day);
+  }
+  
   Params::get_param_from_string("isolation_delay", &Global::Isolation_Delay);
   Params::get_param_from_string("isolation_rate", &Global::Isolation_Rate);
   // added for residual_immunity_by_FIPS
@@ -331,5 +348,6 @@ void Global::get_global_parameters() {
   if(Global::Residual_Immunity_by_FIPS) {
     Params::get_param_from_string("residual_immunity_by_FIPS_file", Global::Residual_Immunity_File);
   }
+  
 }
 

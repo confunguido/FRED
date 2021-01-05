@@ -671,6 +671,12 @@ neighborhood_same_age_bias = 0.1
 # community contacts increase on weekends
 weekend_contact_rate = 1.5
 
+# community contacts increase on holidays MM-DD
+enable_holiday_contacts = 0
+holiday_contact_rate = 1.5
+holiday_start = 10-31
+holiday_end = 01-11
+
 ##################### END default calibration parameters
 
 ### IMMUNITY
@@ -923,7 +929,9 @@ shelter_in_place_relax_post_peak_moving_average_days = 7
 shelter_in_place_relax_post_peak_days_with_decline = 10
 shelter_in_place_relax_post_peak_period = 14
 shelter_in_place_relax_post_peak_threshold = 0.05
-
+shelter_in_place_neighborhood = 0
+shelter_in_place_neighborhood_prop = 0.0
+    
 ##########################################################
 #
 # POPULATION DYNAMICS (OPTIONAL)

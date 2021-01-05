@@ -282,6 +282,11 @@ public:
   static bool Enable_Household_Shelter_Relax_Post_Peak_Period;
   static bool Enable_Household_Shelter_Relax_Post_Peak_Threshold;
   static bool Enable_Isolation;
+  static bool Enable_Holiday_Contacts;
+  static int holiday_start_month;
+  static int holiday_start_day;
+  static int holiday_end_month;
+  static int holiday_end_day;
   static int Isolation_Delay;
   static double Isolation_Rate;
   static char PSA_Method[];

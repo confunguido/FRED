@@ -90,11 +90,16 @@ public:
     return Neighborhood::weekend_contact_rate;
   }
 
+  static double get_holiday_contact_rate(int disease) {
+    return Neighborhood::holiday_contact_rate;
+  }
+
 private:
   static double contacts_per_day;
   static double same_age_bias;
   static double** prob_transmission_per_contact;
   static double weekend_contact_rate;
+  static double holiday_contact_rate;
 };
 
 #endif // _FRED_NEIGHBORHOOD_H

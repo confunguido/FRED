@@ -56,6 +56,7 @@ char Place::SUBTYPE_NURSING_HOME = 'N';
 char Place::SUBTYPE_HEALTHCARE_CLINIC = 'I';
 char Place::SUBTYPE_MOBILE_HEALTHCARE_CLINIC = 'Z';
 
+
 Place::Place() : Mixing_Group("BLANK") {
   this->set_id(-1);      // actual id assigned in Place_List::add_place
   this->set_type(Place::TYPE_UNSET);
@@ -280,6 +281,25 @@ double Place::get_contact_rate(int sim_day, int disease_id) {
     int day_of_week = Date::get_day_of_week();
     if(day_of_week == 0 || day_of_week == 6) {
       contacts = Neighborhood::get_weekend_contact_rate(disease_id) * contacts;
+    }
+    // Increase neighborhood contacts on holidays, if enabled
+    // Holidays can be defined as Month end < Month start or Month Start > Month End (winter vs summer holidays)
+    if(Global::Enable_Holiday_Contacts == true){
+      int today_month = Date::get_month();
+      int today_day_of_month = Date::get_day_of_month();
+      if(Global::holiday_start_month > Global::holiday_end_month){ // end of the year
+	if(((today_month == Global::holiday_start_month && today_day_of_month >= Global::holiday_start_day) || today_month > Global::holiday_start_month) ||
+	   ((today_month == Global::holiday_end_month && today_day_of_month <= Global::holiday_end_day) || today_month < Global::holiday_end_month)){
+	  printf("Today: %d-%d is winter holiday (from %d-%d to %d-%d). holiday_contact rate is %.2f\n", today_month, today_day_of_month, Global::holiday_start_month, Global::holiday_start_day, Global::holiday_end_month, Global::holiday_end_day, Neighborhood::get_holiday_contact_rate(disease_id));
+	  contacts *= Neighborhood::get_holiday_contact_rate(disease_id);
+	}
+      }else{
+	if(((today_month == Global::holiday_start_month && today_day_of_month >= Global::holiday_start_day) || today_month > Global::holiday_start_month) && 
+	   ((today_month == Global::holiday_end_month && today_day_of_month <= Global::holiday_end_day) || today_month < Global::holiday_end_month)){
+	  printf("Today: %d-%d is summer holiday (from %d-%d to %d-%d). holiday_contact rate is %.2f\n", today_month, today_day_of_month, Global::holiday_start_month, Global::holiday_start_day, Global::holiday_end_month, Global::holiday_end_day, Neighborhood::get_holiday_contact_rate(disease_id));
+	  contacts *= Neighborhood::get_holiday_contact_rate(disease_id);
+	}
+      }
     }
   }
   // FRED_VERBOSE(1,"Disease %d, expected contacts = %f\n", disease_id, contacts);
