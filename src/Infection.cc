@@ -288,9 +288,15 @@ void Infection::report_infection(int day) {
 	    << " at " << mixing_group_type << " mixing_group " <<  mixing_group_id << " subtype " << mixing_group_subtype << " mixing_group_lbl " << mixing_group_label;
     infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher() << " is_student " << (int)this->host->is_student();
     int income_mixing_group = -1;
+
     if(mixing_group_type == 'S'){
       School* ss = static_cast<School*>(this->mixing_group);
       income_mixing_group = ss->get_school_income();
+      int sch_census_tract_index = (ss == NULL ? -1 : ss->get_census_tract_index());
+      long int sch_census_tract = (sch_census_tract_index == -1 ? -1 : Global::Places.get_census_tract_with_index(sch_census_tract_index));
+      infStrS << " sch_census_tract " << sch_census_tract;
+    }else{
+      infStrS << " sch_census_tract -1 ";
     }
     infStrS << " income " << income_mixing_group; 
   }
@@ -329,7 +335,7 @@ void Infection::report_infection(int day) {
       }
       census_tract_index = (hh == NULL ? -1 : hh->get_census_tract_index());
       census_tract = (census_tract_index == -1 ? -1 : Global::Places.get_census_tract_with_index(census_tract_index));
-      infStrS << " host_census_tract " << census_tract;
+      infStrS << " host_census_tract " << census_tract;      
     }
     infStrS << " | ";
     if(dynamic_cast<Place*>(this->mixing_group) != NULL) {
