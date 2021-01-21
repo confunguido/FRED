@@ -289,7 +289,8 @@ void Infection::report_infection(int day) {
     infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher() << " is_student " << (int)this->host->is_student();
     int income_mixing_group = -1;
     string host_classroom_label = "NA";
-    if(mixing_group_type == 'S'){
+    // if mixing_group is classroom, print out details
+    if(mixing_group_type == 'S' || mixing_group_type == 'C'){
       School* ss = static_cast<School*>(this->mixing_group);
       income_mixing_group = ss->get_school_income();
       int sch_census_tract_index = (ss == NULL ? -1 : ss->get_census_tract_index());
