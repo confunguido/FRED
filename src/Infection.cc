@@ -288,20 +288,21 @@ void Infection::report_infection(int day) {
 	    << " at " << mixing_group_type << " mixing_group " <<  mixing_group_id << " subtype " << mixing_group_subtype << " mixing_group_lbl " << mixing_group_label;
     infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher() << " is_student " << (int)this->host->is_student();
     int income_mixing_group = -1;
-    string host_classroom_label = "NA";
+    string host_classroom_label =  (this->host->get_classroom() == NULL ? "NA" : Place::get_place_label(this->host->get_classroom()));
+    string host_school_label = (this->host->get_school() == NULL ? "NA" : Place::get_place_label(this->host->get_school()));
     // if mixing_group is classroom, print out details
     if(mixing_group_type == 'S' || mixing_group_type == 'C'){
       School* ss = static_cast<School*>(this->mixing_group);
       income_mixing_group = ss->get_school_income();
       int sch_census_tract_index = (ss == NULL ? -1 : ss->get_census_tract_index());
       long int sch_census_tract = (sch_census_tract_index == -1 ? -1 : Global::Places.get_census_tract_with_index(sch_census_tract_index));
-      host_classroom_label = (this->host->get_classroom() == NULL ? "NA" : Place::get_place_label(this->host->get_classroom()));
       infStrS << " sch_census_tract " << sch_census_tract;
     }else{
       infStrS << " sch_census_tract -1 ";
     }
     infStrS << " income " << income_mixing_group;
-    infStrS << " classroom_lbl " << host_classroom_label;    
+    infStrS << " classroom_lbl " << host_classroom_label;
+    infStrS << " school_lbl " << host_school_label;    
   }
 
   if(Global::Track_infection_events > 2) {
