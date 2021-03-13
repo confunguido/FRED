@@ -281,6 +281,7 @@ Health::Health() {
   this->days_wearing_face_mask = 0;
   this->washes_hands = false;
   this->days_symptomatic = 0;
+  this->days_hospitalization = 0;
   this->previous_infection_serotype = 0;
   this->insurance_type = Insurance_assignment_index::UNSET;
   this->infection = NULL;
@@ -304,6 +305,7 @@ void Health::setup(Person* self) {
   this->susceptible = fred::disease_bitset();
   this->infectious = fred::disease_bitset();
   this->symptomatic = fred::disease_bitset();
+  this->hospitalized = fred::disease_bitset();
   this->recovered = fred::disease_bitset();
   this->immunity = fred::disease_bitset();
 
@@ -365,6 +367,7 @@ void Health::setup(Person* self) {
   }
 
   this->days_symptomatic = 0;
+  this->days_hospitalization = 0;
   this->vaccine_health = NULL;
   this->av_health = NULL;
   this->checked_for_av = NULL;
@@ -466,6 +469,22 @@ void Health::become_susceptible_by_vaccine_waning(int disease_id) {
   }
 }
 
+void Health::become_susceptible_to_symptoms_by_vaccine_waning(int disease_id) {
+  this->immunity_to_symptoms.reset(disease_id);
+  FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
+			   "HEALTH CHART: %s person %d is SUSCEPTIBLE TO SYMPTOMS for disease %d\n",
+			   Date::get_date_string().c_str(),
+			   myself->get_id(), disease_id);
+}
+
+void Health::become_susceptible_to_hospitalization_by_vaccine_waning(int disease_id) {
+  this->immunity_to_hospitalization.reset(disease_id);
+  FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
+			   "HEALTH CHART: %s person %d is SUSCEPTIBLE TO HOSPITALIZATION for disease %d\n",
+			   Date::get_date_string().c_str(),
+			   myself->get_id(), disease_id);
+}
+
 void Health::become_exposed(int disease_id, Person* infector, Mixing_Group* mixing_group, int day) {
 
    FRED_VERBOSE(0, "become_exposed: person %d is exposed to disease %d day %d\n",
@@ -490,6 +509,7 @@ void Health::become_exposed(int disease_id, Person* infector, Mixing_Group* mixi
 
   this->infectious.reset(disease_id);
   this->symptomatic.reset(disease_id);
+  this->hospitalized.reset(disease_id);
   Disease* disease = Global::Diseases.get_disease(disease_id);
   this->infection[disease_id] = Infection::get_new_infection(disease, infector, myself, mixing_group, day);
   FRED_VERBOSE(1, "setup infection: person %d dis_id %d day %d\n", myself->get_id(), disease_id, day);
@@ -511,7 +531,14 @@ void Health::become_exposed(int disease_id, Person* infector, Mixing_Group* mixi
     FRED_VERBOSE(1, "Joining transmission network: %d\n", myself->get_id());
     myself->join_network(Global::Transmission_Network);
   }
-
+  if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+    for(int dis_i = 0; dis_i < Global::Diseases.get_number_of_diseases(); ++dis_i){
+      if(dis_i == disease_id){
+	continue;
+      }
+      become_unsusceptible(Global::Diseases.get_disease(dis_i));
+    }
+  }
   if(Global::Enable_Vector_Transmission && Global::Diseases.get_number_of_diseases() > 1) {
     // special check for multi-serotype dengue:
     if(this->previous_infection_serotype == -1) {
@@ -529,6 +556,7 @@ void Health::become_exposed(int disease_id, Person* infector, Mixing_Group* mixi
       }
     } else {
       // after the second infection, become immune to other two serotypes.
+      // This isn't making everyone immune, just unsusceptible
       for(int sero = 0; sero < Global::Diseases.get_number_of_diseases(); ++sero) {
         if(sero == this->previous_infection_serotype) {
           continue;
@@ -569,7 +597,7 @@ void Health::become_infectious(Disease* disease) {
 			  "HEALTH CHART: %s person %d is INFECTIOUS for disease %d\n",
 			  Date::get_date_string().c_str(),
 			  myself->get_id(), disease_id);
-  
+
   /*
     If facemasks enabled, then decide if will wear facemasks 
   */
@@ -630,6 +658,26 @@ void Health::become_symptomatic(Disease* disease) {
 			  myself->get_id(), disease_id);
 }
 
+void Health::become_hospitalized(Disease* disease) {
+  int disease_id = disease->get_id();
+  if(this->infection[disease_id] == NULL) {
+    FRED_STATUS(1, "Help: becoming hospitalized with no infection: person %d, disease_id %d\n", myself->get_id(), disease_id);
+  }
+  assert(this->infection[disease_id] != NULL);
+  if(this->hospitalized.test(disease_id)) {
+    FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
+			    "HEALTH CHART: %s person %d is ALREADY HOSPITALIZED for disease %d\n",
+			    Date::get_date_string().c_str(),
+			    myself->get_id(), disease_id);
+    return;
+  }
+  this->hospitalized.set(disease_id);
+  FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
+			  "HEALTH CHART: %s person %d is HOSPITALIZED for disease %d\n",
+			  Date::get_date_string().c_str(),
+			  myself->get_id(), disease_id);
+}
+
 void Health::resolve_symptoms(Disease* disease) {
   int disease_id = disease->get_id();
   // assert(this->infection[disease_id] != NULL);
@@ -638,6 +686,19 @@ void Health::resolve_symptoms(Disease* disease) {
   }
   FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
 			  "HEALTH CHART: %s person %d RESOLVES SYMPTOMS for disease %d\n",
+			  Date::get_date_string().c_str(),
+			  myself->get_id(), disease_id);
+}
+
+
+void Health::resolve_hospitalization(Disease* disease) {
+  int disease_id = disease->get_id();
+  // assert(this->infection[disease_id] != NULL);
+  if(this->hospitalized.test(disease_id)) {
+    this->hospitalized.reset(disease_id);
+  }
+  FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
+			  "HEALTH CHART: %s person %d RESOLVES HOSPITALIZATION for disease %d\n",
 			  Date::get_date_string().c_str(),
 			  myself->get_id(), disease_id);
 }
@@ -669,6 +730,7 @@ void Health::become_removed(int disease_id, int day) {
   this->susceptible.reset(disease_id);
   this->infectious.reset(disease_id);
   this->symptomatic.reset(disease_id);
+  this->hospitalized.reset(disease_id);
   FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
 			   "HEALTH CHART: %s person %d is REMOVED for disease %d\n",
 			   Date::get_date_string().c_str(),
@@ -678,13 +740,37 @@ void Health::become_removed(int disease_id, int day) {
 void Health::become_immune(Disease* disease) {
   int disease_id = disease->get_id();
   disease->become_immune(myself, this->susceptible.test(disease_id),
-      this->infectious.test(disease_id), this->symptomatic.test(disease_id));
+			 this->infectious.test(disease_id), this->symptomatic.test(disease_id), this->hospitalized.test(disease_id));
   this->immunity.set(disease_id);
   this->susceptible.reset(disease_id);
   this->infectious.reset(disease_id);
   this->symptomatic.reset(disease_id);
+  this->hospitalized.reset(disease_id);
   FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
 			  "HEALTH CHART: %s person %d is IMMUNE for disease %d\n",
+			  Date::get_date_string().c_str(),
+			  myself->get_id(), disease_id);
+}
+
+void Health::become_immune_to_symptoms(Disease* disease) {
+  int disease_id = disease->get_id();
+  disease->become_immune_to_symptoms(myself, this->susceptible.test(disease_id),
+				     this->infectious.test(disease_id), this->symptomatic.test(disease_id),this->hospitalized.test(disease_id));
+  this->immunity_to_symptoms.set(disease_id);
+  FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
+			  "HEALTH CHART: %s person %d is IMMUNE TO SYMPTOMS for disease %d\n",
+			  Date::get_date_string().c_str(),
+			  myself->get_id(), disease_id);
+}
+
+
+void Health::become_immune_to_hospitalization(Disease* disease) {
+  int disease_id = disease->get_id();
+  disease->become_immune_to_hospitalization(myself, this->susceptible.test(disease_id),
+					    this->infectious.test(disease_id), this->symptomatic.test(disease_id), this->hospitalized.test(disease_id));
+  this->immunity_to_hospitalization.set(disease_id);
+  FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
+			  "HEALTH CHART: %s person %d is IMMUNE TO HOSPITALIZATION for disease %d\n",
 			  Date::get_date_string().c_str(),
 			  myself->get_id(), disease_id);
 }
@@ -701,7 +787,11 @@ void Health::become_case_fatality(int disease_id, int day) {
   /* EDIT: We have to TERMINATE a fatality case before become_removed() because 
      become removed cleans all the disease information...
    */
+  
+  //Have to figure out a way to remove all events from all diseases when people die
+  //Right now if a person dies from one disease, the other diseases don't update
   Global::Diseases.get_disease(disease_id)->terminate_person(myself, day);
+  
   
   become_removed(disease_id, day);
 
@@ -742,6 +832,15 @@ void Health::update_infection(int day, int disease_id) {
     }
   }
 
+  // update days_symptomatic if needed
+  if(this->is_hospitalized(disease_id)) {
+    int days_hosp_so_far = (day - this->get_hospitalization_start_date(disease_id));
+    if(days_hosp_so_far > this->days_hospitalization) {
+      this->days_hospitalization = days_hosp_so_far;
+    }
+  }
+
+  
   // case_fatality?
   if(this->infection[disease_id]->is_fatal(day)) {
     become_case_fatality(disease_id, day);
@@ -848,6 +947,22 @@ int Health::get_symptoms_end_date(int disease_id) const {
     return -1;
   } else {
     return this->infection[disease_id]->get_symptoms_end_date();
+  }
+}
+
+int Health::get_hospitalization_start_date(int disease_id) const {
+  if(this->infection[disease_id] == NULL) {
+    return -1;
+  } else {
+    return this->infection[disease_id]->get_hospitalization_start_date();
+  }
+}
+
+int Health::get_hospitalization_end_date(int disease_id) const {
+  if(this->infection[disease_id] == NULL) {
+    return -1;
+  } else {
+    return this->infection[disease_id]->get_hospitalization_end_date();
   }
 }
 

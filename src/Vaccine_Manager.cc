@@ -39,6 +39,7 @@ Vaccine_Manager::Vaccine_Manager() {
   this->current_vaccine_capacity = -1;
   this->vaccine_priority_only = false;
   this->vaccination_capacity_map = NULL;
+  this->vaccine_acceptance_prob = 1.0;
   this->do_vacc = false;
   this->vaccine_dose_priority = -1;
   this->refresh_vaccine_queues_daily = false;
@@ -47,13 +48,14 @@ Vaccine_Manager::Vaccine_Manager() {
 
 Vaccine_Manager::Vaccine_Manager(Population *_pop) :
   Manager(_pop) {
-
+  printf("Vaccine manager entered\n");
   this->pop = _pop;
 
   this->vaccine_package = new Vaccines();
   int num_vaccs = 0;
   Params::get_param_from_string("number_of_vaccines", &num_vaccs);
   if(num_vaccs > 0) {
+    printf("Print vaccines from the package\n");
     this->vaccine_package->setup();
     this->vaccine_package->print();
     this->do_vacc = true;
@@ -96,6 +98,9 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
     }
   }
 
+  // Vaccine acceptance if individual behaviors are disabled
+  Params::get_param_from_string("vaccine_acceptance_probability", &this->vaccine_acceptance_prob);
+  
   // should we vaccinate anyone outside of the priority class
   int vacc_pri_only;
   this->vaccine_priority_only = false;
@@ -343,13 +348,24 @@ void Vaccine_Manager::vaccinate(int day) {
       if((this->vaccinate_symptomatics == false)
 	 && (current_person->get_health()->get_symptoms_start_date(0) != -1)
 	 && (day >= current_person->get_health()->get_symptoms_start_date(0))) {
+	// Add an additional layer for underreporting of symptomatics
         accept_vaccine = false;
         reject_state_count++;
       } else {
         if(current_person->get_health()->is_vaccinated()) {
-          accept_vaccine = current_person->acceptance_of_another_vaccine_dose();
+	  if(Global::Enable_Behaviors == true){
+	    accept_vaccine = current_person->acceptance_of_another_vaccine_dose();
+	  }else{
+	    double r = Random::draw_random();
+	    accept_vaccine = (r < this->vaccine_acceptance_prob);
+	  }
         } else {
-          accept_vaccine = current_person->acceptance_of_vaccine();
+	  if(Global::Enable_Behaviors == true){
+	    accept_vaccine = current_person->acceptance_of_vaccine();
+	  }else{
+	    double r = Random::draw_random();
+	    accept_vaccine = (r < this->vaccine_acceptance_prob);
+	  }
         }
       }
       if(accept_vaccine == true) {
@@ -436,9 +452,19 @@ void Vaccine_Manager::vaccinate(int day) {
       } else {
         if(current_person->get_health()->is_vaccinated()) {
           // printf("vaccine rejected by person %d age %0.1f -- ALREADY VACCINATED\n", current_person->get_id(), current_person->get_real_age());
-          accept_vaccine = current_person->acceptance_of_another_vaccine_dose();
+	  if(Global::Enable_Behaviors == true){
+	    accept_vaccine = current_person->acceptance_of_another_vaccine_dose();
+	  }else{
+	    double r = Random::draw_random();
+	    accept_vaccine = (r < this->vaccine_acceptance_prob);
+	  }
         } else {
-          accept_vaccine = current_person->acceptance_of_vaccine();
+	  if(Global::Enable_Behaviors == true){
+	    accept_vaccine = current_person->acceptance_of_vaccine();
+	  }else{
+	    double r = Random::draw_random();
+	    accept_vaccine = (r < this->vaccine_acceptance_prob);
+	  }
         }
       }
       if(accept_vaccine == true) {

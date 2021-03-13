@@ -80,6 +80,27 @@ struct Time_Step_Map_Face_Mask {
   }
 };
 
+struct Time_Step_Map_Community_Contact {
+  int sim_day_start;
+  int sim_day_end;
+  double contact_rate;
+  /*
+    1. Create a place_list static array for different contact rates
+    2. Everyday, update a place_list static variable of current increase for all neighborhood contacts
+    3. Check current contact rate if community_contact_timeseries is enabled
+  */
+  
+  const std::string to_string() const {
+    std::stringstream ss;
+    ss << "Community contact::Time Step Map ";
+    ss << " sim_day_start " << sim_day_start;
+    ss << " sim_day_end " << sim_day_end;
+    ss << " contact rate increase " << contact_rate;
+    ss << std::endl;
+    return ss.str();
+  }
+};
+
 // Helper class used during read_all_places/read_places; definition
 // after Place_List class
 class Place_Init_Data;
@@ -176,6 +197,8 @@ public:
   int get_shelter_post_peak_period(){
     return this->Shelter_relax_post_peak_period;
   }
+  void update_community_contact_increase(int day);
+  
   void update_face_mask_compliance(int day);
   void end_of_run();
   double get_face_mask_compliance_today(string locstr);
@@ -492,7 +515,8 @@ private:
   static std::vector<int> Shelter_stepwise_duration;
   static std::vector<Time_Step_Map_Shelter*> shelter_households_timestep;
   static std::vector<Time_Step_Map_Face_Mask*> face_mask_timestep;
-  
+  static std::vector<Time_Step_Map_Community_Contact*> community_contact_timestep;
+  static double current_community_contact_rate;  
   static int Shelter_by_age_duration_mean;
   static int Shelter_by_age_duration_std;
   static int Shelter_by_age_delay_mean;

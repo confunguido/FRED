@@ -290,13 +290,13 @@ double Place::get_contact_rate(int sim_day, int disease_id) {
       if(Global::holiday_start_month > Global::holiday_end_month){ // end of the year
 	if(((today_month == Global::holiday_start_month && today_day_of_month >= Global::holiday_start_day) || today_month > Global::holiday_start_month) ||
 	   ((today_month == Global::holiday_end_month && today_day_of_month <= Global::holiday_end_day) || today_month < Global::holiday_end_month)){
-	  printf("Today: %d-%d is winter holiday (from %d-%d to %d-%d). holiday_contact rate is %.2f\n", today_month, today_day_of_month, Global::holiday_start_month, Global::holiday_start_day, Global::holiday_end_month, Global::holiday_end_day, Neighborhood::get_holiday_contact_rate(disease_id));
+	  //printf("Today: %d-%d is winter holiday (from %d-%d to %d-%d). holiday_contact rate is %.2f\n", today_month, today_day_of_month, Global::holiday_start_month, Global::holiday_start_day, Global::holiday_end_month, Global::holiday_end_day, Neighborhood::get_holiday_contact_rate(disease_id));
 	  contacts *= Neighborhood::get_holiday_contact_rate(disease_id);
 	}
       }else{
 	if(((today_month == Global::holiday_start_month && today_day_of_month >= Global::holiday_start_day) || today_month > Global::holiday_start_month) && 
 	   ((today_month == Global::holiday_end_month && today_day_of_month <= Global::holiday_end_day) || today_month < Global::holiday_end_month)){
-	  printf("Today: %d-%d is summer holiday (from %d-%d to %d-%d). holiday_contact rate is %.2f\n", today_month, today_day_of_month, Global::holiday_start_month, Global::holiday_start_day, Global::holiday_end_month, Global::holiday_end_day, Neighborhood::get_holiday_contact_rate(disease_id));
+	  //printf("Today: %d-%d is summer holiday (from %d-%d to %d-%d). holiday_contact rate is %.2f\n", today_month, today_day_of_month, Global::holiday_start_month, Global::holiday_start_day, Global::holiday_end_month, Global::holiday_end_day, Neighborhood::get_holiday_contact_rate(disease_id));
 	  contacts *= Neighborhood::get_holiday_contact_rate(disease_id);
 	}
       }

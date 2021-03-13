@@ -24,9 +24,12 @@ using namespace std;
 #include "Vaccine_Dose.h"
 #include "Random.h"
 
-Vaccine_Dose::Vaccine_Dose(Age_Map* _efficacy, Age_Map* _efficacy_delay, 
+Vaccine_Dose::Vaccine_Dose(Age_Map* _efficacy, Age_Map* _efficacy_symp,
+			   Age_Map* _efficacy_hosp, Age_Map* _efficacy_delay,
 			   Age_Map* _efficacy_duration, int _days_between_doses){
   efficacy = _efficacy;
+  efficacy_symp = _efficacy_symp;
+  efficacy_hosp = _efficacy_hosp;
   efficacy_delay = _efficacy_delay;
   efficacy_duration = _efficacy_duration;
   days_between_doses = _days_between_doses;
@@ -34,17 +37,22 @@ Vaccine_Dose::Vaccine_Dose(Age_Map* _efficacy, Age_Map* _efficacy_delay,
 
 Vaccine_Dose::~Vaccine_Dose(){
   if (efficacy) delete efficacy;
+  if (efficacy_symp) delete efficacy_symp;
+  if (efficacy_hosp) delete efficacy_hosp;
   if (efficacy_delay) delete efficacy_delay;
 }
 
 void Vaccine_Dose::print() const {
   cout << "Time Between Doses:\t " << days_between_doses << "\n";
   efficacy->print();
+  efficacy_symp->print();
+  efficacy_hosp->print();
   efficacy_delay->print();
   efficacy_duration->print();
 }
 
 bool Vaccine_Dose::is_within_age(double real_age) const {
+  // TODO: This scenario should also consider efficacy against symptoms
   double eff = efficacy->find_value(real_age);
   // printf("age = %.1f  eff = %f\n", real_age, eff);
   if(eff != 0.0){

@@ -95,6 +95,9 @@ std::vector<Time_Step_Map_Shelter*> Place_List::shelter_households_timestep;
 std::vector<Time_Step_Map_Face_Mask*> Place_List::face_mask_timestep;
 std::unordered_map<string,double> Place_List::Face_mask_compliance;
 
+std::vector<Time_Step_Map_Community_Contact*> Place_List::community_contact_timestep;
+double Place_List::current_community_contact_rate = 0.0;
+
 int Place_List::Shelter_by_age_duration_mean = 0;
 int Place_List::Shelter_by_age_duration_std = 0;
 int Place_List::Shelter_by_age_delay_mean = 0;
@@ -236,6 +239,8 @@ void Place_List::get_parameters() {
     }
 
   }
+
+  
   
   // household shelter parameters
   if(Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File == false) {
@@ -381,7 +386,42 @@ void Place_List::get_parameters() {
     }
   }
 
+  // Update community_contact_timeseries
+  if(Global::Enable_Community_Contact_Timeseries == true){
+    char map_file_name[FRED_STRING_SIZE];
+    Params::get_param_from_string("community_contact_timeseries_file", map_file_name);
+    if(strncmp(map_file_name, "none", 4) != 0){
+      Utils::get_fred_file_name(map_file_name);
+      printf("READING: community contact timeseries file: %s\n",map_file_name);
+      ifstream* ts_input = new ifstream(map_file_name);
+      if(!ts_input->is_open()){
+	Utils::fred_abort("Help! Cannot read %s Timestep Map for community contact increase in time\n", map_file_name);
+	abort();
+      }
+      string line;
+      while(getline(*ts_input, line)){
+	if(line[0] == '\n' || line[0] == '#') { // empty line or comment
+	  continue;
+	}
+	char cstr[FRED_STRING_SIZE];
+	std::strcpy(cstr, line.c_str());
 
+	Time_Step_Map_Community_Contact * tmap = new Time_Step_Map_Community_Contact;
+	int n = sscanf(cstr,
+		       "%d %d %lf",
+		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->contact_rate);
+	if(n < 3){
+	  Utils::fred_abort("Need to specify 1.day start, 2. day end, 3. contact rate. ");
+	}
+	if(tmap->contact_rate < 0.0){
+	  tmap->contact_rate = 0.0;
+	}
+	this->community_contact_timestep.push_back(tmap);
+      }
+      ts_input->close();
+    }    
+  }
+  
   // If reading sheltering compliance from a file
   if(Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File == true) {
     char map_file_name[FRED_STRING_SIZE];
@@ -449,7 +489,7 @@ void Place_List::get_parameters() {
     }
     this->previous_shelter_compliance = 0.0;
     printf("Finished with reading shelter-in-place file\n");
-  }
+}
 
   
   // household evacuation parameters
@@ -1590,6 +1630,10 @@ void Place_List::update(int day) {
     }
   }
 
+  if(Global::Enable_Community_Contact_Timeseries == true){
+    this->update_community_contact_increase(day);
+  }
+  
   if(Global::Enable_HAZEL) {
     int number_places = this->places.size();
     for(int p = 0; p < number_places; ++p) {
@@ -3029,6 +3073,16 @@ void Place_List::count_teachers_and_students(){
     printf("School %d Teachers %d Students %d\n", i, school_teachers, school_students);    
   }     
   printf("PLACE_LIST::COUNT_TEACHERS_AND_STUDENTS Teachers %d Students %d\n", num_teachers, num_students);
+}
+
+void Place_List::update_community_contact_increase(int day){
+  Place_List::current_community_contact_rate = 0.0;
+  for(int i = 0; i < this->community_contact_timestep.size(); ++i){
+    Time_Step_Map_Community_Contact* tmap = this->community_contact_timestep[i];
+    if(tmap->sim_day_start <= day && day <= tmap->sim_day_end){
+      Place_List::current_community_contact_rate = this->community_contact_timestep[i]->contact_rate;
+    }
+  }
 }
 
 void Place_List::update_shelter_households(int day, int peak_day_, double proportion_peak_incidence,

@@ -66,6 +66,7 @@ public:
   }
 
   virtual double get_probability_of_symptoms(int age);
+  virtual double get_probability_of_hospitalization(int age);
 
   virtual int get_latent_period(Person* host);
 
@@ -74,8 +75,12 @@ public:
   virtual int get_duration_of_immunity(Person* host);
 
   virtual double get_real_incubation_period(Person* host);
-
+  virtual double get_real_hospitalization_delay(Person* host);
+  
+  virtual int get_hospitalization_delay(Person* host);
+   
   virtual double get_symptoms_duration(Person* host);
+  virtual double get_hospitalization_duration(Person* host);  
 
   virtual double get_real_latent_period(Person* host);
 
@@ -88,6 +93,7 @@ public:
   virtual int get_incubation_period(Person* host);
 
   virtual int get_duration_of_symptoms(Person* host);
+  virtual int get_duration_of_hospitalization(Person* host);
 
   virtual double get_asymptomatic_infectivity() {
     return this->asymptomatic_infectivity;
@@ -165,6 +171,10 @@ public:
     return this->symptoms_distribution_type;
   }
 
+  int get_hospitalization_distribution_type() {
+    return this->hospitalization_distribution_type;
+  }
+
   int get_infectious_distribution_type() {
     return this->infectious_distribution_type;
   }
@@ -190,18 +200,27 @@ protected:
   Disease* disease;
   // prob of getting symptoms
   double probability_of_symptoms;
+  double probability_of_hospitalization;
+  
   // relative infectivity if asymptomatic
   double asymptomatic_infectivity;
 
   // distributions for symptoms and infectiousness
   char symptoms_distributions[32];
+  char hospitalization_distributions[32];
   char infectious_distributions[32];
   int symptoms_distribution_type;
+  int hospitalization_distribution_type;
   int infectious_distribution_type;
 
   // CDFs
   int max_days_incubating;
   int max_days_symptomatic;
+  int max_days_hospitalization;
+  int max_days_hospitalization_delay;
+
+  double* days_hospitalization;
+  double* days_hospitalization_delay;
   double* days_incubating;
   double* days_symptomatic;
 
@@ -211,17 +230,27 @@ protected:
   double* days_infectious;
 
   Age_Map* age_specific_prob_symptoms;
+  Age_Map* age_specific_prob_hospitalization;
   double immunity_loss_rate;
 
   // parameters for incubation and infectious periods and offsets
   double incubation_period_median;
   double incubation_period_dispersion;
   double incubation_period_upper_bound;
-
+  
   double symptoms_duration_median;
   double symptoms_duration_dispersion;
   double symptoms_duration_upper_bound;
 
+  double hospitalization_duration_median;
+  double hospitalization_duration_dispersion;
+  double hospitalization_duration_upper_bound;
+
+  double hospitalization_delay_median;
+  double hospitalization_delay_dispersion;
+  double hospitalization_delay_upper_bound;
+  
+  
   double latent_period_median;
   double latent_period_dispersion;
   double latent_period_upper_bound;
@@ -237,10 +266,11 @@ protected:
   // infectious/symptomatic at a given time point
   double infectivity_threshold;
   double symptomaticity_threshold;
+  double hospitalization_threshold;
 
   // fraction of periods with full symptoms or infectivity
   double full_symptoms_start;
-  double full_symptoms_end;
+  double full_symptoms_end;  
   double full_infectivity_start;
   double full_infectivity_end;
   

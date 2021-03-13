@@ -74,6 +74,10 @@ void Vaccine::update(int day) {
   if(day >= start_day) add_stock(additional_per_day);
 }
 
+void Vaccine::update(int day, int add_vac) {
+  if(day >= start_day) add_stock(add_vac);
+}
+
 int Vaccine::get_strain(int i) {
   if(i < num_strains) return strains[i];
   else return -1;

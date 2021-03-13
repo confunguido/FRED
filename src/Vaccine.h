@@ -73,6 +73,7 @@ public:
   //Utility Functions
   void print() const;
   void update(int day);
+  void update(int day, int add_vac);
   void reset();
   
 private:

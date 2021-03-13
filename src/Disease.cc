@@ -378,8 +378,16 @@ void Disease::terminate_person(Person* person, int day) {
   this->epidemic->terminate_person(person, day);
 }
 
-void Disease::become_immune(Person* person, bool susceptible, bool infectious, bool symptomatic) {
-  this->epidemic->become_immune(person, susceptible, infectious, symptomatic);
+void Disease::become_immune(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized) {
+  this->epidemic->become_immune(person, susceptible, infectious, symptomatic, hospitalized);
+}
+
+void Disease::become_immune_to_symptoms(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized) {
+  this->epidemic->become_immune_to_symptoms(person, susceptible, infectious, symptomatic, hospitalized);
+}
+
+void Disease::become_immune_to_hospitalization(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized) {
+  this->epidemic->become_immune_to_symptoms(person, susceptible, infectious, symptomatic, hospitalized);
 }
 
 bool Disease::is_case_fatality_enabled() {

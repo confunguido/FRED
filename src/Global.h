@@ -272,7 +272,10 @@ public:
   static bool Enable_Household_Shelter_File;
   static bool Enable_Household_Shelter_By_Age;
   static bool Enable_Face_Mask_Timeseries_File;
+  static bool Enable_Vaccine_Stock_Timeseries_File;
   static bool Enable_Face_Mask_Usage;
+  static bool Enable_Community_Contact_Timeseries;
+  static bool Enable_Disease_Cross_Protection;
   static bool Enable_School_Reduced_Capacity;
   static bool Enable_School_Classroom_Size_Array;
   static double School_reduced_capacity;

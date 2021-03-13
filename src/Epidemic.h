@@ -177,6 +177,14 @@ public:
     return this->people_with_current_symptoms;
   }
 
+  int get_people_becoming_hospitalized_today() {
+    return this->people_becoming_hospitalized_today;
+  }
+
+  int get_people_with_current_hospitalization() {
+    return this->people_with_current_hospitalization;
+  }
+
   int get_daily_case_fatality_count() {
     return this->daily_case_fatality_count;
   }
@@ -209,6 +217,14 @@ public:
     return this->symptomatic_incidence;
   }
 
+  int get_hospitalization_incidence() {
+    return this->hospitalization_incidence;
+  }
+
+  int get_hospitalization_prevalence() {
+    return this->hospitalization_prevalence;
+  }
+
   int get_symptomatic_incidence_by_tract_index(int index_);
 
   int get_prevalence_count() {
@@ -227,7 +243,9 @@ public:
     ++(this->number_infected_by_cohort[cohort_day]);
   }
 
-  void become_immune(Person* person, bool susceptible, bool infectious, bool symptomatic);
+  void become_immune(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized);
+  void become_immune_to_symptoms(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized);
+  void become_immune_to_hospitalization(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized);
 
   int get_id() {
     return this->id;
@@ -240,11 +258,15 @@ public:
   void process_infectious_end_events(int day);
   void recover(Person* person, int day);
   void process_symptoms_start_events(int day);
+  void process_hospitalization_start_events(int day);
   void process_symptoms_end_events(int day);
+  void process_hospitalization_end_events(int day);
   void process_immunity_start_events(int day);
   void process_immunity_end_events(int day);
   void cancel_symptoms_start(int day, Person* person);
   void cancel_symptoms_end(int day, Person* person);
+  void cancel_hospitalization_start(int day, Person* person);
+  void cancel_hospitalization_end(int day, Person* person);
   void cancel_infectious_start(int day, Person* person);
   void cancel_infectious_end(int day, Person* person);
   void cancel_immunity_start(int day, Person* person);
@@ -267,6 +289,8 @@ protected:
   Events* infectious_end_event_queue;
   Events* symptoms_start_event_queue;
   Events* symptoms_end_event_queue;
+  Events* hospitalization_start_event_queue;
+  Events* hospitalization_end_event_queue;
   Events* immunity_start_event_queue;
   Events* immunity_end_event_queue;
 
@@ -299,6 +323,7 @@ protected:
 
   vector<Person*> daily_infections_list;
   vector<Person*> daily_symptomatic_list;
+  vector<Person*> daily_hospitalization_list;
 
   static int get_age_group(int age);
 
@@ -308,6 +333,8 @@ protected:
   int infectious_people;
   int removed_people;
   int immune_people;
+  int immune_to_symptoms_people;
+  int immune_to_hospitalization_people;
   int vaccinated_people;
   int infected_not_symp_people;
 
@@ -324,6 +351,9 @@ protected:
   int people_becoming_symptomatic_today;
   int people_with_current_symptoms;
 
+  int people_becoming_hospitalized_today;
+  int people_with_current_hospitalization;
+  
   int daily_case_fatality_count;
   int total_case_fatality_count;
   int daily_case_fatality_nursing;
@@ -344,6 +374,8 @@ protected:
   // used for maintining quantities from previous day;
   int incidence;
   int symptomatic_incidence;
+  int hospitalization_incidence;
+  int hospitalization_prevalence;
   int prevalence_count;
   double prevalence;
   int case_fatality_incidence;

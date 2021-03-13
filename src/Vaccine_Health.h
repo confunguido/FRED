@@ -41,6 +41,8 @@ public:
   int get_vaccination_day()              const { return vaccination_day; }
   int get_vaccination_effective_day()    const { return vaccination_effective_day; }
   int is_effective()                     const { if(vaccination_effective_day != -1) return 1; else return 0;}
+  int is_effective_symptoms()            const { if(vaccination_effective_symp_day != -1) return 1; else return 0;}
+  int is_effective_hospitalization()            const { if(vaccination_effective_hosp_day != -1) return 1; else return 0;}
   Vaccine* get_vaccine()                 const { return vaccine; }
   int get_current_dose()                 const { return current_dose; }
   int get_days_to_next_dose()            const { return days_to_next_dose; }
@@ -66,6 +68,8 @@ public:
 private:
   int vaccination_day;              // On which day did you get the vaccine
   int vaccination_effective_day;    // On which day is the vaccine effective
+  int vaccination_effective_symp_day;    // On which day is the vaccine effective
+  int vaccination_effective_hosp_day;    // On which day is the vaccine effective
   int vaccination_immunity_loss_day;  // On which day does the vaccine lose effectiveness
   Vaccine* vaccine;                 // Which vaccine did you take
   int current_dose;                 // Current Dose that the agent is on
@@ -73,6 +77,8 @@ private:
   Person * person;                  // The person object this belongs to.
   Vaccine_Manager* vaccine_manager; // Which manager did the vaccine come from?
   bool effective;
+  bool effective_symptoms;
+  bool effective_hospitalization;
 };
 
 #endif

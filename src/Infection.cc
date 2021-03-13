@@ -59,6 +59,7 @@ Infection::Infection(Disease* _disease, Person* _infector, Person* _host, Mixing
   this->symptoms_end_date = -1;
   this->immunity_end_date = -1;
   this->will_develop_symptoms = false;
+  this->will_be_hospitalized = false;
   this->infection_is_fatal_today = false;
 }
 
@@ -100,9 +101,23 @@ void Infection::setup() {
   
   FRED_VERBOSE(1, "infection::setup entered\n");
 
-  // decide if this host will develop symptoms
-  double prob_symptoms = this->disease->get_natural_history()->get_probability_of_symptoms(this->host->get_age());
-  this->will_develop_symptoms = (Random::draw_random() < prob_symptoms);
+  //Check for vaccine status to reduce the probability of developing symptoms!!
+  if(this->host->is_immune_to_symptoms(this->disease->get_id()) == false){
+    // decide if this host will develop symptoms
+    double prob_symptoms = this->disease->get_natural_history()->get_probability_of_symptoms(this->host->get_age());
+    this->will_develop_symptoms = (Random::draw_random() < prob_symptoms);
+    if(this->will_develop_symptoms == true){
+      if(this->host->is_immune_to_hospitalization(this->disease->get_id()) == false){
+	double prob_hospitalization = this->disease->get_natural_history()->get_probability_of_hospitalization(this->host->get_age());
+	this->will_be_hospitalized = (Random::draw_random() < prob_hospitalization);
+      }else{
+	this->will_be_hospitalized;
+      }
+    }
+  }else{
+    this->will_develop_symptoms = false;
+  }
+
 
   // set transition date for becoming susceptible after this infection
   int my_duration_of_immunity = this->disease->get_natural_history()->get_duration_of_immunity(this->host);
@@ -139,6 +154,33 @@ void Infection::setup() {
     }
   }
 
+  // Determine dates for hospitalizations
+  
+  double hospitalization_delay = 0.0;
+  double hospitalization_duration = 0.0;  
+  int hospitalization_distribution_type = this->disease->get_natural_history()->get_hospitalization_distribution_type();
+  
+  if(hospitalization_distribution_type == Natural_History::LOGNORMAL) {
+    hospitalization_delay = this->disease->get_natural_history()->get_real_hospitalization_delay(this->host);
+    hospitalization_duration = this->disease->get_natural_history()->get_hospitalization_duration(this->host);
+    // find symptoms dates (assuming symptoms will occur)
+    this->hospitalization_start_date = this->symptoms_start_date + round(hospitalization_delay);
+    this->hospitalization_end_date = this->hospitalization_start_date + round(hospitalization_duration) ;
+  } else {
+    // distribution type == CDF
+    int my_hospitalization_delay = this->disease->get_natural_history()->get_hospitalization_delay(this->host);
+    assert(my_hospitalization_delay > 0); // FRED needs at least one day to become symptomatic
+    this->hospitalization_start_date = this->symptoms_start_date + my_hospitalization_delay;
+      
+    int my_hospitalization_duration = this->disease->get_natural_history()->get_duration_of_hospitalization(this->host);
+    // duration_of_symptoms <= 0 would mean "symptomatic forever"
+    if(my_hospitalization_duration > 0) {
+      this->hospitalization_end_date = this->hospitalization_start_date + my_hospitalization_duration;
+    } else {
+      this->hospitalization_end_date = Natural_History::NEVER;
+    }
+  }
+  
   // determine dates for infectiousness
   int infectious_distribution_type = this->disease->get_natural_history()->get_infectious_distribution_type();
   if(infectious_distribution_type == Natural_History::OFFSET_FROM_START_OF_SYMPTOMS ||
@@ -226,6 +268,10 @@ void Infection::setup() {
   if(this->will_develop_symptoms == false) {
     this->symptoms_start_date = Natural_History::NEVER;
     this->symptoms_end_date = Natural_History::NEVER;
+  }
+  if(this->will_be_hospitalized == false){
+    this->hospitalization_start_date = Natural_History::NEVER;
+    this->hospitalization_end_date = Natural_History::NEVER;
   }
   // print();
   return;
@@ -382,7 +428,7 @@ void Infection::report_infection(int day) {
 void Infection::update(int today) {
   // if host is symptomatic, determine if infection is fatal today.
   // if so, set flag and terminate infection update.
-  if(this->disease->is_case_fatality_enabled() && is_symptomatic(today)) {
+  if(this->disease->is_case_fatality_enabled() && is_symptomatic(today) && this->host->is_immune_to_hospitalization(this->disease->get_id()) == false) {
     int days_symptomatic = today - this->symptoms_start_date;
     if(Global::Enable_Chronic_Condition) {
       if(this->disease->is_fatal(this->host, get_symptoms(today), days_symptomatic)) {	

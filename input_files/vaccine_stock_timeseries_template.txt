@@ -1,0 +1,8 @@
+# line_format
+# Format is:
+# start end stock vaccine_id
+# All fields are mandatory
+# 10 thousand vaccines added to stock everyday for 100 days for vaccine_id = 0
+# 0 100 10000 0
+#
+0 1 0 0

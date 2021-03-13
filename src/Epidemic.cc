@@ -89,9 +89,15 @@ Epidemic::Epidemic(Disease* dis) {
 
   this->people_becoming_symptomatic_today = 0;
   this->people_with_current_symptoms = 0;
+
+  this->people_becoming_hospitalized_today = 0;
+  this->people_with_current_hospitalization = 0;
+  
   this->removed_people = 0;
 
   this->immune_people = 0;
+  this->immune_to_symptoms_people = 0;
+  this->immune_to_hospitalization_people = 0;
   this->vaccinated_people = 0;
 
   this->report_generation_time = false;
@@ -146,6 +152,8 @@ Epidemic::Epidemic(Disease* dis) {
   this->prevalence_count = 0;
   this->incidence = 0;
   this->symptomatic_incidence = 0;
+  this->hospitalization_incidence = 0;
+  this->hospitalization_prevalence = 0;
   this->prevalence = 0.0;
   this->RR = 0.0;
 
@@ -177,6 +185,8 @@ Epidemic::Epidemic(Disease* dis) {
   this->infectious_end_event_queue = new Events;
   this->symptoms_start_event_queue = new Events;
   this->symptoms_end_event_queue = new Events;
+  this->hospitalization_start_event_queue = new Events;
+  this->hospitalization_end_event_queue = new Events;
   this->immunity_start_event_queue = new Events;
   this->immunity_end_event_queue = new Events;
 
@@ -234,14 +244,22 @@ void Epidemic::track_value(int day, char* key, string value) {
 }
 
 
-void Epidemic::become_immune(Person* person, bool susceptible, bool infectious, bool symptomatic) {
+void Epidemic::become_immune(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized) {
   if(!susceptible) {
     this->removed_people++;
   }
   if(symptomatic) {
     this->people_with_current_symptoms--;
-  }
+  }  
   this->immune_people++;
+}
+
+void Epidemic::become_immune_to_symptoms(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized) {
+  this->immune_to_symptoms_people++;
+}
+
+void Epidemic::become_immune_to_hospitalization(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized) {
+  this->immune_to_hospitalization_people++;
 }
 
 void Epidemic::terminate_person(Person* person, int day) {
@@ -258,10 +276,25 @@ void Epidemic::terminate_person(Person* person, int day) {
     date = person->get_symptoms_end_date(this->id);
     if(date > day) {
       FRED_VERBOSE(0, "EPIDEMIC CANCEL symptoms_end_date %d %d\n", date, day);
+      this->people_with_current_symptoms--;
       cancel_symptoms_end(date, person);
     }
   }
 
+  date = person->get_hospitalization_start_date(this->id);
+  if(date > day) {
+    FRED_VERBOSE(0, "EPIDEMIC CANCEL hospitalization_start_date %d %d\n", date, day);
+    cancel_hospitalization_start(date, person);
+  }
+  else if (date > -1) {
+    date = person->get_hospitalization_end_date(this->id);
+    if(date > day) {
+      FRED_VERBOSE(0, "EPIDEMIC CANCEL hospitalization_end_date %d %d\n", date, day);
+      this->people_with_current_hospitalization--;
+      cancel_hospitalization_end(date, person);
+    }
+  }
+  
   date = person->get_infectious_start_date(this->id);
   if(date > day) {
     FRED_VERBOSE(0, "EPIDEMIC CANCEL infectious_start_date %d %d\n", date, day);
@@ -331,7 +364,9 @@ void Epidemic::setup() {
       if(n < 4) {
         tmap->disease_id = 0;
       }
-      this->imported_cases_map.push_back(tmap);
+      if(tmap->disease_id == this->id){
+	this->imported_cases_map.push_back(tmap);
+      }
     }
     ts_input->close();
   }
@@ -415,6 +450,15 @@ void Epidemic::become_exposed(Person* person, int day) {
   }
   this->symptoms_start_event_queue->add_event(symptoms_start_date, person);
 
+  int hospitalization_start_date = person->get_hospitalization_start_date(this->id);
+  if(0 <= hospitalization_start_date && hospitalization_start_date <= day) {
+    FRED_VERBOSE(0, "TIME WARP day %d hosp %d\n", day, hospitalization_start_date);
+    hospitalization_start_date = day + 1;
+  }
+  this->hospitalization_start_event_queue->add_event(hospitalization_start_date, person);
+
+
+  
   // update epidemic counters
   this->exposed_people++;
   this->people_becoming_infected_today++;
@@ -499,6 +543,8 @@ void Epidemic::print_stats(int day) {
   // preserve these quantities for use during the next day
   this->incidence = this->people_becoming_infected_today;
   this->symptomatic_incidence = this->people_becoming_symptomatic_today;
+  this->hospitalization_incidence = this->people_becoming_hospitalized_today;
+  this->hospitalization_prevalence = this->people_with_current_hospitalization;
   this->prevalence_count = this->exposed_people + this->infectious_people;
   this->prevalence = static_cast<double>(this->prevalence_count) / static_cast<double>(this->N);
   this->case_fatality_incidence = this->daily_case_fatality_count;
@@ -571,9 +617,13 @@ void Epidemic::print_stats(int day) {
     track_value(day, (char*)"CFR", case_fatality_rate);
   }
   track_value(day, (char*)"M", this->immune_people);
+  track_value(day, (char*)"Ms", this->immune_to_symptoms_people);
+  track_value(day, (char*)"Mh", this->immune_to_hospitalization_people);
   track_value(day, (char*)"P",this->prevalence_count);
   track_value(day, (char*)"C", this->incidence);
   track_value(day, (char*)"Cs", this->symptomatic_incidence);
+  track_value(day, (char*)"Chosp", this->hospitalization_incidence);
+  track_value(day, (char*)"Phosp", this->hospitalization_prevalence);
   track_value(day, (char*)"AR", this->attack_rate);
   track_value(day, (char*)"ARs", this->symptomatic_attack_rate);
   track_value(day, (char*)"RR", this->RR);
@@ -654,10 +704,12 @@ void Epidemic::print_stats(int day) {
   // prepare for next day
   this->people_becoming_infected_today = 0;
   this->people_becoming_symptomatic_today = 0;
+  this->people_becoming_hospitalized_today = 0;
   this->daily_case_fatality_count = 0;
   this->daily_case_fatality_nursing = 0;
   this->daily_infections_list.clear();
   this->daily_symptomatic_list.clear();
+  this->daily_hospitalization_list.clear();
 }
 
 void Epidemic::report_age_of_infection(int day) {
@@ -1849,6 +1901,10 @@ void Epidemic::process_infectious_end_events(int day) {
     if(-1 < symptoms_end_date && symptoms_end_date < day) {
       recover(person, day);
     }
+    int hospitalization_end_date = person->get_hospitalization_end_date(this->id);
+    if(-1 < hospitalization_end_date && hospitalization_end_date < day) {
+      recover(person, day);
+    }
     if(symptoms_end_date == -1){
       recover(person, day);
       this->infected_not_symp_people--;
@@ -1957,6 +2013,52 @@ void Epidemic::process_symptoms_end_events(int day) {
   this->symptoms_end_event_queue->clear_events(day);
 }
 
+
+void Epidemic::process_hospitalization_start_events(int day) {
+  int size = this->hospitalization_start_event_queue->get_size(day);
+  FRED_VERBOSE(1, "HOSP_START_EVENT_QUEUE day %d size %d\n", day, size);
+  printf("Entered process_hospitalization_start_events, size: %d\n", size);
+  for(int i = 0; i < size; ++i) {
+    Person* person =  this->hospitalization_start_event_queue->get_event(day, i);
+
+    // update next event list
+    int hospitalization_end_date = person->get_hospitalization_end_date(this->id);
+    this->hospitalization_end_event_queue->add_event(hospitalization_end_date, person);
+
+    // update epidemic counters
+    this->people_with_current_hospitalization++;
+    this->people_becoming_hospitalized_today++;    
+        
+    // update person's health chart
+    person->become_hospitalized(this->disease);
+    this->daily_hospitalization_list.push_back(person);
+  }
+  this->hospitalization_start_event_queue->clear_events(day);
+}
+
+void Epidemic::process_hospitalization_end_events(int day) {
+  printf("Entered process_hospitalization_end_events\n");
+  int size = hospitalization_end_event_queue->get_size(day);
+  FRED_VERBOSE(1, "HOSP_END_EVENT_QUEUE day %d size %d\n", day, size);
+
+  for(int i = 0; i < size; ++i) {
+    Person* person = this->hospitalization_end_event_queue->get_event(day, i);
+
+    // update epidemic counters
+    this->people_with_current_hospitalization--;
+
+    // update person's health chart
+    person->resolve_hospitalization(this->disease);
+        
+    // check to see if person has fully recovered:
+    int infectious_end_date = person->get_infectious_end_date(this->id);
+    if (-1 < infectious_end_date && infectious_end_date <= day) {
+      recover(person, day);
+    }
+  }
+  this->hospitalization_end_event_queue->clear_events(day);
+}
+
 void Epidemic::process_immunity_start_events(int day) {
   int size = immunity_start_event_queue->get_size(day);
   FRED_VERBOSE(1, "IMMUNITY_START_EVENT_QUEUE day %d size %d\n", day, size);
@@ -1988,12 +2090,19 @@ void Epidemic::process_immunity_end_events(int day) {
     
     // update person's health chart
     person->become_susceptible(this->id);
+    if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+      for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
+	if(dis_id != this->id){
+	  person->become_susceptible(dis_id);
+	}
+      }
+    }
   }
   this->immunity_end_event_queue->clear_events(day);
 }
 
 void Epidemic::update(int day) {
-
+  printf("Entered EPidemic update for day %d\n", day);
   FRED_VERBOSE(0, "epidemic update for disease %d day %d\n", id, day);
   Utils::fred_start_epidemic_timer();
 
@@ -2013,8 +2122,17 @@ void Epidemic::update(int day) {
   // transition to symptomatic
   process_symptoms_start_events(day);
 
+  printf("Getting ready to process hospitalization_start_events\n");
+  // transition to hospitalization
+  process_hospitalization_start_events(day);
+
+  printf("Getting ready to process symptom end events\n");
   // transition to asymptomatic
   process_symptoms_end_events(day);
+
+  printf("Getting ready to process hospitalization end events\n");
+  // transition to not-hospitalized
+  process_hospitalization_end_events(day);
 
   // transition to immune
   process_immunity_start_events(day);
@@ -2023,11 +2141,16 @@ void Epidemic::update(int day) {
   process_immunity_end_events(day);
 
   //Update sheltering houses
+  //TODO: Should the following line be inthe place_list class?
   if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
-    Global::Places.update_shelter_households(day, this->peak_day,
-					     1.0*this->symptomatic_incidence/this->peak_incidence,
-					     this->days_of_decline);
+    // Only update for the first disease, todo: fix peak_day and all of that
+    if(this->id == 0){
+      Global::Places.update_shelter_households(day, this->peak_day,
+					       1.0*this->symptomatic_incidence/this->peak_incidence,
+					       this->days_of_decline);
+    }
   }
+  
   if(Global::Enable_School_Reduced_Capacity == true && Global::School_reduced_capacity_day <= day){
     printf("School capacity reduced enabled to %.2f day %d\n",Global::School_reduced_capacity, day);
   }
@@ -2036,7 +2159,10 @@ void Epidemic::update(int day) {
    */
   
   if(Global::Enable_Face_Mask_Usage && Global::Enable_Face_Mask_Timeseries_File){
-    Global::Places.update_face_mask_compliance(day);
+    // Only update on disease = 0, otherwise it will update too many times
+    if(this->id == 0){
+      Global::Places.update_face_mask_compliance(day);
+    }
   }
   
   // Utils::fred_print_epidemic_timer("transition events");
@@ -2241,6 +2367,14 @@ void Epidemic::cancel_symptoms_start(int day, Person* person) {
 
 void Epidemic::cancel_symptoms_end(int day, Person* person) {
   this->symptoms_end_event_queue->delete_event(day, person);
+}
+
+void Epidemic::cancel_hospitalization_start(int day, Person* person) {
+  this->hospitalization_start_event_queue->delete_event(day, person);
+}
+
+void Epidemic::cancel_hospitalization_end(int day, Person* person) {
+  this->hospitalization_end_event_queue->delete_event(day, person);
 }
 
 void Epidemic::cancel_infectious_start(int day, Person* person) {

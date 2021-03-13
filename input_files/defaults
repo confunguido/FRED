@@ -466,6 +466,13 @@ vaccine_dose_priority = 0
 vaccine_priority_only = 0
 vaccinate_symptomatics = 0
 refresh_vaccine_queues_daily = 0
+vaccine_acceptance_probability = 1.0
+
+enable_vaccine_stock_timeseries = 0
+vaccine_stock_timeseries_file = none
+## TODO: include this parameter
+vaccine_report_probability_symptomatics = 1.0
+
 
 ## Sample Definition of Vaccine #0
 vaccine_number_of_doses[0] = 1
@@ -479,6 +486,10 @@ vaccine_efficacy_duration_values[0] = 1 99999
 vaccine_next_dosage_day[0][0] = 0
 vaccine_dose_efficacy_age_groups[0][0] = 1 100
 vaccine_dose_efficacy_values[0][0] = 1 0.70
+vaccine_dose_efficacy_symptoms_age_groups[0][0] = 1 100
+vaccine_dose_efficacy_symptoms_values[0][0] = 1 0.0
+vaccine_dose_efficacy_hospitalization_age_groups[0][0] = 1 100
+vaccine_dose_efficacy_hospitalization_values[0][0] = 1 0.0
 vaccine_dose_efficacy_delay_age_groups[0][0] = 1 100
 vaccine_dose_efficacy_delay_values[0][0] = 1 14
 vaccine_strains[0] = 0
@@ -575,6 +586,9 @@ HAZEL_seek_hc_ramp_up_mult = 1.0
 # Number of diseases circulating
 diseases = 1
 
+# Cross protection across diseases disabled by default
+enable_disease_cross_protection = 0
+
 # Names of diseases
 disease_names = 1 influenza
 
@@ -603,6 +617,13 @@ influenza_probability_of_symptoms = 0.67
 ### optional symptoms age map
 influenza_prob_symptoms_age_groups = 0
 influenza_prob_symptoms_values = 0
+
+### hospitalization rate:
+influenza_probability_of_hospitalization = 0.0
+
+### optional hospitalization age map
+influenza_prob_hospitalization_age_groups = 0
+influenza_prob_hospitalization_values = 0
 
 ### optional susceptibility by age
 enable_age_specific_susceptibility = 0
@@ -641,6 +662,14 @@ influenza_full_symptoms_end = 1.0
 influenza_full_infectivity_start = 0.0
 influenza_full_infectivity_end = 1.0
 
+
+#### default: lognormal incubation and symptoms duration
+influenza_hospitalization_distributions = lognormal
+influenza_hospitalization_delay_median = 1.9
+influenza_hospitalization_delay_dispersion = 1.51
+influenza_hospitalization_duration_median = 5.0
+influenza_hospitalization_duration_dispersion = 1.5 
+
 ######################################################
 #
 ### DEFAULT PLACE-SPECIFIC CONTACTS FOR RESPIRATORY TRANSMISSION
@@ -676,6 +705,9 @@ enable_holiday_contacts = 0
 holiday_contact_rate = 1.5
 holiday_start = 10-31
 holiday_end = 01-11
+
+enable_community_contact_timeseries = 0
+community_contact_timeseries_file = none
 
 ##################### END default calibration parameters
 

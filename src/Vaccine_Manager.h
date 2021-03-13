@@ -109,6 +109,8 @@ private:
   Vaccines* vaccine_package;             //Pointer to the vaccines that this manager oversees
   list<Person *> priority_queue;         //Queue for the priority agents
   list<Person *> queue;                  //Queue for everyone else
+
+  double vaccine_acceptance_prob;
   
   //Parameters from Input 
   bool do_vacc;                           //Is Vaccination being performed

@@ -64,6 +64,8 @@ public:
    * @param disease the disease to reference
    */
   void become_immune(Disease* disease);
+  void become_immune_to_symptoms(Disease* disease);
+  void become_immune_to_hospitalization(Disease* disease);
 
   void print(FILE* fp, int disease_id);
 
@@ -133,6 +135,14 @@ public:
     this->health.become_susceptible_by_vaccine_waning(disease_id);
   }
 
+  void become_susceptible_to_symptoms_by_vaccine_waning(int disease_id) {
+    this->health.become_susceptible_to_symptoms_by_vaccine_waning(disease_id);
+  }
+
+  void become_susceptible_to_hospitalization_by_vaccine_waning(int disease_id) {
+    this->health.become_susceptible_to_hospitalization_by_vaccine_waning(disease_id);
+  }
+
   void update_household_counts(int day, int disease_id);
   void update_school_counts(int day, int disease_id);
 
@@ -158,6 +168,14 @@ public:
 
   void resolve_symptoms(Disease* disease) {
     this->health.resolve_symptoms(disease);
+  }
+
+  void become_hospitalized(Disease* disease) {
+    this->health.become_hospitalized(disease);
+  }
+
+  void resolve_hospitalization(Disease* disease) {
+    this->health.resolve_hospitalization(disease);
   }
 
   /**
@@ -321,6 +339,14 @@ public:
     return this->health.is_immune(disease_id);
   }
 
+  bool is_immune_to_symptoms(int disease_id) {
+    return this->health.is_immune_to_symptoms(disease_id);
+  }
+  
+  bool is_immune_to_hospitalization(int disease_id) {
+    return this->health.is_immune_to_hospitalization(disease_id);
+  }
+
   /**
    * @param dis the disease to check
    * @return <code>true</code> if this agent is susceptible to disease, <code>false</code> otherwise
@@ -411,6 +437,14 @@ public:
 
   int get_symptoms_end_date(int disease) const {
     return this->health.get_symptoms_end_date(disease);
+  }
+
+  int get_hospitalization_start_date(int disease) const {
+    return this->health.get_hospitalization_start_date(disease);
+  }
+
+  int get_hospitalization_end_date(int disease) const {
+    return this->health.get_hospitalization_end_date(disease);
   }
 
   int get_immunity_end_date(int disease) const {

@@ -213,7 +213,9 @@ public:
     return this->transmission;
   }
 
-  void become_immune(Person* person, bool susceptible, bool infectious, bool symptomatic);
+  void become_immune(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized);
+  void become_immune_to_symptoms(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized);
+  void become_immune_to_hospitalization(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized);
 
   bool assume_susceptible() {
     return this->make_all_susceptible;

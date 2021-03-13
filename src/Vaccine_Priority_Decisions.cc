@@ -24,6 +24,7 @@
 #include "Health.h"
 #include "Demographics.h"
 #include <iostream>
+#include <string>
 
 Vaccine_Priority_Decision_Specific_Age::Vaccine_Priority_Decision_Specific_Age() : Decision(){ }
 

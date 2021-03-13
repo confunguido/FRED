@@ -140,6 +140,20 @@ void Person::become_immune(Disease* disease) {
   }
 }
 
+void Person::become_immune_to_symptoms(Disease* disease) {
+  int disease_id = disease->get_id();
+  if(!this->health.is_immune_to_symptoms(disease_id)) {
+    this->health.become_immune_to_symptoms(disease);
+  }
+}
+
+void Person::become_immune_to_hospitalization(Disease* disease) {
+  int disease_id = disease->get_id();
+  if(!this->health.is_immune_to_hospitalization(disease_id)) {
+    this->health.become_immune_to_hospitalization(disease);
+  }
+}
+
 Person* Person::give_birth(int day) {
   int age = 0;
   char sex = (Random::draw_random(0.0, 1.0) < 0.5 ? 'M' : 'F');
