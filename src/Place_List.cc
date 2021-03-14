@@ -94,9 +94,8 @@ std::vector<int> Place_List::Shelter_stepwise_duration;
 std::vector<Time_Step_Map_Shelter*> Place_List::shelter_households_timestep;
 std::vector<Time_Step_Map_Face_Mask*> Place_List::face_mask_timestep;
 std::unordered_map<string,double> Place_List::Face_mask_compliance;
-
 std::vector<Time_Step_Map_Community_Contact*> Place_List::community_contact_timestep;
-double Place_List::current_community_contact_rate = 0.0;
+double Place_List::current_community_contact_rate = 1.0;
 
 int Place_List::Shelter_by_age_duration_mean = 0;
 int Place_List::Shelter_by_age_duration_std = 0;
@@ -161,7 +160,7 @@ void Place_List::init_place_type_name_lookup_map() {
 }
 
 void Place_List::get_parameters() {
-
+  
   // get static parameters for all place subclasses
   Household::get_parameters();
   Neighborhood::get_parameters();
@@ -209,7 +208,44 @@ void Place_List::get_parameters() {
     Params::get_param_from_string("military_fixed_staff", &Place_List::Military_fixed_staff);
     Params::get_param_from_string("military_resident_to_staff_ratio", &Place_List::Military_resident_to_staff_ratio);
   }
+  
+  //Read community_contact_timeseries
+  if(Global::Enable_Community_Contact_Timeseries == true){
+    Place_List::community_contact_timestep.clear();
+    char map_file_name[FRED_STRING_SIZE];
+    Params::get_param_from_string("community_contact_timeseries_file", map_file_name);
+    if(strncmp(map_file_name, "none", 4) != 0){
+      Utils::get_fred_file_name(map_file_name);
+      printf("READING: community contact timeseries file: %s\n",map_file_name);
+      ifstream* ts_input = new ifstream(map_file_name);
+      if(!ts_input->is_open()){
+	Utils::fred_abort("Help! Cannot read %s Timestep Map for community contact increase in time\n", map_file_name);
+	abort();
+      }
+      string line;
+      while(getline(*ts_input, line)){
+	if(line[0] == '\n' || line[0] == '#') { // empty line or comment
+	  continue;
+	}
+	char cstr[FRED_STRING_SIZE];
+	std::strcpy(cstr, line.c_str());
 
+	Time_Step_Map_Community_Contact * tmap = new Time_Step_Map_Community_Contact;
+	int n = sscanf(cstr,
+		       "%d %d %lf",
+		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->contact_rate);
+	if(n < 3){
+	  Utils::fred_abort("Need to specify 1.day start, 2. day end, 3. contact rate. ");
+	}
+	if(tmap->contact_rate < 0.0){
+	  tmap->contact_rate = 0.0;
+	}
+	Place_List::community_contact_timestep.push_back(tmap);
+      }
+      ts_input->close();
+    }    
+  }
+  
   // Facemask wearing parameters
   if(Global::Enable_Face_Mask_Usage == true && Global::Enable_Face_Mask_Timeseries_File == true){
     // Load face mask compliance map
@@ -384,42 +420,6 @@ void Place_List::get_parameters() {
     if(Place_List::Shelter_by_age_min_age > Place_List::Shelter_by_age_max_age){
       Utils::fred_abort("Min Age %d cannot be higher than Max Age %d\n", Place_List::Shelter_by_age_min_age, Place_List::Shelter_by_age_max_age);
     }
-  }
-
-  // Update community_contact_timeseries
-  if(Global::Enable_Community_Contact_Timeseries == true){
-    char map_file_name[FRED_STRING_SIZE];
-    Params::get_param_from_string("community_contact_timeseries_file", map_file_name);
-    if(strncmp(map_file_name, "none", 4) != 0){
-      Utils::get_fred_file_name(map_file_name);
-      printf("READING: community contact timeseries file: %s\n",map_file_name);
-      ifstream* ts_input = new ifstream(map_file_name);
-      if(!ts_input->is_open()){
-	Utils::fred_abort("Help! Cannot read %s Timestep Map for community contact increase in time\n", map_file_name);
-	abort();
-      }
-      string line;
-      while(getline(*ts_input, line)){
-	if(line[0] == '\n' || line[0] == '#') { // empty line or comment
-	  continue;
-	}
-	char cstr[FRED_STRING_SIZE];
-	std::strcpy(cstr, line.c_str());
-
-	Time_Step_Map_Community_Contact * tmap = new Time_Step_Map_Community_Contact;
-	int n = sscanf(cstr,
-		       "%d %d %lf",
-		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->contact_rate);
-	if(n < 3){
-	  Utils::fred_abort("Need to specify 1.day start, 2. day end, 3. contact rate. ");
-	}
-	if(tmap->contact_rate < 0.0){
-	  tmap->contact_rate = 0.0;
-	}
-	this->community_contact_timestep.push_back(tmap);
-      }
-      ts_input->close();
-    }    
   }
   
   // If reading sheltering compliance from a file
@@ -3076,11 +3076,11 @@ void Place_List::count_teachers_and_students(){
 }
 
 void Place_List::update_community_contact_increase(int day){
-  Place_List::current_community_contact_rate = 0.0;
+  this->current_community_contact_rate = 1.0;
   for(int i = 0; i < this->community_contact_timestep.size(); ++i){
     Time_Step_Map_Community_Contact* tmap = this->community_contact_timestep[i];
     if(tmap->sim_day_start <= day && day <= tmap->sim_day_end){
-      Place_List::current_community_contact_rate = this->community_contact_timestep[i]->contact_rate;
+      this->current_community_contact_rate = this->community_contact_timestep[i]->contact_rate;
     }
   }
 }

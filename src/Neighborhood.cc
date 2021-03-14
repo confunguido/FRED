@@ -54,6 +54,7 @@ void Neighborhood::get_parameters() {
     Params::get_param_from_string("holiday_contact_rate", &Neighborhood::holiday_contact_rate);
   }
 
+  
   if(Global::Verbose > 0) {
     printf("\nprob_transmission_per_contact before normalization:\n");
     for(int i  = 0; i < n; ++i)  {

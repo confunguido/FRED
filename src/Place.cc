@@ -34,6 +34,8 @@
 #include "Utils.h"
 #include "Vector_Layer.h"
 
+#include "Place_List.h"
+
 #define PI 3.14159265359
 
 // static place type codes
@@ -301,6 +303,11 @@ double Place::get_contact_rate(int sim_day, int disease_id) {
 	}
       }
     }
+    
+    if(Global::Enable_Community_Contact_Timeseries == true){
+      contacts *= Place_List::get_current_community_contact_rate();
+    }
+    
   }
   // FRED_VERBOSE(1,"Disease %d, expected contacts = %f\n", disease_id, contacts);
   return contacts;
