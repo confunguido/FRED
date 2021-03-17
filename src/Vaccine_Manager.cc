@@ -36,6 +36,10 @@ Vaccine_Manager::Vaccine_Manager() {
   this->vaccine_package = NULL;
   this->vaccine_priority_age_low = -1;
   this->vaccine_priority_age_high = -1;
+  this->vaccine_priority_phases_age_low.clear();
+  this->vaccine_priority_phases_age_high.clear();
+  this->vaccine_priority_phases_ID.clear();
+  this->vaccine_priority_phases_pop_prob.clear();
   this->current_vaccine_capacity = -1;
   this->vaccine_priority_only = false;
   this->vaccination_capacity_map = NULL;
@@ -69,32 +73,35 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
     this->do_vacc = false;
     return;
   }
-  // ACIP Priority takes precidence
-  int do_acip_priority;
-  current_policy = VACC_NO_PRIORITY;
-  Params::get_param_from_string("vaccine_prioritize_acip", &do_acip_priority);
-  if(do_acip_priority == 1) {
-    cout << "Vaccination Priority using ACIP recommendations\n";
-    cout << "   Includes: \n";
-    cout << "        Ages 0 to 24\n";
-    cout << "        Pregnant Women\n";
-    cout << "        Persons at risk for complications\n";
-    this->current_policy = VACC_ACIP_PRIORITY;
-    this->vaccine_priority_age_low = 0;
-    this->vaccine_priority_age_high = 24;
-  } else {
-    int do_age_priority;
-    Params::get_param_from_string("vaccine_prioritize_by_age", &do_age_priority);
-    if(do_age_priority) {
-      cout << "Vaccination Priority by Age\n";
-      this->current_policy = VACC_AGE_PRIORITY;
-      Params::get_param_from_string("vaccine_priority_age_low", &this->vaccine_priority_age_low);
-      Params::get_param_from_string("vaccine_priority_age_high", &this->vaccine_priority_age_high);
-      cout << "      Between Ages " << this->vaccine_priority_age_low << " and "
-           << this->vaccine_priority_age_high << "\n";
-    } else {
+
+  if(Global::Enable_Vaccination_Phases == false){
+    // ACIP Priority takes precidence
+    int do_acip_priority;
+    current_policy = VACC_NO_PRIORITY;
+    Params::get_param_from_string("vaccine_prioritize_acip", &do_acip_priority);
+    if(do_acip_priority == 1) {
+      cout << "Vaccination Priority using ACIP recommendations\n";
+      cout << "   Includes: \n";
+      cout << "        Ages 0 to 24\n";
+      cout << "        Pregnant Women\n";
+      cout << "        Persons at risk for complications\n";
+      this->current_policy = VACC_ACIP_PRIORITY;
       this->vaccine_priority_age_low = 0;
-      this->vaccine_priority_age_high = Demographics::MAX_AGE;
+      this->vaccine_priority_age_high = 24;
+    } else {
+      int do_age_priority;
+      Params::get_param_from_string("vaccine_prioritize_by_age", &do_age_priority);
+      if(do_age_priority) {
+	cout << "Vaccination Priority by Age\n";
+	this->current_policy = VACC_AGE_PRIORITY;
+	Params::get_param_from_string("vaccine_priority_age_low", &this->vaccine_priority_age_low);
+	Params::get_param_from_string("vaccine_priority_age_high", &this->vaccine_priority_age_high);
+	cout << "      Between Ages " << this->vaccine_priority_age_low << " and "
+	     << this->vaccine_priority_age_high << "\n";
+      } else {
+	this->vaccine_priority_age_low = 0;
+	this->vaccine_priority_age_high = Demographics::MAX_AGE;
+      }
     }
   }
 
@@ -133,13 +140,110 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
   Params::get_param_from_string("refresh_vaccine_queues_daily", &refresh);
   this->refresh_vaccine_queues_daily = (refresh > 0);
 
-  // Need to fill the Vaccine_Manager Policies
-  this->policies.push_back(new Vaccine_Priority_Policy_No_Priority(this));
-  this->policies.push_back(new Vaccine_Priority_Policy_Specific_Age(this));
-  this->policies.push_back(new Vaccine_Priority_Policy_ACIP(this));
+  if(Global::Enable_Vaccination_Phases == true){
+    // Fill the vaccine manager policies based on the number of phases and each phase identifier
+    int number_of_phases, N_phases_age_low, N_phases_age_high, N_phases_id,N_phases_pop_prob;    Params::get_param_from_string("vaccination_phases_names", &(number_of_phases));
+    Params::get_param_from_string("vaccination_phases_age_low", &(N_phases_age_low));
+    Params::get_param_from_string("vaccination_phases_age_high", &(N_phases_age_high));
+    Params::get_param_from_string("vaccination_phases_id", &(N_phases_id));
+    Params::get_param_from_string("vaccination_phases_pop_prob", &(N_phases_pop_prob));
+    printf("Vaccination phases enabled:: N_names:%d, N_age_low: %d, N_age_high: %d, N_phases_id %d, N_pop_prob %d\n", number_of_phases,N_phases_age_low, N_phases_age_high, N_phases_id, N_phases_pop_prob);
+    if(!(number_of_phases == N_phases_age_low && number_of_phases == N_phases_age_high && number_of_phases == N_phases_id && number_of_phases == N_phases_pop_prob)){
+      Utils::fred_abort("Number of phases should be the same as the ages low and high for vaccination phases, and their IDs, as well as their pop_prob even if pop_prob is 0");
+    }
+    // If phases not specified, create a non-priority one
+    if(number_of_phases <= 0){
+      // Make sure this would work
+      current_policy = VACC_NO_PRIORITY;
+      this->policies.push_back(new Vaccine_Priority_Policy_No_Priority(this));
+      this->vaccine_priority_age_low = 0;
+      this->vaccine_priority_age_high = Demographics::MAX_AGE;
+      printf("Vaccination phases enabled, but phases not specified. Assuming no priority\n");
+    }else{
+      std::vector<string> vaccination_phase_names_un;
+      std::vector<string> vaccination_phase_names;
+      std::vector<double>vaccine_priority_phases_age_low_un;
+      std::vector<double>vaccine_priority_phases_age_high_un;
+      std::vector<double>vaccine_priority_phases_ID_un;
+      std::vector<double>vaccine_priority_phases_pop_prob_un;
+      Params::get_param_vector_from_string((char*)"vaccination_phases_names", vaccination_phase_names_un);
+      char age_low_str[MAX_PARAM_SIZE], age_high_str[MAX_PARAM_SIZE], phase_id_str[MAX_PARAM_SIZE], phase_pop_str[MAX_PARAM_SIZE];
+      Params::get_param((char*)"vaccination_phases_age_low", age_low_str);
+      Params::get_param((char*)"vaccination_phases_age_high",age_high_str);
+      Params::get_param((char*)"vaccination_phases_id",phase_id_str);
+      Params::get_param((char*)"vaccination_phases_pop_prob",phase_pop_str);
+      Params::get_param_vector_from_string(age_low_str, vaccine_priority_phases_age_low_un);
+      Params::get_param_vector_from_string(age_high_str, vaccine_priority_phases_age_high_un);
+      Params::get_param_vector_from_string(phase_id_str, vaccine_priority_phases_ID_un);
+      Params::get_param_vector_from_string(phase_pop_str, vaccine_priority_phases_pop_prob_un);
 
-}
-;
+      std::vector<int>sorted_phase_id;
+      std::vector<int>sorted_phase_indices;
+      std::set<int>unique_phase_id;
+      printf("Trying to reassign vaccine priority phases\n");
+      for(int i = 0; i < vaccine_priority_phases_ID_un.size(); ++i){
+	sorted_phase_id.push_back((int)vaccine_priority_phases_ID_un[i]);
+      }
+      printf("Reassigned to sorted phase id\n");
+      std::sort(sorted_phase_id.begin(), sorted_phase_id.end());
+      for(int i = 0; i < sorted_phase_id.size(); ++i){
+	unique_phase_id.insert(sorted_phase_id[i]);
+      }
+      printf("Assigned phases to a set\n");
+      for(auto it : unique_phase_id){
+	for(int i = 0; i < vaccine_priority_phases_ID_un.size(); ++i){
+	  if(it ==  (int)vaccine_priority_phases_ID_un[i]){
+	    sorted_phase_indices.push_back(i);
+	    this->vaccine_priority_phases_age_low.push_back((int) vaccine_priority_phases_age_low_un[i]);
+	    this->vaccine_priority_phases_age_high.push_back((int)vaccine_priority_phases_age_high_un[i]);
+	    this->vaccine_priority_phases_ID.push_back((int) vaccine_priority_phases_ID_un[i]);
+	    this->vaccine_priority_phases_pop_prob.push_back(vaccine_priority_phases_pop_prob_un[i]);
+	    vaccination_phase_names.push_back(vaccination_phase_names_un[i]);
+	  }
+	}
+      }            
+      // Should we first sort and then add to the list of policies?
+      for(int pp = 0; pp < this->vaccine_priority_phases_ID.size(); pp++){	
+	// Read each priority group and find an appropriate policy, if non existent, add no priority
+	printf("index = %d, priority id: %d, priority name %s\n", pp,(int)this->vaccine_priority_phases_ID[pp], vaccination_phase_names[pp].c_str());
+	if(vaccination_phase_names[pp] == "age"){
+	  printf("Vaccination priority %d, priority based on age. Min Age %d, Max Age %d, ID %d\n", pp, (int)this->vaccine_priority_phases_age_low[pp], (int)this->vaccine_priority_phases_age_high[pp], (int) this->vaccine_priority_phases_ID[pp]);
+	  this->policies.push_back(new Vaccine_Priority_Policy_Phase_Age(this));
+	}else if(vaccination_phase_names[pp] == "essentialworkers"){
+	  printf("Vaccination priority %d, priority to essential workers, ID %d\n", pp, (int)this->vaccine_priority_phases_ID[pp]);
+	  this->policies.push_back(new Vaccine_Priority_Policy_Phase_Essential_Workers(this));
+	}else if(vaccination_phase_names[pp] == "comorbidity"){
+	  printf("Vaccination priority %d, priority to comorbidity groups ID %d\n", pp,(int)this->vaccine_priority_phases_ID[pp]);
+	  this->policies.push_back(new Vaccine_Priority_Policy_Phase_Comorbidities(this));
+	}else if(vaccination_phase_names[pp] == "ltc"){
+	  printf("Vaccination priority %d, priority to LTC groups ID %d\n", pp,(int)this->vaccine_priority_phases_ID[pp]);
+	  this->policies.push_back(new Vaccine_Priority_Policy_Phase_LTC(this));
+	}else if(vaccination_phase_names[pp] == "teachers"){
+	  printf("Vaccination priority %d, priority to teachers groups ID %d\n", pp,(int)this->vaccine_priority_phases_ID[pp]);
+	  this->policies.push_back(new Vaccine_Priority_Policy_Phase_Teachers(this));
+	}else{
+	  printf("Vaccination priority not available, adding a non-priority phase\n");
+	  this->vaccine_priority_phases_age_low[pp] = 0;
+	  this->vaccine_priority_phases_age_high[pp] = Demographics::MAX_AGE;
+	  this->policies.push_back(new Vaccine_Priority_Policy_Phase_No_Priority(this));
+	}
+      }
+    }
+  }else{
+    // Need to fill the Vaccine_Manager Policies
+    this->policies.push_back(new Vaccine_Priority_Policy_No_Priority(this));
+    this->policies.push_back(new Vaccine_Priority_Policy_Specific_Age(this));
+    this->policies.push_back(new Vaccine_Priority_Policy_ACIP(this));
+  }
+
+  if(Global::Enable_Vaccination_Phases == true && this->vaccine_priority_phases_ID.size() > 0){
+    for(int i = 0; i < this->policies.size(); i++){
+      this->policies[i]->print();
+      printf("POLICY %d ID %d---------\nAge min: %d, Age max: %d, Prop. Pop: %.3f\n", i, this->vaccine_priority_phases_ID[i], this->vaccine_priority_phases_age_low[i], this->vaccine_priority_phases_age_high[i], this->vaccine_priority_phases_pop_prob[i]);
+    }
+  }
+};
+
 
 Vaccine_Manager::~Vaccine_Manager() {
   if(this->vaccine_package != NULL) {
@@ -155,15 +259,61 @@ void Vaccine_Manager::fill_queues() {
   if(!this->do_vacc) {
     return;
   }
-  // We need to loop over the entire population that the Manager oversees to put them in a queue.
-  for(int ip = 0; ip < pop->get_index_size(); ip++) {
-    Person * current_person = this->pop->get_person_by_index(ip);
-    if (current_person != NULL) {
-      if(this->policies[current_policy]->choose_first_positive(current_person, 0, 0) == true) {
-	priority_queue.push_back(current_person);
-      } else {
-	if(this->vaccine_priority_only == false)
+  /*
+    We need to loop over the entire population that the Manager oversees to put them in a queue.
+    If phases are enabled, loop over all the policies, in order and then add to the queue
+    Maybe check if policies are overlapping, in that case, only enroll in one queue
+   */
+  if(Global::Enable_Vaccination_Phases == true && this->vaccine_priority_phases_ID.size() > 0){
+    // Load the first queue with policy 0
+    printf("Filling up vaccination priority queues\n");
+    std::vector<std::list<Person*>>priority_queue_vector;
+    for(int ii = 0; ii < this->vaccine_priority_phases_ID.size(); ii++){
+      std::list<Person*> tmp_list;
+      tmp_list.clear();
+      priority_queue_vector.push_back(tmp_list);
+    }
+    printf("Priority queue vector has %d elements, and policies %d\n", priority_queue_vector.size(), this->policies.size());
+      
+    priority_queue.clear();
+    for(int ip = 0; ip < pop->get_index_size(); ip++) {
+      Person * current_person = this->pop->get_person_by_index(ip);
+      if (current_person != NULL) {
+	bool current_person_priority = false;
+	for(int cc = 0; cc < this->policies.size();cc++){
+	  this->current_policy = cc;
+	  if(this->policies[current_policy]->choose_first_positive(current_person, 0, 0) == true) {
+	    priority_queue_vector[current_policy].push_back(current_person);
+	    current_person_priority = true;
+	    break;
+	  }
+	}
+	if(this->vaccine_priority_only == false && current_person_priority == false){
 	  this->queue.push_back(current_person);
+	}
+      }
+    }
+    printf("Priority queue has %lu size, regular queue %lu size\n", this->priority_queue.size(), this->queue.size());
+    for(int ii = 0; ii < priority_queue_vector.size(); ii++){
+      printf("Priority queue for phase %d - %d has size: %lu, regular queue has size %lu\n", (int)this->vaccine_priority_phases_ID[ii], ii, priority_queue_vector[ii].size(), this->queue.size());
+      
+      while(!priority_queue_vector[ii].empty()){
+	this->priority_queue.push_back(priority_queue_vector[ii].front());
+	priority_queue_vector[ii].pop_front();
+      }
+    }
+    
+    printf("Priority queue has %lu size, regular queue %lu size\n", this->priority_queue.size(), this->queue.size());    
+  }else{
+    for(int ip = 0; ip < pop->get_index_size(); ip++) {
+      Person * current_person = this->pop->get_person_by_index(ip);
+      if (current_person != NULL) {
+	if(this->policies[current_policy]->choose_first_positive(current_person, 0, 0) == true) {
+	  priority_queue.push_back(current_person);
+	} else {
+	  if(this->vaccine_priority_only == false)
+	    this->queue.push_back(current_person);
+	}
       }
     }
   }

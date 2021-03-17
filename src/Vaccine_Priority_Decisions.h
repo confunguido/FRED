@@ -50,4 +50,46 @@ public:
   int evaluate(Person* person, int disease, int day);
 };
 
+class Vaccine_Priority_Decision_Phase_Age: public Decision {
+public:
+  Vaccine_Priority_Decision_Phase_Age(Policy *p);
+  Vaccine_Priority_Decision_Phase_Age();
+  int evaluate(Person* person, int disease, int day);
+};
+
+class Vaccine_Priority_Decision_Phase_Essential_Workers: public Decision {
+public:
+  Vaccine_Priority_Decision_Phase_Essential_Workers(Policy *p);
+  Vaccine_Priority_Decision_Phase_Essential_Workers();
+  int evaluate(Person* person, int disease, int day);
+};
+
+class Vaccine_Priority_Decision_Phase_Teachers: public Decision {
+public:
+  Vaccine_Priority_Decision_Phase_Teachers(Policy *p);
+  Vaccine_Priority_Decision_Phase_Teachers();
+  int evaluate(Person* person, int disease, int day);
+};
+
+class Vaccine_Priority_Decision_Phase_Comorbidities: public Decision {
+public:
+  Vaccine_Priority_Decision_Phase_Comorbidities(Policy *p);
+  Vaccine_Priority_Decision_Phase_Comorbidities();
+  int evaluate(Person* person, int disease, int day);
+};
+
+class Vaccine_Priority_Decision_Phase_LTC: public Decision {
+public:
+  Vaccine_Priority_Decision_Phase_LTC(Policy *p);
+  Vaccine_Priority_Decision_Phase_LTC();
+  int evaluate(Person* person, int disease, int day);
+};
+
+class Vaccine_Priority_Decision_Phase_No_Priority: public Decision {
+public:
+  Vaccine_Priority_Decision_Phase_No_Priority(Policy *p);
+  Vaccine_Priority_Decision_Phase_No_Priority();
+  int evaluate(Person* person, int disease, int day);
+};
+
 #endif

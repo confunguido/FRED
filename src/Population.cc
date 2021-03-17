@@ -197,7 +197,7 @@ void Population::setup() {
     }
   }
   this->av_manager->reset();
-  this->vacc_manager->reset();
+  //this->vacc_manager->reset();
 
   // record age-specific popsize
   for(int age = 0; age <= Demographics::MAX_AGE; ++age) {

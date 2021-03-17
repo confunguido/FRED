@@ -360,7 +360,10 @@ void fred_setup(int argc, char* argv[]) {
   if(Global::Enable_Household_Shelter_By_Age){
     printf("FRED.cc::HOUSEHOLD SHELTER BY AGE ENABLED\n");
   }
-  
+
+  if(Global::Enable_Vaccination){
+    Global::Pop.vacc_manager->reset();
+  }
   Utils::fred_print_wall_time("FRED initialization complete");
 
   Utils::fred_start_timer(&Global::Simulation_start_time);

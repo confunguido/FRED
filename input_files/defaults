@@ -470,6 +470,13 @@ vaccine_acceptance_probability = 1.0
 
 enable_vaccine_stock_timeseries = 0
 vaccine_stock_timeseries_file = none
+enable_vaccination_phases = 0
+vaccination_phases_names = 0
+vaccination_phases_age_low = 0
+vaccination_phases_age_high = 0
+vaccination_phases_id = 0
+vaccination_phases_pop_prob = 0
+
 ## TODO: include this parameter
 vaccine_report_probability_symptomatics = 1.0
 

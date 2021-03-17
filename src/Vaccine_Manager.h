@@ -94,6 +94,30 @@ public:
     return this->vaccine_priority_age_high;
   }
 
+  int get_vaccine_priority_age_low(int n) const {
+    if(vaccine_priority_phases_age_low.size() > n){
+      return vaccine_priority_phases_age_low[n];
+    }else{
+      return -120;
+    }
+  }
+
+  int get_vaccine_priority_age_high(int n) const {
+    if(vaccine_priority_phases_age_high.size() > n){
+      return this->vaccine_priority_phases_age_high[n];
+    }else{
+      return -1;
+    }       
+  }
+
+  double get_vaccine_priority_pop_prob(int n) const {
+    if(vaccine_priority_phases_pop_prob.size() > n){
+      return this->vaccine_priority_phases_pop_prob[n];
+    }else{
+      return 0.0;
+    }       
+  }
+
   int get_vaccine_dose_priority() const {
     return this->vaccine_dose_priority;
   }
@@ -120,6 +144,11 @@ private:
   
   int vaccine_priority_age_low;           //Age specific priority
   int vaccine_priority_age_high;
+  vector<int>vaccine_priority_phases_age_low;
+  vector<int>vaccine_priority_phases_age_high;
+  vector<int>vaccine_priority_phases_ID;
+  vector<double>vaccine_priority_phases_pop_prob;
+  
   int vaccine_dose_priority;              //Defines where people getting multiple doses fit in the queue
                                           // See defines above for values
   

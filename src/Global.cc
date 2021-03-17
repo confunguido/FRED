@@ -116,6 +116,7 @@ bool Global::Enable_Household_Shelter = false;
 bool Global::Enable_Household_Shelter_File = false;
 bool Global::Enable_Face_Mask_Timeseries_File = false;
 bool Global::Enable_Vaccine_Stock_Timeseries_File = false;
+bool Global::Enable_Vaccination_Phases = false;
 bool Global::Enable_Community_Contact_Timeseries = false;
 bool Global::Enable_Disease_Cross_Protection = false;
 bool Global::Enable_Face_Mask_Usage = false;
@@ -313,6 +314,8 @@ void Global::get_global_parameters() {
   Global::Enable_Face_Mask_Timeseries_File = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_vaccine_stock_timeseries", &temp_int);
   Global::Enable_Vaccine_Stock_Timeseries_File = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_vaccination_phases", &temp_int);
+  Global::Enable_Vaccination_Phases = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_community_contact_timeseries", &temp_int);
   Global::Enable_Community_Contact_Timeseries = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_face_mask_usage", &temp_int);

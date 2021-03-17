@@ -54,4 +54,53 @@ public:
   Vaccine_Priority_Policy_ACIP(Vaccine_Manager* vcm);
 };
 
+// Policies that rely on phases existing
+class Vaccine_Priority_Policy_Phase_Age:public Policy {
+  Vaccine_Manager *vacc_manager;
+  
+public:
+  Vaccine_Priority_Policy_Phase_Age();
+  Vaccine_Priority_Policy_Phase_Age(Vaccine_Manager* vcm);
+};  
+
+class Vaccine_Priority_Policy_Phase_Essential_Workers:public Policy {
+  Vaccine_Manager *vacc_manager;
+  
+public:
+  Vaccine_Priority_Policy_Phase_Essential_Workers();
+  Vaccine_Priority_Policy_Phase_Essential_Workers(Vaccine_Manager* vcm);
+};  
+
+class Vaccine_Priority_Policy_Phase_Teachers:public Policy {
+  Vaccine_Manager *vacc_manager;
+  
+public:
+  Vaccine_Priority_Policy_Phase_Teachers();
+  Vaccine_Priority_Policy_Phase_Teachers(Vaccine_Manager* vcm);
+};  
+
+class Vaccine_Priority_Policy_Phase_Comorbidities:public Policy {
+  Vaccine_Manager *vacc_manager;
+  
+public:
+  Vaccine_Priority_Policy_Phase_Comorbidities();
+  Vaccine_Priority_Policy_Phase_Comorbidities(Vaccine_Manager* vcm);
+};  
+
+class Vaccine_Priority_Policy_Phase_LTC:public Policy {
+  Vaccine_Manager *vacc_manager;
+  
+public:
+  Vaccine_Priority_Policy_Phase_LTC();
+  Vaccine_Priority_Policy_Phase_LTC(Vaccine_Manager* vcm);
+};  
+
+class Vaccine_Priority_Policy_Phase_No_Priority: public Policy {
+  Vaccine_Manager *vacc_manager;
+  
+public:
+  Vaccine_Priority_Policy_Phase_No_Priority() { }
+  Vaccine_Priority_Policy_Phase_No_Priority(Vaccine_Manager* vcm);
+};
+
 #endif
