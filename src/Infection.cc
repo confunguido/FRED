@@ -164,7 +164,7 @@ void Infection::setup() {
     hospitalization_delay = this->disease->get_natural_history()->get_real_hospitalization_delay(this->host);
     hospitalization_duration = this->disease->get_natural_history()->get_hospitalization_duration(this->host);
     // find symptoms dates (assuming symptoms will occur)
-    this->hospitalization_start_date = this->symptoms_start_date + round(hospitalization_delay);
+    this->hospitalization_start_date = this->symptoms_start_date + round(hospitalization_delay);   
     this->hospitalization_end_date = this->hospitalization_start_date + round(hospitalization_duration) ;
   } else {
     // distribution type == CDF
@@ -180,6 +180,7 @@ void Infection::setup() {
       this->hospitalization_end_date = Natural_History::NEVER;
     }
   }
+
   
   // determine dates for infectiousness
   int infectious_distribution_type = this->disease->get_natural_history()->get_infectious_distribution_type();
@@ -272,6 +273,10 @@ void Infection::setup() {
   if(this->will_be_hospitalized == false){
     this->hospitalization_start_date = Natural_History::NEVER;
     this->hospitalization_end_date = Natural_History::NEVER;
+  }else{
+    if(this->hospitalization_end_date > this->symptoms_end_date){
+      this->symptoms_end_date = this->hospitalization_end_date;
+    }
   }
   // print();
   return;

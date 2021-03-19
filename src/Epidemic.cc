@@ -1899,12 +1899,10 @@ void Epidemic::process_infectious_end_events(int day) {
     // check to see if person has fully recovered:
     int symptoms_end_date = person->get_symptoms_end_date(this->id);
     if(-1 < symptoms_end_date && symptoms_end_date < day) {
-      recover(person, day);
+	recover(person, day);
     }
-    int hospitalization_end_date = person->get_hospitalization_end_date(this->id);
-    if(-1 < hospitalization_end_date && hospitalization_end_date < day) {
-      recover(person, day);
-    }
+    // Hospitalizations are as long as symptoms, no need to include here
+    
     if(symptoms_end_date == -1){
       recover(person, day);
       this->infected_not_symp_people--;

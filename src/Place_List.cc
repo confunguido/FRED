@@ -3083,6 +3083,7 @@ void Place_List::update_community_contact_increase(int day){
       this->current_community_contact_rate = this->community_contact_timestep[i]->contact_rate;
     }
   }
+  printf("Day: %d Updating PLACE_LIST community contact: %.2f\n", day, this->current_community_contact_rate);
 }
 
 void Place_List::update_shelter_households(int day, int peak_day_, double proportion_peak_incidence,
