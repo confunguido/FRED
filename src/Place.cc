@@ -306,9 +306,6 @@ double Place::get_contact_rate(int sim_day, int disease_id) {
     
     if(Global::Enable_Community_Contact_Timeseries == true){
       contacts *= Place_List::get_current_community_contact_rate();
-      if(Place_List::get_current_community_contact_rate() > 1.0){
-	printf("Day %d, community contact is %.2f\n",sim_day, Place_List::get_current_community_contact_rate());
-      }
     }
     
   }

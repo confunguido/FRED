@@ -527,13 +527,15 @@ void Health::become_exposed(int disease_id, Person* infector, Mixing_Group* mixi
   this->exposure_date[disease_id] = day;
   this->infected_in_mixing_group[disease_id] = mixing_group;
 
+  /*
   if(myself->get_id() == 3936721){
     printf("PERSON ID: infectious %d-%d %d symptoms %d to %d hospitalization %d to %d\n", myself->get_id(),
 	   this->get_infectious_start_date(disease_id), this->get_infectious_end_date(disease_id),
 	   this->get_symptoms_start_date(disease_id), this->get_symptoms_end_date(disease_id),
 	   this->get_hospitalization_start_date(disease_id), this->get_hospitalization_end_date(disease_id));
     abort();
-  }
+    }
+  */
   if(Global::Enable_Transmission_Network) {
     FRED_VERBOSE(1, "Joining transmission network: %d\n", myself->get_id());
     myself->join_network(Global::Transmission_Network);
