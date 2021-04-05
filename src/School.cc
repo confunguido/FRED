@@ -95,6 +95,7 @@ School::School(const char* lab, char _subtype, fred::geo lon, fred::geo lat) : P
     this->classrooms[i].clear();
   }
   this->closure_dates_have_been_set = false;
+  this->closure_grade_dates_have_been_set = false;
   this->staff_size = 0;
   this->max_grade = -1;
   this->county_index = -1;
@@ -301,7 +302,7 @@ void School::close(int day, int day_to_close, int duration) {
   this->close_date = day_to_close;
   this->open_date = close_date + duration;
   this->closure_dates_have_been_set = true;
-
+  
   // log this school closure decision
   if(Global::Verbose > 0) {
     printf("SCHOOL %s CLOSURE decision day %d close_date %d duration %d open_date %d\n",
@@ -316,7 +317,6 @@ void School::close_by_grade(int day, int day_to_close, int duration, int min_gra
     this->open_capacity_grade[i] = capacity_in;
     this->closure_grade_dates_have_been_set = true;
   }
-  
   // log this school closure decision
   if(Global::Verbose > 0) {
     printf("SCHOOL %s CLOSURE GRADE decision day %d close_date %d duration %d open_date %d grades: %d-%d capacity %.2f\n",
@@ -326,6 +326,17 @@ void School::close_by_grade(int day, int day_to_close, int duration, int min_gra
 
 
 bool School::is_open(int day) {
+  // Ignore closure if school is open by grades
+  bool open_grade = false;
+  for(int grade = 0; grade < GRADES; grade++){
+    if(day >= this->close_grade_date[grade] && this->open_grade_date[grade] >= day){
+      open_grade = true;
+      break;
+    }
+  }
+  if(open_grade == true){
+    return true;
+  }
   bool open = (day < this->close_date || this->open_date <= day);
   if(open == true && School::global_closure_schedule_is_enabled == true) {
     this->closure_dates_have_been_set = false;
