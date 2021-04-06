@@ -327,22 +327,43 @@ void School::close_by_grade(int day, int day_to_close, int duration, int min_gra
 
 bool School::is_open(int day) {
   // Ignore closure if school is open by grades
+  int sch_census_tract_index = this->get_census_tract_index();
+  long int sch_census_tract = -1;
+  if(sch_census_tract_index > 0){
+    sch_census_tract = Global::Places.get_census_tract_with_index(sch_census_tract_index);
+  }
+  if(sch_census_tract == 11001008405){
+    printf("SCHOOL CENSUS TRACT %lu verifying if it is open on day %d\n", sch_census_tract, day);
+  }
   bool open_grade = false;
   for(int grade = 0; grade < GRADES; grade++){
     if(day >= this->close_grade_date[grade] && this->open_grade_date[grade] >= day){
       open_grade = true;
+      if(sch_census_tract == 11001008405){
+	printf("SCHOOL CENSUS TRACT %lu open for grade %d\n", sch_census_tract, grade);
+      }
       break;
     }
   }
   if(open_grade == true){
+    if(sch_census_tract == 11001008405){
+      printf("SCHOOL CENSUS TRACT %lu open at least for one grade on day %d\n", sch_census_tract, day);
+    }
     return true;
   }
   bool open = (day < this->close_date || this->open_date <= day);
-  if(open == true && School::global_closure_schedule_is_enabled == true) {
+  if(open == true) {
     this->closure_dates_have_been_set = false;
   }
   if(!open) {
+    if(sch_census_tract == 11001008405){
+      printf("SCHOOL CENSUS TRACT %lu closed on day %d\n", sch_census_tract, day);
+    }
     FRED_VERBOSE(1, "Place %s is closed on day %d\n", this->get_label(), day);
+  }else{
+    if(sch_census_tract == 11001008405){
+      printf("SCHOOL CENSUS TRACT %lu open for ALL GRADES on day %d\n", sch_census_tract, day);
+    }
   }
   return open;
 }
@@ -389,6 +410,12 @@ bool School::should_be_open(int day, int disease_id) {
     }
   }
 
+  // global school closure policy in effect
+  if(strcmp(School::school_closure_policy, "global_schedule") == 0) {
+    apply_global_schedule_school_closure_policy(day, disease_id);
+    return is_open(day);
+  }
+  
   // stick to previously made decision to close
   if(this->closure_dates_have_been_set) {
     return is_open(day);
@@ -404,13 +431,7 @@ bool School::should_be_open(int day, int disease_id) {
   if(strcmp(School::school_closure_policy, "individual") == 0) {
     apply_individual_school_closure_policy(day, disease_id);
     return is_open(day);
-  }
-
-  // global school closure policy in effect
-  if(strcmp(School::school_closure_policy, "global_schedule") == 0) {
-    apply_global_schedule_school_closure_policy(day, disease_id);
-    return is_open(day);
-  }
+  }  
 
   // if school_closure_policy is not recognized, then open
   return true;
@@ -439,6 +460,7 @@ void School::apply_global_schedule_school_closure_policy(int day, int disease_id
 	int sch_census_tract_index = this->get_census_tract_index();
 	if(sch_census_tract_index > 0){
 	  long int sch_census_tract = Global::Places.get_census_tract_with_index(sch_census_tract_index);
+	  printf("Applying GLOBAL SCHEDULE with census tract: %lu, checking with school %lu\n", tmap->census_tract, sch_census_tract);
 	  if(tmap->census_tract == sch_census_tract){
 	    close(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start);
 	  }
