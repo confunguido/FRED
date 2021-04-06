@@ -1369,7 +1369,7 @@ void Place_List::read_school_file(unsigned char deme_id, char* location_file, In
 	  }
 	}
 	if(tract_index == n_census_tracts) {
-	  tract_index = -1; // Only read tracts already in the synthetic population of households
+	  this->census_tracts.push_back(census_tract);
 	}
 	//printf("READING SCHOOL %s - CENSUS TRACT %s (%ld) - INDeX: %d (out of %d)\n", tokens[school_id], census_tract_str, census_tract, tract_index, this->census_tracts.size());
       }
@@ -1557,7 +1557,19 @@ void Place_List::prepare() {
     }
   }
 
-
+  // Check schools census tracts
+  if(Global::Verbose > 1){
+    for(int p = 0; p < number_of_schools; ++p) {
+      School* school = get_school_ptr(p);
+      int sch_census_tract_index = school->get_census_tract_index();
+      long int sch_census_tract = -1;
+      if(sch_census_tract_index > 0){
+	sch_census_tract = Global::Places.get_census_tract_with_index(sch_census_tract_index);
+      }
+      printf("SCHOOL %s CENSUS TRACT %lu STUDENTS %d\n", school->get_label(), sch_census_tract, school->get_orig_number_of_students());
+    }  
+  }
+  
   if(Global::Verbose > 1) {
     // check the schools by grade lists
     printf("\n");

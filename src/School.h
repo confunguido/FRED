@@ -250,6 +250,8 @@ private:
   vector<Classroom*> classrooms[GRADES];
   bool closure_dates_have_been_set;
   bool closure_grade_dates_have_been_set;
+  bool school_closure_dates_checked_today;
+  int day_closure_dates_grades_set;
   int max_grade;
   int county_index;
   int income_quartile;

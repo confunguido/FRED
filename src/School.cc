@@ -75,6 +75,8 @@ School::School() : Place() {
   }
   this->closure_dates_have_been_set = false;
   this->closure_grade_dates_have_been_set = false;
+  this->school_closure_dates_checked_today = false;
+  this->day_closure_dates_grades_set = -1;
   this->staff_size = 0;
   this->max_grade = -1;
   this->county_index = -1;
@@ -96,6 +98,8 @@ School::School(const char* lab, char _subtype, fred::geo lon, fred::geo lat) : P
   }
   this->closure_dates_have_been_set = false;
   this->closure_grade_dates_have_been_set = false;
+  this->school_closure_dates_checked_today = false;
+  this->day_closure_dates_grades_set = -1;
   this->staff_size = 0;
   this->max_grade = -1;
   this->county_index = -1;
@@ -332,38 +336,51 @@ bool School::is_open(int day) {
   if(sch_census_tract_index > 0){
     sch_census_tract = Global::Places.get_census_tract_with_index(sch_census_tract_index);
   }
-  if(sch_census_tract == 11001008405){
-    printf("SCHOOL CENSUS TRACT %lu verifying if it is open on day %d\n", sch_census_tract, day);
-  }
-  bool open_grade = false;
-  for(int grade = 0; grade < GRADES; grade++){
-    if(day >= this->close_grade_date[grade] && this->open_grade_date[grade] >= day){
-      open_grade = true;
-      if(sch_census_tract == 11001008405){
-	printf("SCHOOL CENSUS TRACT %lu open for grade %d\n", sch_census_tract, grade);
+  /*if(sch_census_tract == 11001008526){
+    printf("SCHOOL %s CENSUS TRACT %lu verifying if it is open on day %d\n", this->get_label(),sch_census_tract, day);
+    }*/
+  if(this->closure_grade_dates_have_been_set == true){
+    bool open_grade = false;
+    for(int grade = 0; grade < GRADES; grade++){
+      if(day >= this->close_grade_date[grade] && this->open_grade_date[grade] >= day){
+	open_grade = true;
+	/*
+	if(sch_census_tract == 11001008526){
+	  printf("SCHOOL CENSUS TRACT %lu open for grade %d\n", sch_census_tract, grade);
+	  }*/
+	break;
       }
-      break;
     }
-  }
-  if(open_grade == true){
-    if(sch_census_tract == 11001008405){
+    if(open_grade == true){
+      /*
+      if(sch_census_tract == 11001008526){
       printf("SCHOOL CENSUS TRACT %lu open at least for one grade on day %d\n", sch_census_tract, day);
+	}*/
+      //printf("SCHOOL CENSUS TRACT %lu open at least for one grade on day %d\n", sch_census_tract, day);
+      return true;
     }
-    return true;
   }
+  
   bool open = (day < this->close_date || this->open_date <= day);
   if(open == true) {
     this->closure_dates_have_been_set = false;
   }
   if(!open) {
-    if(sch_census_tract == 11001008405){
+    /*
+    if(sch_census_tract == 11001008526){
       printf("SCHOOL CENSUS TRACT %lu closed on day %d\n", sch_census_tract, day);
-    }
+      }*/
     FRED_VERBOSE(1, "Place %s is closed on day %d\n", this->get_label(), day);
-  }else{
-    if(sch_census_tract == 11001008405){
-      printf("SCHOOL CENSUS TRACT %lu open for ALL GRADES on day %d\n", sch_census_tract, day);
+  }
+  /*
+  else{
+    if(sch_census_tract == 11001008526){
+    printf("SCHOOL CENSUS TRACT %lu open for ALL GRADES on day %d, close date (%d) open date(%d)\n", sch_census_tract, day, this->close_date, this->open_date);
     }
+  }
+  */
+  if(open){
+    //printf("SCHOOL CENSUS TRACT %lu open for ALL GRADES on day %d, close date (%d) open date(%d)\n", sch_census_tract, day, this->close_date, this->open_date);
   }
   return open;
 }
@@ -412,7 +429,9 @@ bool School::should_be_open(int day, int disease_id) {
 
   // global school closure policy in effect
   if(strcmp(School::school_closure_policy, "global_schedule") == 0) {
-    apply_global_schedule_school_closure_policy(day, disease_id);
+    if(day > this->day_closure_dates_grades_set){
+      apply_global_schedule_school_closure_policy(day, disease_id);
+    }    
     return is_open(day);
   }
   
@@ -440,6 +459,7 @@ bool School::should_be_open(int day, int disease_id) {
 void School::apply_global_schedule_school_closure_policy(int day, int disease_id) {
   // Should I move this to place list?
   // Every day, check is day is within school closure of time step
+  this->closure_grade_dates_have_been_set = false;
   for(int i = 0; i < School::school_closure_schedule.size(); ++i) {
     Time_Step_Map_Closure* tmap = School::school_closure_schedule[i];
     if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
@@ -450,7 +470,9 @@ void School::apply_global_schedule_school_closure_policy(int day, int disease_id
 	if(sch_census_tract_index > 0){
 	  sch_census_tract = Global::Places.get_census_tract_with_index(sch_census_tract_index);
 	}
-	//printf("Day: %d School in census_tract %ld closed with tmap %s\n", day, sch_census_tract, tmap->to_string().c_str());
+	if(sch_census_tract == 11001008526){
+	  printf("Day: %d School in census_tract %ld closed with tmap %s\n", day, sch_census_tract, tmap->to_string().c_str());
+	}
 	close(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start);
       }else if(tmap->grade_min <= 1 && tmap->grade_max == GRADES && tmap->capacity_open == 0.0 && tmap->income_school > 0){
 	if(tmap->income_school == this->school_income){
@@ -475,6 +497,9 @@ void School::apply_global_schedule_school_closure_policy(int day, int disease_id
 	  if(sch_census_tract_index > 0){
 	    long int sch_census_tract = Global::Places.get_census_tract_with_index(sch_census_tract_index);
 	    if(tmap->census_tract == sch_census_tract){
+	      if(sch_census_tract == 11001008526){
+		printf("Day: %d School in census_tract %ld closed with tmap %s\n", day, sch_census_tract, tmap->to_string().c_str());
+	      }
 	      close_by_grade(day,tmap->sim_day_start, tmap->sim_day_end - tmap->sim_day_start, tmap->grade_min, tmap->grade_max, tmap->capacity_open);
 	    }
 	  }
@@ -487,6 +512,8 @@ void School::apply_global_schedule_school_closure_policy(int day, int disease_id
       }
     }
   }
+  this->day_closure_dates_grades_set = day;
+  this->school_closure_dates_checked_today = false;
 }
 
 void School::apply_global_school_closure_policy(int day, int disease_id) {
