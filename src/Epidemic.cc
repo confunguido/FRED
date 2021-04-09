@@ -456,8 +456,6 @@ void Epidemic::become_exposed(Person* person, int day) {
     hospitalization_start_date = day + 1;
   }
   this->hospitalization_start_event_queue->add_event(hospitalization_start_date, person);
-
-
   
   // update epidemic counters
   this->exposed_people++;
@@ -1921,6 +1919,35 @@ void Epidemic::recover(Person* person, int day) {
   
   // update person's health chart
   person->recover(day, this->disease);
+
+  // Become immune
+  Disease* disease_tmp = Global::Diseases.get_disease(this->id);
+  person->become_immune(disease_tmp);
+  /* Here, we check the probability of immune scape from disease dis_i
+     If there is a 25% immunity scape, then the cross_protection of dis_i should be 0.75
+  */
+  if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+    for(int dis_i = 0; dis_i < Global::Diseases.get_number_of_diseases(); ++dis_i){
+      if(dis_i == this->id){
+	continue;
+      }
+      if(person->is_immune(dis_i) == false){	  
+	person->become_susceptible(dis_i);
+      }
+      double cross_protection_tmp = Global::Diseases.get_disease(dis_i)->get_natural_history()->get_cross_protection_probability();
+      if(Random::draw_random() < cross_protection_tmp) {
+	Disease* disease_tmp = Global::Diseases.get_disease(dis_i);
+	person->become_immune(disease_tmp);
+      }
+    }
+  }
+  // Lose immunity if necessary
+  int immunity_end_date = person->get_immunity_end_date(this->id);
+
+  if(immunity_end_date > -1){
+    this->immunity_end_event_queue->add_event(immunity_end_date, person);
+  }
+
 }
 
 void Epidemic::process_symptoms_start_events(int day) {
@@ -2059,6 +2086,7 @@ void Epidemic::process_hospitalization_end_events(int day) {
 
 void Epidemic::process_immunity_start_events(int day) {
   int size = immunity_start_event_queue->get_size(day);
+  printf("IMMUNITY_START_EVENT_QUEUE day %d size %d\n", day, size);
   FRED_VERBOSE(1, "IMMUNITY_START_EVENT_QUEUE day %d size %d\n", day, size);
 
   for(int i = 0; i < size; ++i) {
@@ -2066,15 +2094,35 @@ void Epidemic::process_immunity_start_events(int day) {
 
     // update epidemic counters
     this->immune_people++;
-
+    
     // update person's health chart
-    // person->become_immune(this->id);
+    Disease* disease_tmp = Global::Diseases.get_disease(this->id);
+    person->become_immune(disease_tmp);
+    /* Here, we check the probability of immune scape from disease dis_i
+       If there is a 25% immunity scape, then the cross_protection of dis_i should be 0.75
+    */
+    if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+      for(int dis_i = 0; dis_i < Global::Diseases.get_number_of_diseases(); ++dis_i){
+	if(dis_i == this->id){
+	  continue;
+	}
+	if(person->is_immune(dis_i) == false){	  
+	  person->become_susceptible(dis_i);
+	}
+	double cross_protection_tmp = Global::Diseases.get_disease(dis_i)->get_natural_history()->get_cross_protection_probability();
+	if(Random::draw_random() < cross_protection_tmp) {
+	  Disease* disease_tmp = Global::Diseases.get_disease(dis_i);
+	  person->become_immune(disease_tmp);
+	}
+      }
+    }
   }
   this->immunity_start_event_queue->clear_events(day);
 }
 
 void Epidemic::process_immunity_end_events(int day) {
   int size = immunity_end_event_queue->get_size(day);
+  printf("IMMUNITY_END_EVENT_QUEUE day %d size %d\n", day, size);
   FRED_VERBOSE(1, "IMMUNITY_END_EVENT_QUEUE day %d size %d\n", day, size);
 
   for(int i = 0; i < size; ++i) {

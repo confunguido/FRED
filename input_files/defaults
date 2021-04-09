@@ -593,9 +593,6 @@ HAZEL_seek_hc_ramp_up_mult = 1.0
 # Number of diseases circulating
 diseases = 1
 
-# Cross protection across diseases disabled by default
-enable_disease_cross_protection = 0
-
 # Names of diseases
 disease_names = 1 influenza
 
@@ -606,6 +603,11 @@ influenza_transmission_mode = respiratory
 
 # basic => on-off infectiousness and symptoms
 influenza_natural_history_model = basic
+
+
+# Cross protection across diseases disabled by default
+enable_disease_cross_protection = 0
+influenza_cross_protection_prob = 0.0
 
 ##########################################################
 #

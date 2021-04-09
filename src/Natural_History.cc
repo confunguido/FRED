@@ -110,6 +110,7 @@ void Natural_History::setup(Disease * _disease) {
   this->age_specific_prob_symptoms = NULL;
   this->age_specific_prob_hospitalization = NULL;
   this->immunity_loss_rate = 0;
+  this->cross_protection_prob = 0.0;
   this->incubation_period_median = 0;
   this->incubation_period_dispersion = 0;
   this->incubation_period_upper_bound = 0;
@@ -310,6 +311,11 @@ void Natural_History::get_parameters() {
   sprintf(paramstr, "%s_infection_immunity", disease_name);
   this->age_specific_prob_infection_immunity->read_from_input(paramstr);
 
+  // Read cross-protection values
+  if(Global::Enable_Disease_Cross_Protection == true){
+    Params::get_indexed_param(disease_name, "cross_protection_prob",&(this->cross_protection_prob));    
+  }
+  
   //case fatality parameters
   Params::get_indexed_param(disease_name, "enable_case_fatality",
 			    &(this->enable_case_fatality));

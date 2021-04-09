@@ -544,8 +544,8 @@ void Health::become_exposed(int disease_id, Person* infector, Mixing_Group* mixi
     for(int dis_i = 0; dis_i < Global::Diseases.get_number_of_diseases(); ++dis_i){
       if(dis_i == disease_id){
 	continue;
-      }
-      become_unsusceptible(Global::Diseases.get_disease(dis_i));
+      }      
+      become_unsusceptible(Global::Diseases.get_disease(dis_i));      
     }
   }
   if(Global::Enable_Vector_Transmission && Global::Diseases.get_number_of_diseases() > 1) {

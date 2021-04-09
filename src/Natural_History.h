@@ -95,6 +95,10 @@ public:
   virtual int get_duration_of_symptoms(Person* host);
   virtual int get_duration_of_hospitalization(Person* host);
 
+  virtual double get_cross_protection_probability(){
+    return this->cross_protection_prob;
+  }
+  
   virtual double get_asymptomatic_infectivity() {
     return this->asymptomatic_infectivity;
   }
@@ -232,6 +236,7 @@ protected:
   Age_Map* age_specific_prob_symptoms;
   Age_Map* age_specific_prob_hospitalization;
   double immunity_loss_rate;
+  double cross_protection_prob;
 
   // parameters for incubation and infectious periods and offsets
   double incubation_period_median;
