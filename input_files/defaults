@@ -722,6 +722,7 @@ community_contact_timeseries_file = none
 
 ### IMMUNITY
 influenza_immunity_loss_rate = 0
+influenza_immunity_proportion_loss = 1
 influenza_residual_immunity_age_groups = 0
 influenza_residual_immunity_values = 0
 influenza_infection_immunity_age_groups = 1 120

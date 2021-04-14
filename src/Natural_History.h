@@ -236,7 +236,9 @@ protected:
   Age_Map* age_specific_prob_symptoms;
   Age_Map* age_specific_prob_hospitalization;
   double immunity_loss_rate;
+  double immunity_proportion_loss;
   double cross_protection_prob;
+  bool will_lose_immunity;
 
   // parameters for incubation and infectious periods and offsets
   double incubation_period_median;

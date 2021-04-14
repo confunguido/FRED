@@ -110,6 +110,8 @@ void Natural_History::setup(Disease * _disease) {
   this->age_specific_prob_symptoms = NULL;
   this->age_specific_prob_hospitalization = NULL;
   this->immunity_loss_rate = 0;
+  this->will_lose_immunity = false;
+  this->immunity_proportion_loss = 1.0;
   this->cross_protection_prob = 0.0;
   this->incubation_period_median = 0;
   this->incubation_period_dispersion = 0;
@@ -293,6 +295,12 @@ void Natural_History::get_parameters() {
   Params::get_indexed_param(disease_name, "full_infectivity_start", &(this->full_infectivity_start));
   Params::get_indexed_param(disease_name, "full_infectivity_end", &(this->full_infectivity_end));
   Params::get_indexed_param(disease_name, "immunity_loss_rate",&(this->immunity_loss_rate));
+  if(this->immunity_loss_rate > 0.0){
+    Params::get_indexed_param(disease_name, "immunity_proportion_loss",&(this->immunity_proportion_loss));
+    if(Random::draw_random() < this->immunity_proportion_loss){
+      this->will_lose_immunity = true;
+    }
+  }
   Params::get_indexed_param(disease_name, "infectivity_threshold", &(this->infectivity_threshold));
   Params::get_indexed_param(disease_name, "symptomaticity_threshold", &(this->symptomaticity_threshold));
 
@@ -387,7 +395,7 @@ int Natural_History::get_duration_of_hospitalization(Person* host) {
 
 int Natural_History::get_duration_of_immunity(Person* host) {
   int days;
-  if(this->immunity_loss_rate > 0.0) {
+  if(this->immunity_loss_rate > 0.0 && this->will_lose_immunity == true) {
     // draw from exponential distribution
     days = floor(0.5 + Random::draw_exponential(this->immunity_loss_rate));
     // printf("DAYS RECOVERED = %d\n", days);
