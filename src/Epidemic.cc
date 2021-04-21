@@ -432,7 +432,7 @@ void Epidemic::become_exposed(Person* person, int day) {
       FRED_VERBOSE(0, "TIME WARP day %d inf %d\n", day, infectious_start_date);
       infectious_start_date = day + 1;
     }
-    this->infectious_start_event_queue->add_event(infectious_start_date, person);
+    this->infectious_start_event_queue->add_event(infectious_start_date, person);    
   } else {
     // This disease is not transmissible, therefore, no one ever becomes
     // infectious.  Consequently, spread_infection is never called. So
@@ -1712,17 +1712,15 @@ void Epidemic::seed_nursing_home_infections(int day){
       // pick a candidate without replacement
       for(int i = 0; i < nursing_home_importations; i++){	
 	int pos_n = Random::draw_random_int(0,N_nursing_homes-1);
-	int infector_n = Random::draw_random_int(0,this->infectious_people-1);
+	int infector_n = Random::draw_random_int(0,this->actually_infectious_people.size()-1);
 	Person* infectee_nh = Global::Places.get_nursing_home_resident_ptr(pos_n);
 	
 	if(infectee_nh->get_health()->is_susceptible(this->id)) {
 	  // infect the candidate, choose a random person to be the infector
 	  FRED_VERBOSE(0, "infecting candidate %d id %d\n", i, infectee_nh->get_id());
-	  infectee_nh->become_exposed(this->id, this->actually_infectious_people[infector_n], infectee_nh->get_household(), day);
+	  infectee_nh->become_exposed(this->id, NULL, NULL, day);
 	  FRED_VERBOSE(0, "exposed candidate %d id %d\n", i, infectee_nh->get_id());
-	  if(this->seeding_type != SEED_EXPOSED) {
-	    advance_seed_infection(infectee_nh);
-	  }
+	  
 	  become_exposed(infectee_nh, day);
 	  nh_imported_cases++;
 	}
@@ -1926,24 +1924,25 @@ void Epidemic::recover(Person* person, int day) {
   /* Here, we check the probability of immune scape from disease dis_i
      If there is a 25% immunity scape, then the cross_protection of dis_i should be 0.75
   */
-  if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
-    for(int dis_i = 0; dis_i < Global::Diseases.get_number_of_diseases(); ++dis_i){
-      if(dis_i == this->id){
-	continue;
-      }
-      if(person->is_immune(dis_i) == false){	  
-	person->become_susceptible(dis_i);
-      }
-      double cross_protection_tmp = Global::Diseases.get_disease(dis_i)->get_natural_history()->get_cross_protection_probability();
-      if(Random::draw_random() < cross_protection_tmp) {
-	Disease* disease_tmp = Global::Diseases.get_disease(dis_i);
-	person->become_immune(disease_tmp);
+  if(person->is_alive()){
+    if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+      for(int dis_i = 0; dis_i < Global::Diseases.get_number_of_diseases(); ++dis_i){
+	if(dis_i == this->id){
+	  continue;
+	}
+	if(person->is_immune(dis_i) == false){	  
+	  person->become_susceptible(dis_i);
+	}
+	double cross_protection_tmp = Global::Diseases.get_disease(dis_i)->get_natural_history()->get_cross_protection_probability();
+	if(Random::draw_random() < cross_protection_tmp) {
+	  Disease* disease_tmp = Global::Diseases.get_disease(dis_i);
+	  person->become_immune(disease_tmp);
+	}
       }
     }
   }
   // Lose immunity if necessary
-  int immunity_end_date = person->get_immunity_end_date(this->id);
-
+  int immunity_end_date = person->get_immunity_end_date(this->id);  
   if(immunity_end_date > -1){
     this->immunity_end_event_queue->add_event(immunity_end_date, person);
   }
@@ -2101,18 +2100,20 @@ void Epidemic::process_immunity_start_events(int day) {
     /* Here, we check the probability of immune scape from disease dis_i
        If there is a 25% immunity scape, then the cross_protection of dis_i should be 0.75
     */
-    if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
-      for(int dis_i = 0; dis_i < Global::Diseases.get_number_of_diseases(); ++dis_i){
-	if(dis_i == this->id){
-	  continue;
-	}
-	if(person->is_immune(dis_i) == false){	  
-	  person->become_susceptible(dis_i);
-	}
-	double cross_protection_tmp = Global::Diseases.get_disease(dis_i)->get_natural_history()->get_cross_protection_probability();
-	if(Random::draw_random() < cross_protection_tmp) {
-	  Disease* disease_tmp = Global::Diseases.get_disease(dis_i);
-	  person->become_immune(disease_tmp);
+    if(person->is_alive()){
+      if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+	for(int dis_i = 0; dis_i < Global::Diseases.get_number_of_diseases(); ++dis_i){
+	  if(dis_i == this->id){
+	    continue;
+	  }
+	  if(person->is_immune(dis_i) == false){	  
+	    person->become_susceptible(dis_i);
+	  }
+	  double cross_protection_tmp = Global::Diseases.get_disease(dis_i)->get_natural_history()->get_cross_protection_probability();
+	  if(Random::draw_random() < cross_protection_tmp) {
+	    Disease* disease_tmp = Global::Diseases.get_disease(dis_i);
+	    person->become_immune(disease_tmp);
+	  }
 	}
       }
     }
@@ -2127,7 +2128,18 @@ void Epidemic::process_immunity_end_events(int day) {
 
   for(int i = 0; i < size; ++i) {
     Person* person = this->immunity_end_event_queue->get_event(day, i);
-
+    bool currently_infected = false;
+    if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+      for(int dis_i = 0; dis_i < Global::Diseases.get_number_of_diseases(); ++dis_i){
+	if(person->get_health()->get_infection(dis_i) != NULL){
+	  currently_infected = true;
+	}
+      }
+    }
+    if(currently_infected == true){
+      printf("Refusing to end partial immunity to other diseases because person is currently infected\n");
+      continue;
+    }
     // update epidemic counters
     this->immune_people--;
     
@@ -2135,11 +2147,13 @@ void Epidemic::process_immunity_end_events(int day) {
     this->removed_people++;
     
     // update person's health chart
-    person->become_susceptible(this->id);
-    if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
-      for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
-	if(dis_id != this->id){
-	  person->become_susceptible(dis_id);
+    if(person->is_alive()){
+      person->become_susceptible_by_natural_waning(this->id);
+      if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+	for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
+	  if(dis_id != this->id){
+	    person->become_susceptible_by_natural_waning(dis_id);
+	  }
 	}
       }
     }

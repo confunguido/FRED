@@ -99,6 +99,7 @@ public:
   void update_interventions(int day);
   void become_exposed(int disease_id, Person* infector, Mixing_Group* mixing_group, int day);
   void become_susceptible(int disease_id);
+  void become_susceptible_by_natural_waning(int disease_id);
   void become_susceptible(Disease* disease);
   void become_susceptible_by_vaccine_waning(int disease_id);
   void become_susceptible_to_symptoms_by_vaccine_waning(int disease_id);

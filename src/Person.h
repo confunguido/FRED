@@ -131,6 +131,10 @@ public:
     this->health.become_susceptible(disease_id);
   }
 
+  void become_susceptible_by_natural_waning(int disease_id) {
+    this->health.become_susceptible_by_natural_waning(disease_id);
+  }
+
   void become_susceptible_by_vaccine_waning(int disease_id) {
     this->health.become_susceptible_by_vaccine_waning(disease_id);
   }

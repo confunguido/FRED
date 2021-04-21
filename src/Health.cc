@@ -433,10 +433,15 @@ Health::~Health() {
 void Health::become_susceptible(int disease_id) {
   if(this->susceptible.test(disease_id)) {
     FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
-			    "HEALTH CHART: %s person %d is already SUSCEPTIBLE for disease %d\n",
+			     "HEALTH CHART: %s person %d is already SUSCEPTIBLE for disease %d\n",
 			    Date::get_date_string().c_str(),
 			    myself->get_id(), disease_id);
     return;
+  }  
+  if(this->infection[disease_id] != NULL){
+    printf("HEALTH CHART: %s person %d has an active infection for disease %d\n",
+	   Date::get_date_string().c_str(),
+	   myself->get_id(), disease_id);
   }
   assert(this->infection[disease_id] == NULL);
   this->susceptibility_multp[disease_id] = 1.0;
@@ -447,6 +452,28 @@ void Health::become_susceptible(int disease_id) {
 			  "HEALTH CHART: %s person %d is SUSCEPTIBLE for disease %d\n",
 			  Date::get_date_string().c_str(),
 			  myself->get_id(), disease_id);
+}
+
+void Health::become_susceptible_by_natural_waning(int disease_id) {
+  if(this->susceptible.test(disease_id)) {
+    this->immunity.reset(disease_id);
+    return;
+  }  
+  if(this->infection[disease_id] == NULL) {
+    // not already infected
+    this->susceptibility_multp[disease_id] = 1.0;
+    this->susceptible.set(disease_id);
+    this->immunity.reset(disease_id);
+    FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
+			    "HEALTH CHART: %s person %d is SUSCEPTIBLE for disease %d by natural waning\n",
+			    Date::get_date_string().c_str(),
+			    myself->get_id(), disease_id);
+  } else {
+    FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
+			    "HEALTH CHART: %s person %d had no vaccine waning because was already infected with disease %d\n",
+			    Date::get_date_string().c_str(),
+			    myself->get_id(), disease_id);
+  }
 }
 
 void Health::become_susceptible_by_vaccine_waning(int disease_id) {
@@ -487,8 +514,12 @@ void Health::become_susceptible_to_hospitalization_by_vaccine_waning(int disease
 
 void Health::become_exposed(int disease_id, Person* infector, Mixing_Group* mixing_group, int day) {
 
-   FRED_VERBOSE(0, "become_exposed: person %d is exposed to disease %d day %d\n",
+  FRED_VERBOSE(0, "become_exposed: person %d is exposed to disease %d day %d\n",
 		            myself->get_id(), disease_id, day);
+  // if(myself->get_id() == 7147928){
+  //   printf("become_exposed: person %d is exposed to disease %d day %d\n",
+  // 	   myself->get_id(), disease_id, day);
+  // }
   if(this->infection[disease_id] != NULL) {
     Utils::fred_abort("DOUBLE EXPOSURE: person %d dis_id %d day %d\n", myself->get_id(), disease_id, day);
   }
@@ -544,7 +575,12 @@ void Health::become_exposed(int disease_id, Person* infector, Mixing_Group* mixi
     for(int dis_i = 0; dis_i < Global::Diseases.get_number_of_diseases(); ++dis_i){
       if(dis_i == disease_id){
 	continue;
-      }      
+      }
+      this->infectious.reset(dis_i);
+      this->symptomatic.reset(dis_i);
+      this->hospitalized.reset(dis_i);
+      this->immunity_end_date[dis_i] = -1;
+      this->immunity.reset(dis_i);
       become_unsusceptible(Global::Diseases.get_disease(dis_i));      
     }
   }
