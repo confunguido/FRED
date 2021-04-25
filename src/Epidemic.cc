@@ -176,6 +176,9 @@ Epidemic::Epidemic(Disease* dis) {
   this->fraction_seeds_infectious = 0.0;
 
   this->imported_cases_map.clear();
+  this->hosp_multiplier_map.clear();
+  this->daily_hospitalization_multiplier = 1.0;
+  
   this->import_by_age = false;
   this->import_age_lower_bound = 0;
   this->import_age_upper_bound = Demographics::MAX_AGE;
@@ -377,6 +380,50 @@ void Epidemic::setup() {
     }
   }
 
+  if(Global::Enable_Hospitalization_Multiplier_File == true){
+    // read time_step_map
+    Params::get_param_from_string("hospitalization_duration_timeseries_file", map_file_name);
+    // If this parameter is "none", then there is no map
+    if(strncmp(map_file_name, "none", 4) != 0){
+      Utils::get_fred_file_name(map_file_name);
+      ifstream* ts_input = new ifstream(map_file_name);
+      if(!ts_input->is_open()) {
+	Utils::fred_abort("Help!  Can't read %s Timestep Map for Hospitalization Multiplier\n", map_file_name);
+	abort();
+      }
+      string line;
+      while(getline(*ts_input,line)){
+	if(line[0] == '\n' || line[0] == '#') { // empty line or comment
+	  continue;
+	}
+	char cstr[FRED_STRING_SIZE];
+	std::strcpy(cstr, line.c_str());
+	Time_Step_Hosp_Map * tmap = new Time_Step_Hosp_Map;
+	int n = sscanf(cstr,
+		       "%d %d %d %lf",
+		       &tmap->sim_day_start, &tmap->sim_day_end,
+		       &tmap->disease_id, &tmap->hosp_multiplier);
+	if(n < 4) {
+	  Utils::fred_abort("Need to specify at least SimulationDayStart, SimulationDayEnd Disease and Hospitalizatoin Multiplier");
+	}
+	if(tmap->disease_id == this->id){
+	  this->hosp_multiplier_map.push_back(tmap);
+	}
+      }
+      ts_input->close();
+    }
+    if (Global::Verbose > 1) {
+      for(int i = 0; i < this->hosp_multiplier_map.size(); ++i) {
+	string ss = this->hosp_multiplier_map[i]->to_string();
+	printf("%s\n", ss.c_str());
+      }
+    }
+    for(int i = 0; i < this->hosp_multiplier_map.size(); ++i) {
+      string ss = this->hosp_multiplier_map[i]->to_string();
+      printf("%s\n", ss.c_str());
+    }
+  }
+  
   Params::get_param_from_string("seed_by_age", &temp);
   this->import_by_age = (temp == 0 ? false : true);
   Params::get_param_from_string("seed_age_lower_bound", &import_age_lower_bound);
@@ -1838,6 +1885,18 @@ void Epidemic::get_imported_infections(int day) {
   }
 }
 
+void Epidemic::get_hospitalization_multiplier_today(int day){ 
+  for(int i = 0; i < this->hosp_multiplier_map.size(); ++i) {
+    Time_Step_Hosp_Map* tmap = this->hosp_multiplier_map[i];
+    if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
+      FRED_VERBOSE(0,"HOSP MULT:\n"); // tmap->print();
+      if(tmap->hosp_multiplier > 0){
+	this->daily_hospitalization_multiplier = tmap->hosp_multiplier;
+      }      
+    }
+  }
+}
+
 void Epidemic::advance_seed_infection(Person* person) {
   // if advanced_seeding is infectious or random
   int d = this->disease->get_id();
@@ -2166,6 +2225,9 @@ void Epidemic::update(int day) {
   FRED_VERBOSE(0, "epidemic update for disease %d day %d\n", id, day);
   Utils::fred_start_epidemic_timer();
 
+  if(Global::Enable_Hospitalization_Multiplier_File == true){
+    get_hospitalization_multiplier_today(day);
+  }  
   // import infections from unknown sources
   get_imported_infections(day);
   // Utils::fred_print_epidemic_timer("imported infections");

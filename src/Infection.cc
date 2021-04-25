@@ -163,6 +163,9 @@ void Infection::setup() {
   if(hospitalization_distribution_type == Natural_History::LOGNORMAL) {
     hospitalization_delay = this->disease->get_natural_history()->get_real_hospitalization_delay(this->host);
     hospitalization_duration = this->disease->get_natural_history()->get_hospitalization_duration(this->host);
+    if(Global::Enable_Hospitalization_Multiplier_File == true){
+      hospitalization_duration *= this->disease->get_epidemic()->get_daily_hospitalization_multiplier();
+    }
     // find symptoms dates (assuming symptoms will occur)
     this->hospitalization_start_date = this->symptoms_start_date + round(hospitalization_delay);   
     this->hospitalization_end_date = this->hospitalization_start_date + round(hospitalization_duration) ;
@@ -172,9 +175,13 @@ void Infection::setup() {
     assert(my_hospitalization_delay > 0); // FRED needs at least one day to become symptomatic
     this->hospitalization_start_date = this->symptoms_start_date + my_hospitalization_delay;
       
-    int my_hospitalization_duration = this->disease->get_natural_history()->get_duration_of_hospitalization(this->host);
+    int my_hospitalization_duration = this->disease->get_natural_history()->get_duration_of_hospitalization(this->host);   
     // duration_of_symptoms <= 0 would mean "symptomatic forever"
+    
     if(my_hospitalization_duration > 0) {
+      if(Global::Enable_Hospitalization_Multiplier_File == true){
+	my_hospitalization_duration *= this->disease->get_epidemic()->get_daily_hospitalization_multiplier();
+      }
       this->hospitalization_end_date = this->hospitalization_start_date + my_hospitalization_duration;
     } else {
       this->hospitalization_end_date = Natural_History::NEVER;
@@ -337,7 +344,7 @@ void Infection::report_infection(int day) {
 	          << (this->infector == NULL ? -1 : this->infector->is_symptomatic()) << " inf_sick_leave "
 	          << (this->infector == NULL ? -1 : this->infector->is_sick_leave_available())
 	    << " at " << mixing_group_type << " mixing_group " <<  mixing_group_id << " subtype " << mixing_group_subtype << " mixing_group_lbl " << mixing_group_label;
-    infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher() << " is_student " << (int)this->host->is_student();
+    infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher() << " is_student " << (int)this->host->is_student() << " total_infections " << (int)this->host->get_total_number_of_infections();
     int income_mixing_group = -1;
     string host_classroom_label =  (this->host->get_classroom() == NULL ? "NA" : Place::get_place_label(this->host->get_classroom()));
     string host_school_label = (this->host->get_school() == NULL ? "NA" : Place::get_place_label(this->host->get_school()));

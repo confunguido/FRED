@@ -270,6 +270,7 @@ public:
   static bool Assign_Teachers;
   static bool Enable_Household_Shelter;
   static bool Enable_Household_Shelter_File;
+  static bool Enable_Hospitalization_Multiplier_File;
   static bool Enable_Household_Shelter_By_Age;
   static bool Enable_Face_Mask_Timeseries_File;
   static bool Enable_Vaccine_Stock_Timeseries_File;

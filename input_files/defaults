@@ -589,6 +589,9 @@ HAZEL_seek_hc_ramp_up_mult = 1.0
 # DISEASE PARAMETERS
 #
 ##########################################################
+## If there's a change in hospitalization duration
+enable_hospitalization_duration_timeseries = 0
+hospitalization_duration_timeseries_file = none
 
 # Number of diseases circulating
 diseases = 1

@@ -65,6 +65,24 @@ struct Time_Step_Map {
   }
 };
 
+struct Time_Step_Hosp_Map {
+  int sim_day_start;
+  int sim_day_end;
+  int disease_id;
+  double hosp_multiplier;
+
+  const std::string to_string() const {
+    std::stringstream ss;
+    ss << "Time Step Map ";
+    ss << " sim_day_start " << sim_day_start;
+    ss << " sim_day_end " << sim_day_end;
+    ss << " disease_id " << disease_id;
+    ss << " hosp_multiplier " << hosp_multiplier;
+    ss << std::endl;
+    return ss.str();
+  }
+};
+
 struct Disease_Count_Info {
   int tot_ppl_evr_inf;
   int tot_ppl_evr_sympt;
@@ -133,6 +151,7 @@ public:
 
   void seed_nursing_home_infections(int day);
   virtual void get_imported_infections(int day);
+  void get_hospitalization_multiplier_today(int day);
   void become_exposed(Person* person, int day);
 
   virtual void update(int day);
@@ -141,6 +160,10 @@ public:
   void find_active_places_of_type(int day, int place_type);
   void spread_infection_in_active_places(int day);
 
+  double get_daily_hospitalization_multiplier(){
+    return this->daily_hospitalization_multiplier;
+  }
+  
   int get_susceptible_people() {
     return this->susceptible_people;
   }
@@ -303,6 +326,9 @@ protected:
 
   // seeding imported cases
   std::vector<Time_Step_Map*> imported_cases_map;
+  std::vector<Time_Step_Hosp_Map*> hosp_multiplier_map;
+  double daily_hospitalization_multiplier;
+  
   bool import_by_age;
   double import_age_lower_bound;
   double import_age_upper_bound;

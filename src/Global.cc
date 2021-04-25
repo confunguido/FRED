@@ -114,6 +114,7 @@ bool Global::Report_County_Demographic_Information = false;
 bool Global::Assign_Teachers = false;
 bool Global::Enable_Household_Shelter = false;
 bool Global::Enable_Household_Shelter_File = false;
+bool Global::Enable_Hospitalization_Multiplier_File = false;
 bool Global::Enable_Face_Mask_Timeseries_File = false;
 bool Global::Enable_Vaccine_Stock_Timeseries_File = false;
 bool Global::Enable_Vaccination_Phases = false;
@@ -310,6 +311,8 @@ void Global::get_global_parameters() {
   Global::Enable_Household_Shelter = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_shelter_in_place_timeseries", &temp_int);
   Global::Enable_Household_Shelter_File = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_hospitalization_duration_timeseries", &temp_int);
+  Global::Enable_Hospitalization_Multiplier_File = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_face_mask_timeseries", &temp_int);
   Global::Enable_Face_Mask_Timeseries_File = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_vaccine_stock_timeseries", &temp_int);

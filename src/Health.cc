@@ -293,6 +293,7 @@ Health::Health() {
   this->infected_in_mixing_group = NULL;
   this->health_condition = NULL;
   this->health_state.clear();
+  this->total_number_of_infections = 0;
 }
 
 void Health::setup(Person* self) {
@@ -537,7 +538,7 @@ void Health::become_exposed(int disease_id, Person* infector, Mixing_Group* mixi
 			      myself->get_id(), disease_id);
     }
   }
-
+  this->total_number_of_infections++;
   this->infectious.reset(disease_id);
   this->symptomatic.reset(disease_id);
   this->hospitalized.reset(disease_id);

@@ -141,7 +141,10 @@ public:
   void terminate(int day);
 
   // ACCESS TO HEALTH CONDITIONS
-
+  int get_total_number_of_infections(){
+    return this->total_number_of_infections;
+  }
+  
   int get_days_symptomatic() { 
     return this->days_symptomatic;
   }
@@ -724,6 +727,7 @@ private:
   Mixing_Group** infected_in_mixing_group;
   int days_symptomatic; 			// over all diseases
   int days_hospitalization;
+  int total_number_of_infections;
 
   // living or not?
   bool alive;

@@ -339,6 +339,10 @@ public:
     return this->health.get_days_symptomatic();
   }
 
+  int get_total_number_of_infections() {
+    return this->health.get_total_number_of_infections();
+  }  
+
   bool is_immune(int disease_id) {
     return this->health.is_immune(disease_id);
   }
@@ -423,6 +427,7 @@ public:
    * @param disease the disease to check
    * @return the simulation day that this agent became exposed to disease
    */
+  
   int get_exposure_date(int disease) const {
     return this->health.get_exposure_date(disease);
   }
@@ -670,7 +675,7 @@ public:
   Past_Infection* get_past_infection(int disease, int i) {
     return this->health.get_past_infection(disease, i);
   }
-
+  
   void clear_past_infections(int disease) {
     this->health.clear_past_infections(disease);
   }
