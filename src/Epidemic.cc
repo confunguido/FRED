@@ -1765,7 +1765,8 @@ void Epidemic::seed_nursing_home_infections(int day){
 	if(infectee_nh->get_health()->is_susceptible(this->id)) {
 	  // infect the candidate, choose a random person to be the infector
 	  FRED_VERBOSE(0, "infecting candidate %d id %d\n", i, infectee_nh->get_id());
-	  infectee_nh->become_exposed(this->id, NULL, NULL, day);
+	  	  
+	  infectee_nh->become_exposed(this->id, this->actually_infectious_people[infector_n], infectee_nh->get_household(), day);
 	  FRED_VERBOSE(0, "exposed candidate %d id %d\n", i, infectee_nh->get_id());
 	  
 	  become_exposed(infectee_nh, day);

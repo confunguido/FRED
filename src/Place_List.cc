@@ -1868,8 +1868,8 @@ void Place_List::setup_group_quarters() {
       int gq_units = house->get_group_quarters_units();
       FRED_VERBOSE(0, "GQ_setup: house %d label %s subtype %c initial size %d units %d\n", p, house->get_label(),
           house->get_subtype(), gq_size, gq_units);
-      //printf("GQ_setup: house %d label %s subtype %c initial size %d units %d\n", p, house->get_label(),
-      //house->get_subtype(), gq_size, gq_units);
+      printf("GQ_setup: house %d label %s subtype %c initial size %d units %d\n", p, house->get_label(),
+      house->get_subtype(), gq_size, gq_units);
       if(house->is_nursing_home()){
 	for(int j = 0; j < gq_size; ++j) {
 	  Person* nursing_person = house->get_enrollee(j);
@@ -2094,9 +2094,11 @@ void Place_List::reassign_workers_to_places_of_type(char place_type, int fixed_s
       if(staff_ratio > 0.0) {
         staff += (0.5 + (double)n / staff_ratio);
       }
+      /*
       if(place_type == Place::TYPE_SCHOOL) {
 	printf("REASSIGN_WORKERS_TO_TEACHERS: STAFF: %d, RATIO %.2f N %d\n",staff, staff_ratio,n);
       }
+      */
       
       Place* nearby_workplace = regional_patch->get_nearby_workplace(place, staff);
       if(nearby_workplace != NULL) {
@@ -2122,6 +2124,7 @@ void Place_List::reassign_workers_to_group_quarters(char subtype, int fixed_staf
   for(int p = 0; p < number_places; ++p) {
     Place* place = this->places[p];
     if(place->is_workplace() && place->get_subtype() == subtype) {
+      printf("Place %d entered\n", p);
       fred::geo lat = place->get_latitude();
       fred::geo lon = place->get_longitude();
       double x = Geo::get_x(lon);
@@ -2141,7 +2144,11 @@ void Place_List::reassign_workers_to_group_quarters(char subtype, int fixed_staf
       if(resident_to_staff_ratio > 0.0) {
         staff += 0.5 + (double)place->get_size() / resident_to_staff_ratio;
       }
-
+      
+      if(subtype == Place::SUBTYPE_NURSING_HOME) {
+	printf("REASSIGN_WORKERS_TO_NURSING_HOME_STAFF: STAFF: %d, RATIO %.2f N %d\n",staff, resident_to_staff_ratio,place->get_size());
+      }
+      
       Place* nearby_workplace = regional_patch->get_nearby_workplace(place, staff);
       if(nearby_workplace != NULL) {
         // make all the workers in selected workplace as workers in the target place

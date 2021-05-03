@@ -317,8 +317,7 @@ void Respiratory_Transmission::default_transmission_model(int day, int disease_i
 }
 
 
-void Respiratory_Transmission::pairwise_transmission_model(int day, int disease_id, Place* place) {
-
+void Respiratory_Transmission::pairwise_transmission_model(int day, int disease_id, Place* place) {  
   person_vec_t* infectious = place->get_infectious_people(disease_id);
   person_vec_t* susceptibles = place->get_enrollees();
 
