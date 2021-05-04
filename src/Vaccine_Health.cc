@@ -91,21 +91,26 @@ void Vaccine_Health::update(int day, double age){
   // First check for immunity 
   if (is_effective()) {
     if (day == vaccination_effective_day) {
-      Disease* disease = Global::Diseases.get_disease(0);
-      if (person->is_infected(disease->get_id())==false) {
-	person->become_immune(disease);
-	effective = true;
-	if(Global::Verbose > 0) {
-	  cout << "Agent " << person->get_id() 
-	       << " has become immune from dose "<< current_dose 
-	       << " on day " << day << "\n";
+      for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
+	if(Global::Enable_Disease_Cross_Protection == false && dis_id > 0){
+	  break;
 	}
-      }
-      else {
-	if(Global::Verbose > 0) {
-	  cout << "Agent " << person->get_id() 
-	       << " was already infected so did not become immune from dose "<< current_dose 
-	       << " on day " << day << "\n";
+	Disease* disease = Global::Diseases.get_disease(dis_id);
+	if (person->is_infected(disease->get_id())==false) {
+	  person->become_immune(disease);
+	  effective = true;
+	  if(Global::Verbose > 0) {
+	    cout << "Agent " << person->get_id() 
+		 << " has become immune from dose "<< current_dose 
+		 << " on day " << day << "\n";
+	  }
+	}
+	else {
+	  if(Global::Verbose > 0) {
+	    cout << "Agent " << person->get_id() 
+		 << " was already infected so did not become immune from dose "<< current_dose 
+		 << " on day " << day << "\n";
+	  }
 	}
       }
     }
@@ -133,24 +138,30 @@ void Vaccine_Health::update(int day, double age){
   // Next check on symptoms
   if (is_effective_symptoms()) {
     if (day == vaccination_effective_symp_day) {
-      Disease* disease = Global::Diseases.get_disease(0);
-      if (person->is_infected(disease->get_id())==false) {
-	// Make person become immune to symptoms
-	person->become_immune_to_symptoms(disease);
-	
-	effective_symptoms = true;
-	
-	if(Global::Verbose > 0) {
-	  cout << "Agent " << person->get_id() 
-	       << " has become immune to symptoms from dose "<< current_dose 
-	       << " on day " << day << "\n";
+      for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
+	if(Global::Enable_Disease_Cross_Protection == false && dis_id > 0){
+	  break;
 	}
-      }
-      else {
-	if(Global::Verbose > 0) {
-	  cout << "Agent " << person->get_id() 
-	       << " was already infected so did not become immune to symptoms from dose "<< current_dose 
-	       << " on day " << day << "\n";
+      // Include cross protection here instead of in Health.cc
+	Disease* disease = Global::Diseases.get_disease(dis_id);
+	if (person->is_infected(disease->get_id())==false) {
+	  // Make person become immune to symptoms
+	  person->become_immune_to_symptoms(disease);
+	  
+	  effective_symptoms = true;
+	
+	  if(Global::Verbose > 0) {
+	    cout << "Agent " << person->get_id() 
+		 << " has become immune to symptoms from dose "<< current_dose 
+		 << " on day " << day << "\n";
+	  }
+	}
+	else {
+	  if(Global::Verbose > 0) {
+	    cout << "Agent " << person->get_id() 
+		 << " was already infected so did not become immune to symptoms from dose "<< current_dose 
+		 << " on day " << day << "\n";
+	  }
 	}
       }
     }
@@ -180,24 +191,30 @@ void Vaccine_Health::update(int day, double age){
   // Next check on severe disease
   if (is_effective_hospitalization()) {
     if (day == vaccination_effective_hosp_day) {
-      Disease* disease = Global::Diseases.get_disease(0);
-      if (person->is_infected(disease->get_id())==false) {
-	// Make person become immune to symptoms
-	person->become_immune_to_hospitalization(disease);
-	
-	effective_hospitalization = true;
-	
-	if(Global::Verbose > 0) {
-	  cout << "Agent " << person->get_id() 
-	       << " has become immune to hospitalization from dose "<< current_dose 
-	       << " on day " << day << "\n";
+      for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
+	if(Global::Enable_Disease_Cross_Protection == false && dis_id > 0){
+	  break;
 	}
-      }
-      else {
-	if(Global::Verbose > 0) {
-	  cout << "Agent " << person->get_id() 
-	       << " was already infected so did not become immune to hospitalization from dose "<< current_dose 
-	       << " on day " << day << "\n";
+      // Include cross protection here instead of in Health.cc
+	Disease* disease = Global::Diseases.get_disease(dis_id);
+	if (person->is_infected(disease->get_id())==false) {
+	  // Make person become immune to symptoms
+	  person->become_immune_to_hospitalization(disease);
+	
+	  effective_hospitalization = true;
+	
+	  if(Global::Verbose > 0) {
+	    cout << "Agent " << person->get_id() 
+		 << " has become immune to hospitalization from dose "<< current_dose 
+		 << " on day " << day << "\n";
+	  }
+	}
+	else {
+	  if(Global::Verbose > 0) {
+	    cout << "Agent " << person->get_id() 
+		 << " was already infected so did not become immune to hospitalization from dose "<< current_dose 
+		 << " on day " << day << "\n";
+	  }
 	}
       }
     }
