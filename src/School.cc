@@ -232,7 +232,7 @@ void School::get_parameters() {
 	int n = sscanf(cstr,
 		       "%d %d %d %d %lg %d %ld",
 		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->grade_min, &tmap->grade_max, &tmap->capacity_open, &tmap->income_school, &tmap->census_tract);
-	printf("SCHOOL SCHEDULE LINES: %d\n",n);
+	//printf("SCHOOL SCHEDULE LINES: %d\n",n);
 	if(n < 5) {
 	  Utils::fred_abort("Need to specify at least SimulationDayStart, SimulationDayEnd, Minimum grade, and Maximum Grade (0-20), capacity open");
 	}
@@ -258,11 +258,11 @@ void School::get_parameters() {
       ts_input->close();
     }
   }
-
+  /*
   for(int i = 0; i < School::school_closure_schedule.size(); ++i){
     string ss = School::school_closure_schedule[i]->to_string();
     printf("%s\n", ss.c_str());
-  }
+    }*/
     
   
   

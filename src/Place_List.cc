@@ -343,7 +343,7 @@ void Place_List::get_parameters() {
 	int n = sscanf(cstr,
 		       "%d %d %lf %s",
 		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->compliance, &lstr);
-	printf("LINES: %d\n",n);
+	//printf("LINES: %d\n",n);
 	if(n < 4) {
 	  Utils::fred_abort("Need to specify at least SimulationDayStart, SimulationDayEnd and shelter compliance for Time_Step_Map_Face_Mask of facemask wearing by place.");
 	}
@@ -355,13 +355,14 @@ void Place_List::get_parameters() {
       }
       ts_input->close();
     }
-    
-    for(int i = 0; i < face_mask_timestep.size(); ++i){
-      string ss = this->face_mask_timestep[i]->to_string();
-      printf("%s\n", ss.c_str());
+    if(Global::Verbose > 1){
+      for(int i = 0; i < face_mask_timestep.size(); ++i){
+	string ss = this->face_mask_timestep[i]->to_string();
+	printf("%s\n", ss.c_str());
+      }
     }
     
-    if (Global::Verbose > -1) {
+    if (Global::Verbose > 1) {
       for(int i = 0; i < this->shelter_households_timestep.size(); ++i) {
 	string ss = this->shelter_households_timestep[i]->to_string();
 	printf("%s\n", ss.c_str());
