@@ -436,7 +436,8 @@ void fred_step(int day) {
 
   // distribute AVs
   Global::Pop.av_manager->update(day);
-
+  Utils::fred_print_lap_time("day %d update vaccines", day);
+  
   // update generic activities (individual activities updated only if
   // needed -- see below)
   Activities::update(day);
