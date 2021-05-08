@@ -97,6 +97,7 @@ public:
   void update_infection(int day, int disease_id);
   void update_face_mask_decision(int day, int disease_id);
   void update_interventions(int day);
+  void update_vaccine_interventions(int day);
   void become_exposed(int disease_id, Person* infector, Mixing_Group* mixing_group, int day);
   void become_susceptible(int disease_id);
   void become_susceptible_by_natural_waning(int disease_id);
@@ -319,6 +320,10 @@ public:
     }
   }
 
+  int is_vaccine_effective_any() const;
+  int get_vaccination_any_effective_day() const;
+
+  int get_vaccination_immunity_loss_day() const;
   /**
    * @return the number of vaccines this agent has taken
    */

@@ -928,25 +928,53 @@ void Health::update_face_mask_decision(int day, int disease_id) {
   }
 }
 
+void Health::update_vaccine_interventions(int day){
+  if(!(this->alive)) {
+    return;
+  }
+  if(this->intervention_flags[Intervention_flag::TAKES_VACCINE]) {
+    int size = (int)(this->vaccine_health->size());
+    for(int i = 0; i < size; ++i) {
+      (*this->vaccine_health)[i]->update(day, myself->get_real_age());
+    }
+  }  
+}
+
+int Health::is_vaccine_effective_any() const{
+  if(this->vaccine_health){
+    return (*this->vaccine_health)[0]->is_effective_any();
+  }else{
+    return -1;
+  }
+}
+
+int Health::get_vaccination_any_effective_day() const{
+  if(this->vaccine_health){
+    return (*this->vaccine_health)[0]->get_vaccination_any_effective_day();
+    }else{
+    return -1;
+  }
+}
+
+int Health::get_vaccination_immunity_loss_day() const {
+  if(this->vaccine_health){
+    return (*this->vaccine_health)[0]->get_vaccine_immunity_loss_day();
+  }else{
+    return -1;
+  }
+}
+
 void Health::update_interventions(int day) {
   // if deceased, health status should have been cleared during population
   // update (by calling Person->die(), then Health->die(), which will reset (bool) alive
   if(!(this->alive)) {
     return;
   }
-  if(this->intervention_flags.any()) {
-    // update vaccine status
-    if(this->intervention_flags[Intervention_flag::TAKES_VACCINE]) {
-      int size = (int)(this->vaccine_health->size());
-      for(int i = 0; i < size; ++i) {
-        (*this->vaccine_health)[i]->update(day, myself->get_real_age());
-      }
-    }
-    // update antiviral status
-    if(this->intervention_flags[Intervention_flag::TAKES_AV]) {
-      for(av_health_itr i = this->av_health->begin(); i != this->av_health->end(); ++i) {
-        (*i)->update(day);
-      }
+  //if(this->intervention_flags.any()) {
+  // update antiviral status
+  if(this->intervention_flags[Intervention_flag::TAKES_AV]) {
+    for(av_health_itr i = this->av_health->begin(); i != this->av_health->end(); ++i) {
+      (*i)->update(day);
     }
   }
 } // end Health::update_interventions

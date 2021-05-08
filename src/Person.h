@@ -89,6 +89,22 @@ public:
     this->health.update_interventions(day);
   }
 
+  int is_vaccine_effective_any(){
+    return (this->health.is_vaccine_effective_any());
+  }
+
+  int get_vaccination_any_effective_day(){
+    return (this->health.get_vaccination_any_effective_day());
+  }
+
+  int get_vaccination_immunity_loss_day(){
+    return (this->health.get_vaccination_immunity_loss_day());
+  }
+
+  void update_vaccine_interventions(int day) {
+    this->health.update_vaccine_interventions(day);
+  }
+
   /**
    * @param day the simulation day
    * @see Behavior::update(int day)

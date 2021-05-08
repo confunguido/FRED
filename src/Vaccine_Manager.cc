@@ -29,6 +29,7 @@
 #include "Timestep_Map.h"
 #include "Utils.h"
 #include "Tracker.h"
+#include "Events.h"
 
 #include <algorithm>
 
@@ -48,12 +49,19 @@ Vaccine_Manager::Vaccine_Manager() {
   this->vaccine_dose_priority = -1;
   this->refresh_vaccine_queues_daily = false;
   this->vaccinate_symptomatics = false;
+  this->vaccine_immunity_start_event_queue = new Events();
+  this->vaccine_immunity_end_event_queue = new Events();
+  printf("Finished createing vaccine manager ()\n");
 }
 
 Vaccine_Manager::Vaccine_Manager(Population *_pop) :
   Manager(_pop) {
   printf("Vaccine manager entered\n");
   this->pop = _pop;
+
+  this->vaccine_immunity_start_event_queue = new Events();
+  this->vaccine_immunity_end_event_queue = new Events();
+  printf("Created queues in vaccine manager (pop)\n");
 
   this->vaccine_package = new Vaccines();
   int num_vaccs = 0;
@@ -430,6 +438,11 @@ void Vaccine_Manager::update(int day) {
 
     // vaccinate people in the queues:
     vaccinate(day);
+
+    printf("After vaccinating, process immunity events\n");
+    //Update events for: gaining immunity and loss of imminuty
+    this->process_vaccine_immunity_start_events(day);
+    this->process_vaccine_immunity_end_events(day);
   }
 }
 
@@ -444,6 +457,38 @@ void Vaccine_Manager::reset() {
 
 void Vaccine_Manager::print() {
   this->vaccine_package->print();
+}
+
+void Vaccine_Manager::process_vaccine_immunity_start_events(int day){
+  int size = this->vaccine_immunity_start_event_queue->get_size(day);
+  FRED_VERBOSE(-1, "VAX_IMM_START_EVENT_QUEUE day %d size %d\n", day, size);
+  if(size <= 0){
+    return;
+  }
+  for(int i = 0; i < size; ++i) {
+    Person* person =  this->vaccine_immunity_start_event_queue->get_event(day, i);
+
+    FRED_VERBOSE(1,"vaccine_immunity_start_event day %d person %d\n",
+		 day, person->get_id());
+    person->update_vaccine_interventions(day);
+  }
+  this->vaccine_immunity_start_event_queue->clear_events(day);
+}
+
+void Vaccine_Manager::process_vaccine_immunity_end_events(int day){
+  int size = this->vaccine_immunity_end_event_queue->get_size(day);
+  FRED_VERBOSE(-1, "VAX_IMM_END_EVENT_QUEUE day %d size %d\n", day, size);
+  if(size <= 0){
+    return;
+  }
+  for(int i = 0; i < size; ++i) {
+    Person* person =  this->vaccine_immunity_end_event_queue->get_event(day, i);
+
+    FRED_VERBOSE(1,"vaccine_immunity_end_event day %d person %d\n",
+		 day, person->get_id());
+    person->update_vaccine_interventions(day);
+  }
+  this->vaccine_immunity_end_event_queue->clear_events(day);
 }
 
 void Vaccine_Manager::vaccinate(int day) {
@@ -526,8 +571,24 @@ void Vaccine_Manager::vaccinate(int day) {
         Vaccine* vacc = this->vaccine_package->get_vaccine(vacc_app);
         vacc->remove_stock(1);
         total_vaccines_avail--;
-        current_person->take_vaccine(vacc, day, this);
+        current_person->take_vaccine(vacc, day, this);	
         ip = this->priority_queue.erase(ip);  // remove a vaccinated person
+	// ADD VACCINE EVENTS TO QUEUE TO PROCESS LATER
+	int is_vax_effective = current_person->is_vaccine_effective_any();
+	if(is_vax_effective != -1){
+	  int eff_day = current_person->get_vaccination_any_effective_day();
+	  if(eff_day > -1){
+	    this->vaccine_immunity_start_event_queue->add_event(eff_day, current_person);
+	    
+	    // Cancel immunity end events first
+	    int eff_end_day = current_person->get_vaccination_immunity_loss_day();
+	    if(eff_end_day > day){
+	      // Add new immunity start/end events
+	      // Make sure when ending immunity to check that the day is the immunity end day
+	      this->vaccine_immunity_end_event_queue->add_event(eff_end_day, current_person);
+	    }
+	  }
+	}
       } else {
         reject_count++;
 	// TODO: HBM FIX THIS!
@@ -622,12 +683,27 @@ void Vaccine_Manager::vaccinate(int day) {
         accept_count++;
         number_vaccinated++;
         this->current_vaccine_capacity--;
-        n_r_vaccinated++;
+        n_r_vaccinated++;	
         Vaccine* vacc = this->vaccine_package->get_vaccine(vacc_app);
         vacc->remove_stock(1);
         total_vaccines_avail--;
         current_person->take_vaccine(vacc, day, this);
         ip = this->queue.erase(ip);  // remove a vaccinated person
+
+	int is_vax_effective = current_person->is_vaccine_effective_any();
+	if(is_vax_effective != -1){
+	  int eff_day = current_person->get_vaccination_any_effective_day();
+	  if(eff_day > -1){
+	    this->vaccine_immunity_start_event_queue->add_event(eff_day, current_person);	    
+	    // Cancel immunity end events first
+	    int eff_end_day = current_person->get_vaccination_immunity_loss_day();
+	    if(eff_end_day > day){
+	      // Add new immunity start/end events
+	      // Make sure when ending immunity to check that the day is the immunity end day
+	      this->vaccine_immunity_end_event_queue->add_event(eff_end_day, current_person);
+	    }
+	  }
+	}
       } else {
         // printf("vaccine rejected by person %d age %0.1f\n", current_person->get_id(), current_person->get_real_age());
         reject_count++;

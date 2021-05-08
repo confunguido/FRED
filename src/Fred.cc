@@ -408,7 +408,11 @@ void fred_step(int day) {
   }
 
   // update everyone's health intervention status
-  if(Global::Enable_Vaccination || Global::Enable_Antivirals) {
+  if(Global::Enable_Antivirals) {
+    /* This will take a very long time to run, why are we doing this?
+     Very inefficient, it goes through all the population and checks if their immunity is today or if they lose immunity today.
+     At least, we have to reduce this to all the population. Will move this to either vaccine manager or disease update
+    */
     Global::Pop.update_health_interventions(day);
   }
 
@@ -432,11 +436,12 @@ void fred_step(int day) {
   }
 
   // distribute vaccines
+  Utils::fred_print_lap_time("day %d moving to process vaccines", day);
   Global::Pop.vacc_manager->update(day);
-
+  Utils::fred_print_lap_time("day %d update vaccines", day);
   // distribute AVs
   Global::Pop.av_manager->update(day);
-  Utils::fred_print_lap_time("day %d update vaccines", day);
+
   
   // update generic activities (individual activities updated only if
   // needed -- see below)

@@ -39,6 +39,7 @@ class Vaccines;
 class Person;
 class Policy;
 class Timestep_Map;
+class Events;
 
 class Vaccine_Manager: public Manager {
   //Vaccine_Manager handles a stock of vaccines
@@ -130,6 +131,12 @@ public:
   void print();
   
 private:
+  // events processing
+  void process_vaccine_immunity_start_events(int day);
+  void process_vaccine_immunity_end_events(int day);
+  Events* vaccine_immunity_start_event_queue;
+  Events* vaccine_immunity_end_event_queue;
+  
   Vaccines* vaccine_package;             //Pointer to the vaccines that this manager oversees
   list<Person *> priority_queue;         //Queue for the priority agents
   list<Person *> queue;                  //Queue for everyone else

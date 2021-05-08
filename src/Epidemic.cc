@@ -379,7 +379,7 @@ void Epidemic::setup() {
       printf("%s\n", ss.c_str());
     }
   }
-
+  
   if(Global::Enable_Hospitalization_Multiplier_File == true){
     // read time_step_map
     Params::get_param_from_string("hospitalization_duration_timeseries_file", map_file_name);
