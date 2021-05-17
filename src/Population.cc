@@ -15,6 +15,7 @@
 //
 
 #include <unistd.h>
+#include <chrono>
 
 #include "Activities.h"
 #include "Age_Map.h"
@@ -44,6 +45,9 @@
 #if SNAPPY
 #include "Compression.h"
 #endif
+
+using namespace std;
+using namespace std::chrono;
 
 char Population::pop_outfile[FRED_STRING_SIZE];
 char Population::output_population_date_match[FRED_STRING_SIZE];
@@ -531,22 +535,28 @@ void Population::read_population(const char* pop_dir, const char* pop_id, const 
 }
 
 void Population::remove_dead_from_population(int day) {
+  high_resolution_clock::time_point dead_start_timer = high_resolution_clock::now();
   size_t deaths = this->death_list.size();
+  printf("Day %d. Removing dead people from population: size %lu\n", day, deaths);
   for(size_t i = 0; i < deaths; ++i) {
     Person* person = this->death_list[i];
     remove_dead_person_from_population(day, person);
   }
   // clear the death list
   this->death_list.clear();
+  high_resolution_clock::time_point dead_end_timer = high_resolution_clock::now();
+  double dead_duration = 0.000001 * std::chrono::duration_cast<std::chrono::microseconds>(dead_end_timer - dead_start_timer).count();
+  printf("Day %d. Deaths removed from population: size %lu. Took %f\n", day, deaths, dead_duration);
 }
 
 void Population::remove_dead_person_from_population(int day, Person* person) {
-  // remove from vaccine queues
+  // remove from vaccine queues  
+  /*----Here is the issue with slow simulation with vaccination!!!! might be better to do this while vaccinating instead of here
   if(this->vacc_manager->do_vaccination()) {
     FRED_DEBUG(1, "Removing %d from Vaccine Queue\n", person->get_id());
     this->vacc_manager->remove_from_queue(person);
   }
-
+  */
   FRED_VERBOSE(1, "DELETING PERSON: %d ...\n", person->get_id());
   person->terminate(day);
   FRED_VERBOSE(1, "DELETED PERSON: %d\n", person->get_id());

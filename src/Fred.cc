@@ -414,11 +414,13 @@ void fred_step(int day) {
      At least, we have to reduce this to all the population. Will move this to either vaccine manager or disease update
     */
     Global::Pop.update_health_interventions(day);
-  }
-
+    Utils::fred_print_lap_time("day %d update health antivirals", day);
+  }  
+  
   // remove dead from population
   Global::Pop.remove_dead_from_population(day);
-
+  Utils::fred_print_lap_time("day %d remove dead people", day);
+  
   // update activity profiles on July 1
   if(Global::Enable_Population_Dynamics && Date::get_month() == 7 && Date::get_day_of_month() == 1) {
   }
@@ -426,10 +428,12 @@ void fred_step(int day) {
   // Update vector dynamics
   if(Global::Enable_Vector_Layer) {
     Global::Vectors->update(day);
+    Utils::fred_print_lap_time("day %d vectors update", day);
   }
-
+  
   // update travel decisions
   Travel::update_travel(day);
+  Utils::fred_print_lap_time("day %d travel update", day);
 
   if(Global::Enable_Behaviors) {
     // update decisions about behaviors
@@ -437,7 +441,7 @@ void fred_step(int day) {
 
   // distribute vaccines
   Utils::fred_print_lap_time("day %d moving to process vaccines", day);
-  Global::Pop.vacc_manager->update(day);
+  Global::Pop.vacc_manager->update(day);  
   Utils::fred_print_lap_time("day %d update vaccines", day);
   // distribute AVs
   Global::Pop.av_manager->update(day);

@@ -534,7 +534,14 @@ void Vaccine_Manager::vaccinate(int day) {
   // Run through the priority queue first 
   while(ip != this->priority_queue.end()) {
     Person* current_person = *ip;
-
+    if(current_person == NULL){
+      ip = this->priority_queue.erase(ip);
+      continue;
+    }
+    if(current_person->is_alive() == false){
+      ip = this->priority_queue.erase(ip);
+      continue;
+    }
     int vacc_app = this->vaccine_package->pick_from_applicable_vaccines((double)(current_person->get_age()));
     // printf("person = %d age = %.1f vacc_app = %d\n", current_person->get_id(), current_person->get_real_age(), vacc_app);
     if(vacc_app > -1) {
@@ -651,6 +658,14 @@ void Vaccine_Manager::vaccinate(int day) {
   ip = this->queue.begin();
   while(ip != this->queue.end()) {
     Person* current_person = *ip;
+    if(current_person == NULL){
+      ip = this->priority_queue.erase(ip);
+      continue;
+    }
+    if(current_person->is_alive() == false){
+      ip = this->priority_queue.erase(ip);
+      continue;
+    }
     int vacc_app = this->vaccine_package->pick_from_applicable_vaccines(current_person->get_real_age());
     if(vacc_app > -1) {
       bool accept_vaccine = true;
