@@ -149,7 +149,8 @@ void Vaccines::update(int day) {
       for(int j = 0; j < this->vaccine_additional_timestep.size(); ++j){
 	Time_Step_Map_Vaccine_Additional* tmap = this->vaccine_additional_timestep[j];
 	if(tmap->sim_day_start <= day && day <= tmap->sim_day_end && tmap->vaccine_id == i) {
-	  additional_stock_today = tmap->additional_vaccine;	  
+	  additional_stock_today = tmap->additional_vaccine;
+	  printf("Day %d Vaccine %d Additional Stock Today %d\n", day, i, additional_stock_today);
 	}
       }
       vaccines[i]->update(day, additional_stock_today);
@@ -168,8 +169,10 @@ int Vaccines::pick_from_applicable_vaccines(double real_age) const {
   vector <int> app_vaccs;
   for(unsigned int i=0;i<vaccines.size();i++){
     // if first dose is applicable, add to vector.
-    if(vaccines[i]->get_dose(0)->is_within_age(real_age) &&
-       vaccines[i]->get_current_stock() > 0){
+    // Temporarily removing requirement of efficacy by age
+    //if(vaccines[i]->get_dose(0)->is_within_age(real_age) &&
+    //vaccines[i]->get_current_stock() > 0){
+    if(vaccines[i]->get_current_stock() > 0){
       app_vaccs.push_back(i);
     }
   }

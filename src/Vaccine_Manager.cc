@@ -508,13 +508,15 @@ void Vaccine_Manager::vaccinate(int day) {
 
   // Figure out the total number of vaccines we can hand out today
   int total_vaccines_avail = this->vaccine_package->get_total_vaccines_avail_today();
-
+  printf("Day %d Vaccine Capacity %d Total Vaccines Available %d\n", day, current_vaccine_capacity, total_vaccines_avail);
+  
   if(Global::Debug > 0) {
     cout << "Vaccine Capacity on Day " << day << " = " << current_vaccine_capacity << "\n";
     cout << "Queues at beginning of vaccination:  priority (" << priority_queue.size()
 	 << ")    Regular (" << this->queue.size() << ")\n";
   }
   if(total_vaccines_avail == 0 || current_vaccine_capacity == 0) {
+    printf("Returning. No vaccine available?(%d) on day 0 or no capacity?(%d)\n", total_vaccines_avail, current_vaccine_capacity);
     if(Global::Debug > 1) {
       cout << "No Vaccine Available on Day " << day << "\n";
     }
@@ -528,9 +530,9 @@ void Vaccine_Manager::vaccinate(int day) {
   // Start vaccinating Priority
   list<Person*>::iterator ip;
   ip = this->priority_queue.begin();
-  //int accept_count = 0;
-  //int reject_count = 0;
-  //int reject_state_count = 0;
+  // int accept_count = 0;
+  // int reject_count = 0;
+  // int reject_state_count = 0;
   // Run through the priority queue first 
   while(ip != this->priority_queue.end()) {
     Person* current_person = *ip;
@@ -542,8 +544,9 @@ void Vaccine_Manager::vaccinate(int day) {
       ip = this->priority_queue.erase(ip);
       continue;
     }
+    // If the person is in the queue, why do we need to check for age?
     int vacc_app = this->vaccine_package->pick_from_applicable_vaccines((double)(current_person->get_age()));
-    // printf("person = %d age = %.1f vacc_app = %d\n", current_person->get_id(), current_person->get_real_age(), vacc_app);
+    //printf("person = %d age = %.1f vacc_app = %d\n", current_person->get_id(), current_person->get_real_age(), vacc_app);
     if(vacc_app > -1) {
       bool accept_vaccine = false;
       // STB need to refactor to work with multiple diseases
@@ -573,6 +576,7 @@ void Vaccine_Manager::vaccinate(int day) {
       if(accept_vaccine == true) {
         accept_count++;
         number_vaccinated++;
+	//printf("PERSON accepting vaccine, accept count %d, number vaccinated %d\n", accept_count, number_vaccinated);
         this->current_vaccine_capacity--;
         n_p_vaccinated++;
         Vaccine* vacc = this->vaccine_package->get_vaccine(vacc_app);
