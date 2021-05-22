@@ -339,6 +339,14 @@ public:
     return &this->health;
   }
 
+  int get_current_vaccine_dose(int i){
+    return this->health.get_current_vaccine_dose(i);
+  }
+
+  int get_days_to_next_dose(int i){
+    return this->health.get_days_to_next_dose(i);
+  }
+
   /**
    * @return <code>true</code> if this agent is symptomatic, <code>false</code> otherwise
    * @see Health::is_symptomatic()

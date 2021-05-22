@@ -186,6 +186,7 @@ int Vaccines::pick_from_applicable_vaccines(double real_age) const {
   return app_vaccs[randnum];
 }
 
+
 int Vaccines::get_total_vaccines_avail_today() const {
   int total=0;
   for(unsigned int i=0;i<vaccines.size();i++){

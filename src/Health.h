@@ -320,6 +320,8 @@ public:
     }
   }
 
+  int get_vaccinated_id() const;    
+  
   int is_vaccine_effective_any() const;
   int get_vaccination_any_effective_day() const;
 
@@ -359,6 +361,9 @@ public:
     }
   }
 
+  int get_current_vaccine_dose(int i);
+  int get_days_to_next_dose(int i);
+  
   // MODIFIERS
 
   /**

@@ -1266,7 +1266,21 @@ void Health::modify_develops_symptoms(int disease_id, bool symptoms, int cur_day
     this->symptomatic.set(disease_id);
   }
 }
+int Health::get_current_vaccine_dose(int i){
+  if(this->vaccine_health) {
+    return (*this->vaccine_health)[i]->get_current_dose();
+  } else {
+    return -1;
+  }
+}
 
+int Health::get_days_to_next_dose(int i){
+   if(this->vaccine_health) {
+    return (*this->vaccine_health)[i]->get_days_to_next_dose();
+  } else {
+    return -1;
+  }
+}
 //Medication operators
 void Health::take_vaccine(Vaccine* vaccine, int day, Vaccine_Manager* vm) {
   // Compliance will be somewhere else
@@ -1283,7 +1297,7 @@ void Health::take_vaccine(Vaccine* vaccine, int day, Vaccine_Manager* vm) {
       vaccine_health_for_dose = (*this->vaccine_health)[ivh];
     }
   }
-
+  
   if(vaccine_health_for_dose == NULL) { // This is our first dose of this vaccine
     this->vaccine_health->push_back(new Vaccine_Health(day, vaccine, real_age, myself, vm));
     this->intervention_flags[Intervention_flag::TAKES_VACCINE] = true;
@@ -1292,12 +1306,12 @@ void Health::take_vaccine(Vaccine* vaccine, int day, Vaccine_Manager* vm) {
   }
 
   if(Global::VaccineTracefp != NULL) {
-    fprintf(Global::VaccineTracefp, " id %7d vaccid %3d", myself->get_id(),
-	    (*this->vaccine_health)[this->vaccine_health->size() - 1]->get_vaccine()->get_ID());
+    fprintf(Global::VaccineTracefp, " id %7d vaccid %3d vaccine health %d", myself->get_id(),
+	    (*this->vaccine_health)[this->vaccine_health->size() - 1]->get_vaccine()->get_ID(), this->vaccine_health->size());
     (*this->vaccine_health)[this->vaccine_health->size() - 1]->printTrace();
     fprintf(Global::VaccineTracefp, "\n");
   }
-
+  
   return;
 }
 
@@ -1404,3 +1418,10 @@ void Health::update_health_conditions(int day) {
   }  
 }
 
+int Health::get_vaccinated_id() const {
+  if(this->vaccine_health){
+    return (*this->vaccine_health)[0]->get_vaccine()->get_ID();
+  }else{
+    return -1;
+  }
+}

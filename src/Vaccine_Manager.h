@@ -25,6 +25,7 @@
 #define VACC_DOSE_FIRST_PRIORITY 1
 #define VACC_DOSE_RAND_PRIORITY 2
 #define VACC_DOSE_LAST_PRIORITY 3
+#define VACC_DOSE_SEPARATE_PRIORITY 4
 
 #include <list>
 #include <vector>
@@ -85,7 +86,8 @@ public:
   void add_to_regular_queue_random(Person * person);  //Adds person to the regular queue in a random spot
   void add_to_priority_queue_begin(Person * person);  //Adds person to the beginning of the priority queue
   void add_to_priority_queue_end(Person * person);    //Adds person to the end of the priority queue
-
+  void add_to_next_dose_queue_end(Person * person); // Adds person to a different priority queue for doses
+  
   //Paramters Access Members
   int get_vaccine_priority_age_low() const {
     return vaccine_priority_age_low;
@@ -133,13 +135,16 @@ public:
 private:
   // events processing
   void process_vaccine_immunity_start_events(int day);
+  void process_vaccine_next_dose_events(int day);
   void process_vaccine_immunity_end_events(int day);
-  Events* vaccine_immunity_start_event_queue;
+  Events* vaccine_next_dose_event_queue;
+  Events* vaccine_immunity_start_event_queue;  
   Events* vaccine_immunity_end_event_queue;
   
   Vaccines* vaccine_package;             //Pointer to the vaccines that this manager oversees
   list<Person *> priority_queue;         //Queue for the priority agents
   list<Person *> queue;                  //Queue for everyone else
+  list<Person *> next_dose_queue;
 
   double vaccine_acceptance_prob;
   

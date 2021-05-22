@@ -49,6 +49,7 @@ Vaccine_Manager::Vaccine_Manager() {
   this->vaccine_dose_priority = -1;
   this->refresh_vaccine_queues_daily = false;
   this->vaccinate_symptomatics = false;
+  this->vaccine_next_dose_event_queue = new Events();
   this->vaccine_immunity_start_event_queue = new Events();
   this->vaccine_immunity_end_event_queue = new Events();
   printf("Finished createing vaccine manager ()\n");
@@ -59,6 +60,7 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
   printf("Vaccine manager entered\n");
   this->pop = _pop;
 
+  this->vaccine_next_dose_event_queue = new Events();
   this->vaccine_immunity_start_event_queue = new Events();
   this->vaccine_immunity_end_event_queue = new Events();
   printf("Created queues in vaccine manager (pop)\n");
@@ -136,7 +138,7 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
 
   // get vaccine_dose_priority
   Params::get_param_from_string("vaccine_dose_priority", &this->vaccine_dose_priority);
-  assert(this->vaccine_dose_priority < 4);
+  assert(this->vaccine_dose_priority < 5);
   //get_param((char*)"vaccination_capacity",&vaccination_capacity);
   this->vaccination_capacity_map = new Timestep_Map("vaccination_capacity");
   this->vaccination_capacity_map->read_map();
@@ -304,13 +306,18 @@ void Vaccine_Manager::fill_queues() {
     printf("Priority queue has %lu size, regular queue %lu size\n", this->priority_queue.size(), this->queue.size());
     for(int ii = 0; ii < priority_queue_vector.size(); ii++){
       printf("Priority queue for phase %d - %d has size: %lu, regular queue has size %lu\n", (int)this->vaccine_priority_phases_ID[ii], ii, priority_queue_vector[ii].size(), this->queue.size());
+
+      vector<Person *> rand_priority_queue(priority_queue_vector[ii].size());
+      copy(priority_queue_vector[ii].begin(), priority_queue_vector[ii].end(), rand_priority_queue.begin());
+      FYShuffle<Person *>(rand_priority_queue);
+      copy(rand_priority_queue.begin(), rand_priority_queue.end(),
+	   priority_queue_vector[ii].begin());
       
       while(!priority_queue_vector[ii].empty()){
 	this->priority_queue.push_back(priority_queue_vector[ii].front());
 	priority_queue_vector[ii].pop_front();
       }
-    }
-    
+    }    
     printf("Priority queue has %lu size, regular queue %lu size\n", this->priority_queue.size(), this->queue.size());    
   }else{
     for(int ip = 0; ip < pop->get_index_size(); ip++) {
@@ -331,11 +338,14 @@ void Vaccine_Manager::fill_queues() {
   FYShuffle<Person *>(random_queue);
   copy(random_queue.begin(), random_queue.end(), this->queue.begin());
 
-  vector<Person *> random_priority_queue(this->priority_queue.size());
-  copy(this->priority_queue.begin(), this->priority_queue.end(), random_priority_queue.begin());
-  FYShuffle<Person *>(random_priority_queue);
-  copy(random_priority_queue.begin(), random_priority_queue.end(),
-       this->priority_queue.begin());
+  // Shouldn't shuffle if priority policies are enabled
+  if(!(Global::Enable_Vaccination_Phases == true && this->vaccine_priority_phases_ID.size() > 0)){
+    vector<Person *> random_priority_queue(this->priority_queue.size());
+    copy(this->priority_queue.begin(), this->priority_queue.end(), random_priority_queue.begin());
+    FYShuffle<Person *>(random_priority_queue);
+    copy(random_priority_queue.begin(), random_priority_queue.end(),
+	 this->priority_queue.begin());
+  }
 
   if(Global::Verbose > 0) {
     cout << "Vaccine Queue Stats \n";
@@ -344,6 +354,7 @@ void Vaccine_Manager::fill_queues() {
     cout << "   Total Agents in Vaccine Queue = "
          << this->priority_queue.size() + this->queue.size() << "\n";
   }
+  next_dose_queue.clear();
 }
 
 void Vaccine_Manager::add_to_queue(Person* person) {
@@ -402,6 +413,10 @@ void Vaccine_Manager::add_to_priority_queue_end(Person* person) {
   this->priority_queue.push_back(person);
 }
 
+void Vaccine_Manager::add_to_next_dose_queue_end(Person* person) {
+  this->next_dose_queue.push_back(person);
+}
+
 string Vaccine_Manager::get_vaccine_dose_priority_string() const {
   switch(this->vaccine_dose_priority) {
   case VACC_DOSE_NO_PRIORITY:
@@ -412,6 +427,8 @@ string Vaccine_Manager::get_vaccine_dose_priority_string() const {
     return "Priority, Place with other Priority";
   case VACC_DOSE_LAST_PRIORITY:
     return "Priority, Place at End of Queue";
+  case VACC_DOSE_SEPARATE_PRIORITY:
+    return "Priority, Place at separate queue of next doses";
   default:
     FRED_WARNING("Unrecognized Vaccine Dose Priority\n");
     return "";
@@ -441,6 +458,7 @@ void Vaccine_Manager::update(int day) {
 
     printf("After vaccinating, process immunity events\n");
     //Update events for: gaining immunity and loss of imminuty
+    this->process_vaccine_next_dose_events(day);
     this->process_vaccine_immunity_start_events(day);
     this->process_vaccine_immunity_end_events(day);
   }
@@ -461,7 +479,7 @@ void Vaccine_Manager::print() {
 
 void Vaccine_Manager::process_vaccine_immunity_start_events(int day){
   int size = this->vaccine_immunity_start_event_queue->get_size(day);
-  FRED_VERBOSE(-1, "VAX_IMM_START_EVENT_QUEUE day %d size %d\n", day, size);
+  printf("VAX_IMM_START_EVENT_QUEUE day %d size %d\n", day, size);
   if(size <= 0){
     return;
   }
@@ -475,9 +493,25 @@ void Vaccine_Manager::process_vaccine_immunity_start_events(int day){
   this->vaccine_immunity_start_event_queue->clear_events(day);
 }
 
+void Vaccine_Manager::process_vaccine_next_dose_events(int day){
+  int size = this->vaccine_next_dose_event_queue->get_size(day);
+  printf("VAX_NEXT_DOSE_EVENT_QUEUE day %d size %d\n", day, size);
+  if(size <= 0){
+    return;
+  }
+  for(int i = 0; i < size; ++i) {
+    Person* person =  this->vaccine_next_dose_event_queue->get_event(day, i);
+
+    FRED_VERBOSE(1,"vaccine_next_dose_event day %d person %d\n",
+		 day, person->get_id());
+    person->update_vaccine_interventions(day);
+  }
+  this->vaccine_next_dose_event_queue->clear_events(day);
+}
+
 void Vaccine_Manager::process_vaccine_immunity_end_events(int day){
   int size = this->vaccine_immunity_end_event_queue->get_size(day);
-  FRED_VERBOSE(-1, "VAX_IMM_END_EVENT_QUEUE day %d size %d\n", day, size);
+  printf("VAX_IMM_END_EVENT_QUEUE day %d size %d\n", day, size);
   if(size <= 0){
     return;
   }
@@ -500,6 +534,7 @@ void Vaccine_Manager::vaccinate(int day) {
   }
 
   int number_vaccinated = 0;
+  int number_total_doses = 0;
   int n_p_vaccinated = 0;
   int n_r_vaccinated = 0;
   int accept_count = 0;
@@ -513,7 +548,7 @@ void Vaccine_Manager::vaccinate(int day) {
   if(Global::Debug > 0) {
     cout << "Vaccine Capacity on Day " << day << " = " << current_vaccine_capacity << "\n";
     cout << "Queues at beginning of vaccination:  priority (" << priority_queue.size()
-	 << ")    Regular (" << this->queue.size() << ")\n";
+	 << ")    Regular (" << this->queue.size() << ") Next dose ("<<this->next_dose_queue.size()<<")\n";
   }
   if(total_vaccines_avail == 0 || current_vaccine_capacity == 0) {
     printf("Returning. No vaccine available?(%d) on day 0 or no capacity?(%d)\n", total_vaccines_avail, current_vaccine_capacity);
@@ -524,15 +559,145 @@ void Vaccine_Manager::vaccinate(int day) {
     Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
     Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
     Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
+    Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
     return;
   }
 
-  // Start vaccinating Priority
+  
+
+  // Start vaccinating Second doses
   list<Person*>::iterator ip;
+  ip = this->next_dose_queue.begin();
+  while(ip != this->next_dose_queue.end()) {
+    Person* current_person = *ip;
+    if(current_person == NULL){
+      ip = this->next_dose_queue.erase(ip);
+      continue;
+    }
+    if(current_person->is_alive() == false){
+      ip = this->next_dose_queue.erase(ip);
+      continue;
+    }
+    if(current_person->get_health()->is_vaccinated() == 0) {
+      ip = this->next_dose_queue.erase(ip);
+      continue;
+    }
+    // Pick from vaccines of the first dose, not other vaccine!!!
+    //printf("person = %d age = %.1f vacc_app = %d\n", current_person->get_id(), current_person->get_real_age(), vacc_app);
+    int vacc_app = current_person->get_health()->get_vaccinated_id();
+    if(vacc_app > -1){
+      if(this->vaccine_package->get_vaccine(vacc_app)->get_current_stock() <= 0){
+	vacc_app = -1;
+      }
+    }
+    if(vacc_app > -1) {
+      bool accept_vaccine = false;
+      // STB need to refactor to work with multiple diseases
+      if((this->vaccinate_symptomatics == false)
+	 && (current_person->get_health()->get_symptoms_start_date(0) != -1)
+	 && (day >= current_person->get_health()->get_symptoms_start_date(0))) {
+	// Add an additional layer for underreporting of symptomatics
+        accept_vaccine = false;
+      } else {
+	if(Global::Enable_Behaviors == true){
+	  accept_vaccine = current_person->acceptance_of_another_vaccine_dose();	    
+	}else{
+	  accept_vaccine = true; // Assuming second doses are always accepted in this way
+	  // printf("SECOND DOSE ACCEPTED: person = %d age = %.1f vacc_app = %d\n", current_person->get_id(), current_person->get_real_age(), vacc_app);
+	}
+      }
+      if(accept_vaccine == true) {
+        accept_count++;
+        number_vaccinated++;
+	//printf("PERSON accepting vaccine, accept count %d, number vaccinated %d\n", accept_count, number_vaccinated);
+        this->current_vaccine_capacity--;
+        n_p_vaccinated++;
+        Vaccine* vacc = this->vaccine_package->get_vaccine(vacc_app);
+        vacc->remove_stock(1);
+        total_vaccines_avail--;
+        current_person->take_vaccine(vacc, day, this);
+	int curr_dose = current_person->get_current_vaccine_dose(0);
+	if(curr_dose < vacc->get_number_doses() - 1 && curr_dose > -1){
+	  int days_next_dose = current_person->get_days_to_next_dose(0);	  
+	  if(days_next_dose > 0){
+	    this->vaccine_next_dose_event_queue->add_event(days_next_dose, current_person);
+	  }
+	}else{
+	  number_total_doses++;
+	}
+        ip = this->next_dose_queue.erase(ip);  // remove a vaccinated person
+	// ADD VACCINE EVENTS TO QUEUE TO PROCESS LATER
+	int is_vax_effective = current_person->is_vaccine_effective_any();
+	if(is_vax_effective != -1){
+	  int eff_day = current_person->get_vaccination_any_effective_day();
+	  //printf("Day %d Vaccination is effective for person %d on day %d\n", day, current_person->get_id(), eff_day);
+	  if(eff_day > -1){
+	    this->vaccine_immunity_start_event_queue->add_event(eff_day, current_person);
+	    
+	    // Cancel immunity end events first
+	    int eff_end_day = current_person->get_vaccination_immunity_loss_day();
+	    if(eff_end_day > day){
+	      // Add new immunity start/end events
+	      // Make sure when ending immunity to check that the day is the immunity end day
+	      this->vaccine_immunity_end_event_queue->add_event(eff_end_day, current_person);
+	    }
+	  }
+	}
+      } else {
+        reject_count++;
+        if(0) {
+          ++ip;
+        } else {
+          // remove non-compliant person if not HBM
+          ip = this->next_dose_queue.erase(ip);
+        }
+      }
+    } else {
+      if(Global::Verbose > 0) {
+        cout << "Vaccine next dose not applicable for agent " << current_person->get_id() << " "
+	     << current_person->get_real_age() << "\n";
+      }
+      ++ip;
+    }
+
+    if(total_vaccines_avail == 0) {
+      if(Global::Verbose > 0) {
+        cout << "Vaccinated next dose priority to stock out " << n_p_vaccinated << " agents, for a total of "
+	     << number_vaccinated << " on day " << day << "\n";
+        cout << "Left in queues:  Priority (" << priority_queue.size() << ")    Regular ("
+	     << queue.size() << ")\n";
+        cout << "Number of acceptances: " << accept_count << ", Number of rejections: "
+	     << reject_count << "\n";
+      }
+      Global::Daily_Tracker->set_index_key_pair(day,"V", number_vaccinated);
+      Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
+      return;
+    }
+    if(current_vaccine_capacity == 0) {
+      if(Global::Verbose > 0) {
+        cout << "Vaccinated priority to capacity " << n_p_vaccinated << " agents, for a total of "
+	     << number_vaccinated << " on day " << day << "\n";
+        cout << "Left in queues:  Priority (" << this->priority_queue.size() << ")    Regular ("
+	     << queue.size() << ")\n";
+        cout << "Number of acceptances: " << accept_count << ", Number of rejections: "
+	     << reject_count << "\n";
+      }
+      Global::Daily_Tracker->set_index_key_pair(day,"V", number_vaccinated);
+      Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
+      return;
+    }
+  }
+
+  // If there are enough vaccines after going through the next dose queue, then:
+  // Start vaccinating Priority
+  //list<Person*>::iterator ip;
   ip = this->priority_queue.begin();
-  // int accept_count = 0;
-  // int reject_count = 0;
-  // int reject_state_count = 0;
   // Run through the priority queue first 
   while(ip != this->priority_queue.end()) {
     Person* current_person = *ip;
@@ -559,10 +724,11 @@ void Vaccine_Manager::vaccinate(int day) {
       } else {
         if(current_person->get_health()->is_vaccinated()) {
 	  if(Global::Enable_Behaviors == true){
-	    accept_vaccine = current_person->acceptance_of_another_vaccine_dose();
+	    accept_vaccine = current_person->acceptance_of_another_vaccine_dose();	    
 	  }else{
 	    double r = Random::draw_random();
 	    accept_vaccine = (r < this->vaccine_acceptance_prob);
+	    //printf("SECOND DOSE ACCEPTED: person = %d age = %.1f vacc_app = %d\n", current_person->get_id(), current_person->get_real_age(), vacc_app);
 	  }
         } else {
 	  if(Global::Enable_Behaviors == true){
@@ -582,7 +748,16 @@ void Vaccine_Manager::vaccinate(int day) {
         Vaccine* vacc = this->vaccine_package->get_vaccine(vacc_app);
         vacc->remove_stock(1);
         total_vaccines_avail--;
-        current_person->take_vaccine(vacc, day, this);	
+        current_person->take_vaccine(vacc, day, this);
+	int curr_dose = current_person->get_current_vaccine_dose(0);
+	if(curr_dose < vacc->get_number_doses() - 1 && curr_dose > -1){
+	  int days_next_dose = current_person->get_days_to_next_dose(0);	  
+	  if(days_next_dose > 0){
+	    this->vaccine_next_dose_event_queue->add_event(days_next_dose, current_person);
+	  }
+	}else{
+	  number_total_doses++;
+	}
         ip = this->priority_queue.erase(ip);  // remove a vaccinated person
 	// ADD VACCINE EVENTS TO QUEUE TO PROCESS LATER
 	int is_vax_effective = current_person->is_vaccine_effective_any();
@@ -603,9 +778,6 @@ void Vaccine_Manager::vaccinate(int day) {
       } else {
         reject_count++;
 	// TODO: HBM FIX THIS!
-        // printf("vaccine rejected by person %d age %.1f\n", current_person->get_id(), current_person->get_real_age());
-        // skip non-compliant person under HBM
-        // if(strcmp(Global::Behavior_model_type,"HBM") == 0) ++ip;
         if(0) {
           ++ip;
         } else {
@@ -634,6 +806,7 @@ void Vaccine_Manager::vaccinate(int day) {
       Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
       return;
     }
     if(current_vaccine_capacity == 0) {
@@ -649,6 +822,7 @@ void Vaccine_Manager::vaccinate(int day) {
       Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
       return;
     }
   }
@@ -707,6 +881,15 @@ void Vaccine_Manager::vaccinate(int day) {
         vacc->remove_stock(1);
         total_vaccines_avail--;
         current_person->take_vaccine(vacc, day, this);
+	int curr_dose = current_person->get_current_vaccine_dose(0);
+	if(curr_dose < vacc->get_number_doses() - 1 && curr_dose > -1){	  
+	  int days_next_dose = current_person->get_days_to_next_dose(0);
+	  if(days_next_dose > 0){
+	    this->vaccine_next_dose_event_queue->add_event(days_next_dose, current_person);
+	  }
+	}else{
+	  number_total_doses++;
+	}
         ip = this->queue.erase(ip);  // remove a vaccinated person
 
 	int is_vax_effective = current_person->is_vaccine_effective_any();
@@ -750,6 +933,7 @@ void Vaccine_Manager::vaccinate(int day) {
       Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
       return;
     }
     if(this->current_vaccine_capacity == 0) {
@@ -765,6 +949,7 @@ void Vaccine_Manager::vaccinate(int day) {
       Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
       return;
     }
   }
@@ -781,5 +966,6 @@ void Vaccine_Manager::vaccinate(int day) {
   Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
   Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
   Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
+  Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
   return;
 }

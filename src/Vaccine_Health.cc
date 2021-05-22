@@ -65,7 +65,7 @@ Vaccine_Health::Vaccine_Health(int _vaccination_day, Vaccine* _vaccine, double _
     }
   }
   
-  current_dose =0;
+  current_dose = 0;
   days_to_next_dose = -1;
   if(Global::Debug > 1) {
     cout << "Agent: " << person->get_id() << " took dose " << current_dose << " on day "<< vaccination_day << "\n";
@@ -73,7 +73,10 @@ Vaccine_Health::Vaccine_Health(int _vaccination_day, Vaccine* _vaccine, double _
   if(vaccine->get_number_doses() > 1){
     days_to_next_dose = vaccination_day + vaccine->get_dose(0)->get_days_between_doses();
   }
-  
+  /*
+  printf("Vaccine: %d Efficacy %.2f -> %d, Efficacy Symptoms %.2f -> %d, Efficacy Hosp %.2f -> %d\n",
+	 vaccine->get_ID(), efficacy, vaccination_effective_day, efficacy_symp, vaccination_effective_symp_day, efficacy_hosp, vaccination_effective_hosp_day);
+  */
 }
 
 void Vaccine_Health::print() const {
@@ -82,8 +85,8 @@ void Vaccine_Health::print() const {
 }
 
 void Vaccine_Health::printTrace() const {
-  fprintf(Global::VaccineTracefp," vaccday %5d age %5.1f iseff %2d iseffsymp %d2 ifeffhosp %2d effday %5d currentdose %3d",vaccination_day,
-	  person->get_real_age(),is_effective(), is_effective_symptoms(), is_effective_hospitalization(), vaccination_effective_day, current_dose);
+  fprintf(Global::VaccineTracefp," vaccday %5d age %5.1f iseff %2d iseffsymp %2d ifeffhosp %2d effday %5d currentdose %3d",vaccination_day,
+	  person->get_real_age(),is_effective(), is_effective_symptoms(), is_effective_hospitalization(), this->get_vaccination_any_effective_day(), current_dose);
   fflush(Global::VaccineTracefp);
 }
 
@@ -270,6 +273,8 @@ void Vaccine_Health::update(int day, double age){
 	break;
       case VACC_DOSE_LAST_PRIORITY:
 	vaccine_manager->add_to_priority_queue_end(person);
+      case VACC_DOSE_SEPARATE_PRIORITY:
+	vaccine_manager->add_to_next_dose_queue_end(person);
 	break;
   
       }
@@ -286,8 +291,8 @@ In reality, Not just efficacy can be boosted by a new dose but maybe the duratio
   vaccination_day = day;
   if(!is_effective()){
     double efficacy = vaccine->get_dose(current_dose)->get_efficacy(age);
-    double efficacy_symp = vaccine->get_dose(0)->get_efficacy_symp(age);
-    double efficacy_hosp = vaccine->get_dose(0)->get_efficacy_hosp(age);
+    double efficacy_symp = vaccine->get_dose(current_dose)->get_efficacy_symp(age);
+    double efficacy_hosp = vaccine->get_dose(current_dose)->get_efficacy_hosp(age);
     double efficacy_delay = vaccine->get_dose(current_dose)->get_efficacy_delay(age);
     double efficacy_duration = vaccine->get_dose(current_dose)->get_duration_of_immunity(age);
     if(vaccination_effective_day == -1){
@@ -308,5 +313,10 @@ In reality, Not just efficacy can be boosted by a new dose but maybe the duratio
 	vaccination_immunity_loss_day = vaccination_effective_hosp_day + 1 + efficacy_duration;      
       }
     }
-  }  
+    /*
+    printf("Vaccine Dose: %d of ID %d Efficacy %.2f -> %d, Efficacy Symptoms %.2f -> %d, Efficacy Hosp %.2f -> %d\n",
+	   current_dose,
+	   vaccine->get_ID(), efficacy, vaccination_effective_day, efficacy_symp, vaccination_effective_symp_day, efficacy_hosp, vaccination_effective_hosp_day);
+    */
+  }
 }
