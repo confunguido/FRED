@@ -145,7 +145,7 @@ void fred_setup(int argc, char* argv[]) {
   // city/county population lookup may overwrite Global::Synthetic_population_id
   Global::Places.get_parameters();
 
-  // split the population id parameter string ( that was initialized in 
+  // split the population id parameter string ( that was initialized in
   // Places::get_parameters ) on whitespace; each population id is processed as a
   // separate deme, and stored in the Population object.
   Global::Pop.split_synthetic_populations_by_deme();
@@ -225,7 +225,7 @@ void fred_setup(int argc, char* argv[]) {
   FRED_STATUS(0, "deleting place_label_map\n", "");
   Global::Places.delete_place_label_map();
   FRED_STATUS(0, "prepare places finished\n", "");
-  
+
   if(Global::Enable_Vector_Layer) {
     Global::Vectors->setup();
     Utils::fred_print_lap_time("Vectors->setup");
@@ -317,7 +317,7 @@ void fred_setup(int argc, char* argv[]) {
     Global::Tract_Tracker = new Tracker<long int>("Census Tract Tracker","Tract");
     Global::Pop.report_mean_hh_stats_per_census_tract();
   }
-  
+
   //  //TODO - remove this
   //  if(Global::Enable_HAZEL) {
   //    Global::Pop.print_HAZEL_data();
@@ -326,7 +326,7 @@ void fred_setup(int argc, char* argv[]) {
   // Global tracker allows us to have as many variables we
   // want from wherever in the output file
   Global::Daily_Tracker = new Tracker<int>("Main Daily Tracker","Day");
-  
+
   // prepare diseases after population is all set up
   FRED_VERBOSE(0, "prepare diseases\n");
   Global::Diseases.prepare_diseases();
@@ -356,7 +356,7 @@ void fred_setup(int argc, char* argv[]) {
   if(Global::Enable_Household_Shelter){
     printf("FRED.cc::HOUSEHOLD SHELTER ENABLED\n");
   }
-  
+
   if(Global::Enable_Household_Shelter_By_Age){
     printf("FRED.cc::HOUSEHOLD SHELTER BY AGE ENABLED\n");
   }
@@ -399,7 +399,7 @@ void fred_step(int day) {
   Global::Places.update(day);
   Utils::fred_print_lap_time("day %d update places", day);
 
-  // optional: update population dynamics 
+  // optional: update population dynamics
   if(Global::Enable_Population_Dynamics) {
     Demographics::update(day);
     Utils::fred_print_lap_time("day %d update demographics", day);
@@ -415,12 +415,12 @@ void fred_step(int day) {
     */
     Global::Pop.update_health_interventions(day);
     Utils::fred_print_lap_time("day %d update health antivirals", day);
-  }  
-  
+  }
+
   // remove dead from population
   Global::Pop.remove_dead_from_population(day);
   Utils::fred_print_lap_time("day %d remove dead people", day);
-  
+
   // update activity profiles on July 1
   if(Global::Enable_Population_Dynamics && Date::get_month() == 7 && Date::get_day_of_month() == 1) {
   }
@@ -430,7 +430,7 @@ void fred_step(int day) {
     Global::Vectors->update(day);
     Utils::fred_print_lap_time("day %d vectors update", day);
   }
-  
+
   // update travel decisions
   Travel::update_travel(day);
   Utils::fred_print_lap_time("day %d travel update", day);
@@ -441,12 +441,12 @@ void fred_step(int day) {
 
   // distribute vaccines
   Utils::fred_print_lap_time("day %d moving to process vaccines", day);
-  Global::Pop.vacc_manager->update(day);  
+  Global::Pop.vacc_manager->update(day);
   Utils::fred_print_lap_time("day %d update vaccines", day);
   // distribute AVs
   Global::Pop.av_manager->update(day);
 
-  
+
   // update generic activities (individual activities updated only if
   // needed -- see below)
   Activities::update(day);
@@ -520,7 +520,7 @@ void fred_finish() {
   //Global::Daily_Tracker->create_full_log(10,cout);
   fflush(Global::Infectionfp);
   fflush(Global::InfectionCFfp);
-  
+
   // final reports
   if(Global::Report_Mean_Household_Stats_Per_Income_Category && Global::Report_Epidemic_Data_By_Census_Tract) {
     Global::Tract_Tracker->output_csv_report_format(Global::Tractfp);
@@ -555,4 +555,3 @@ void fred_finish() {
   Utils::fred_end();
 
 }
-

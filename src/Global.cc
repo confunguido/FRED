@@ -168,6 +168,9 @@ Tracker<int>* Global::Income_Category_Tracker = NULL;
 Network* Global::Transmission_Network = NULL;
 Sexual_Transmission_Network* Global::Sexual_Partner_Network = NULL;
 
+//Global testing enable flag
+bool Global:: Enable_PCR_Testing = false;
+
 // global file pointers
 FILE* Global::Statusfp = NULL;
 FILE* Global::Outfp = NULL;
@@ -184,6 +187,7 @@ FILE* Global::Immunityfp = NULL;
 FILE* Global::Householdfp = NULL;
 FILE* Global::Tractfp = NULL;
 FILE* Global::IncomeCatfp = NULL;
+FILE* Global::TestingResults = NULL;
 
 void Global::get_global_parameters() {
   Params::get_param_from_string("verbose", &Global::Verbose);
@@ -235,7 +239,7 @@ void Global::get_global_parameters() {
   Params::get_param_from_string("enable_transmission_network", &temp_int);
   Global::Enable_Transmission_Network = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_sexual_partner_network", &temp_int);
-  Global::Enable_Sexual_Partner_Network = (temp_int == 0 ? false : true);  
+  Global::Enable_Sexual_Partner_Network = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_transmission_bias", &temp_int);
   Global::Enable_Transmission_Bias = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_new_transmission_model", &temp_int);
@@ -354,7 +358,7 @@ void Global::get_global_parameters() {
     sscanf(holiday_date_start, "%d-%d", &Global::holiday_start_month, &Global::holiday_start_day);
     sscanf(holiday_date_end, "%d-%d", &Global::holiday_end_month, &Global::holiday_end_day);
   }
-  
+
   Params::get_param_from_string("isolation_delay", &Global::Isolation_Delay);
   Params::get_param_from_string("isolation_rate", &Global::Isolation_Rate);
   // added for residual_immunity_by_FIPS
@@ -363,6 +367,7 @@ void Global::get_global_parameters() {
   if(Global::Residual_Immunity_by_FIPS) {
     Params::get_param_from_string("residual_immunity_by_FIPS_file", Global::Residual_Immunity_File);
   }
-  
-}
 
+  Params::get_param_from_string("enable_PCR_testing", &temp_int);
+  Global::Enable_PCR_Testing = (temp_int ==0? false: true);
+}

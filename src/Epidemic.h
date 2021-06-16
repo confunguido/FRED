@@ -124,7 +124,7 @@ public:
 
   Epidemic(Disease* disease);
   virtual ~Epidemic();
- 
+
   virtual void setup();
   virtual void prepare() {}
   void print_stats(int day);
@@ -163,7 +163,7 @@ public:
   double get_daily_hospitalization_multiplier(){
     return this->daily_hospitalization_multiplier;
   }
-  
+
   int get_susceptible_people() {
     return this->susceptible_people;
   }
@@ -274,6 +274,62 @@ public:
     return this->id;
   }
 
+  //Testing
+  double get_test_sensitivity(int elapsed_days){
+      if(elapsed_days < (this-> test_sensitivity_lenght)){
+        return this->test_sensitivity[elapsed_days];
+      }//if(elapsed_days<=lenght(this->test_sensitivity))
+      else{
+        return 0;
+      }//else
+  }//double Epidemic::get_test_sensitivity(int elapsed_days)
+
+  void set_new_test_sensitivity_mean(double new_test_sensitivity_mean){
+    //Divides test_sensitivity by its own mean and multiplies bydesired mean to have a sentitivity with desired mean
+    for (int i=0; i < this-> test_sensitivity_lenght; i++){
+      this-> test_sensitivity[i]=this-> test_sensitivity[i]*new_test_sensitivity_mean/this-> test_sensitivity_mean;
+      }
+      //Test sensitivity is scaled to a desired mean value
+      this-> test_sensitivity_mean = new_test_sensitivity_mean;
+      if (Global::Verbose > 0) {
+        std::cout << "Tets sensitivity mean value has been set to " << new_test_sensitivity_mean << '\n';
+      }
+  }
+
+  double get_test_sensitivity_mean(){
+    return this-> test_sensitivity_mean;
+  }
+
+  int* sum_arrays(int* array1, int* array2, int array_length){
+
+    int* array_sum = new int[array_length];
+
+    for(int i=0; i<array_length; i++){
+    array_sum[i] = array1[i] + array2[i];
+    }
+    return array_sum;
+  }
+
+  float* sum_arrays(float* array1, float* array2, int array_length){
+
+    float* array_sum = new float[array_length];
+
+    for(int i=0; i<array_length; i++){
+    array_sum[i] = array1[i] + array2[i];
+    }
+    return array_sum;
+  }
+
+  double* sum_arrays(double* array1, double* array2, int array_length){
+
+    double* array_sum = new double[array_length];
+
+    for(int i=0; i<array_length; i++){
+    array_sum[i] = array1[i] + array2[i];
+    }
+    return array_sum;
+  }
+
   virtual void transition_person(Person* person, int day, int state) {}
 
   // events processing
@@ -297,13 +353,20 @@ public:
   virtual void end_of_run() {}
   virtual void terminate_person(Person* person, int day);
 
+  void process_test_symptomatic_events(int day);
+  void process_detect_symptomatic_events(int day);
+  void process_false_negative_symptomatic_events(int day);
+  void process_test_asymptomatic_events(int day);
+  void process_detect_asymptomatic_events(int day);
+  void process_false_negative_asymptomatic_events(int day);
+
 protected:
   Disease* disease;
   int id;
   int N;          // current population size
   int N_init;     // initial population size
   int N_nursing_homes;
-  
+
   bool report_generation_time;
   bool report_transmission_by_age;
 
@@ -328,7 +391,7 @@ protected:
   std::vector<Time_Step_Map*> imported_cases_map;
   std::vector<Time_Step_Hosp_Map*> hosp_multiplier_map;
   double daily_hospitalization_multiplier;
-  
+
   bool import_by_age;
   double import_age_lower_bound;
   double import_age_upper_bound;
@@ -339,7 +402,7 @@ protected:
   // see Epidemic::advance_seed_infection"
   char seeding_type_name[FRED_STRING_SIZE];
   char seeding_type;
-  double fraction_seeds_infectious; 
+  double fraction_seeds_infectious;
 
   /// advances infection either to the first infetious day (SEED_INFECTIOUS)
   /// or to a random day in the trajectory (SEED_RANDOM)
@@ -379,7 +442,7 @@ protected:
 
   int people_becoming_hospitalized_today;
   int people_with_current_hospitalization;
-  
+
   int daily_case_fatality_count;
   int total_case_fatality_count;
   int daily_case_fatality_nursing;
@@ -422,10 +485,106 @@ protected:
   double average_incidence;
   int days_of_decline;
   int current_nursing_home_incidence;
-  
+
   //Nursing home incidence importations factor
   double nursing_home_incidence_importations_factor;
-  
+
+  // ******* Parameters from txt input
+  // PCR Testing parameters
+  double prob_symp_being_tested;
+  double prob_asymp_being_tested;
+  int symptoms_to_test_delay;
+  int min_asymptomatic_infectious_to_test_delay;
+  int max_asymptomatic_infectious_to_test_delay;
+  int test_results_delay;
+
+  // Test sensitivity
+  int test_sensitivity_lenght;
+  double* test_sensitivity;
+  double test_sensitivity_mean;
+  double new_test_sensitivity_mean;
+  //std::set<Person*> tested_people;
+
+  //Positivity calculated per delay days
+  int* symp_tested_per_delay; //
+  int* symp_detected_per_delay; //
+  int* asymp_tested_per_delay; //
+  int* asymp_detected_per_delay; //
+  int* total_tested_per_delay;
+  int* total_detected_per_delay;
+
+  // ******* Internal parameters
+  // New infected people
+  int symptomatics_today;
+  int total_symptomatics;
+  int asymptomatics_today;
+  int total_asymptomatics;
+  int new_infected_today;
+  int total_new_infected;
+
+  // Tested people according to schedule
+  int symptomatic_tested_today;
+  int total_symptomatic_tested;
+  int asymptomatic_tested_today;
+  int total_asymptomatic_tested;
+  int tested_people_today;
+  int total_tested_people;
+
+  // predicted tested (people for performance monitoring purposes)
+  // Tested people are calculated as soon as person become_exposed
+  int predicted_symptomatic_tested_today;
+  int predicted_total_symptomatic_tested;
+  int predicted_asymptomatic_tested_today;
+  int predicted_total_asymptomatic_tested;
+  int predicted_tested_people_today;
+  int predicted_total_tested_people;
+  //std::set<Person*> infected_people_detected;
+
+  //Detected people according to schedule
+  int symptomatic_detected_today;
+  int total_symptomatic_detected;
+  int asymptomatic_detected_today;
+  int total_asymptomatic_detected;
+  int infected_detected_today;
+  int total_infected_detected;
+
+  // predicted detected (people for performance monitoring purposes)
+  // Detected people are calculated as soon as person become_exposed
+  int predicted_symptomatic_detected_today;
+  int predicted_total_symptomatic_detected;
+  int predicted_asymptomatic_detected_today;
+  int predicted_total_asymptomatic_detected;
+  int predicted_infected_detected_today;
+  int predicted_total_infected_detected;
+
+  // False negatives according to schedule
+  int symptomatic_false_negative_today;
+  int total_symptomatic_false_negative;
+  int asymptomatic_false_negative_today;
+  int total_asymptomatic_false_negative;
+  int false_negative_today;
+  int total_false_negative;
+
+  // predicted false negative (people for performance monitoring purposes)
+  // false negative people are calculated as soon as person become_exposed
+  int predicted_symptomatic_false_negative_today;
+  int predicted_total_symptomatic_false_negative;
+  int predicted_asymptomatic_false_negative_today;
+  int predicted_total_asymptomatic_false_negative;
+  int predicted_false_negative_today;
+  int predicted_total_false_negative;
+
+  //vector<Person*> daily_tested_list;
+  //vector<Person*> daily_detected_list;
+
+  // Queues for scheduled testing and results
+  Events* test_symptomatic_event_queue;
+  Events* detect_symptomatic_event_queue;
+  Events* false_negative_symptomatic_event_queue;
+  Events* test_asymptomatic_event_queue;
+  Events* detect_asymptomatic_event_queue;
+  Events* false_negative_asymptomatic_event_queue;
+
 };
 
 #endif // _FRED_EPIDEMIC_H

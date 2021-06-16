@@ -92,7 +92,7 @@ Epidemic::Epidemic(Disease* dis) {
 
   this->people_becoming_hospitalized_today = 0;
   this->people_with_current_hospitalization = 0;
-  
+
   this->removed_people = 0;
 
   this->immune_people = 0;
@@ -107,7 +107,7 @@ Epidemic::Epidemic(Disease* dis) {
   this->population_infection_counts.tot_ppl_evr_sympt = 0;
 
   this->nursing_home_incidence_importations_factor = 0.0;
-  
+
   if(Global::Report_Mean_Household_Stats_Per_Income_Category) {
     //Values for household income based stratification
     for(int i = 0; i < Household_income_level_code::UNCLASSIFIED; ++i) {
@@ -178,7 +178,7 @@ Epidemic::Epidemic(Disease* dis) {
   this->imported_cases_map.clear();
   this->hosp_multiplier_map.clear();
   this->daily_hospitalization_multiplier = 1.0;
-  
+
   this->import_by_age = false;
   this->import_age_lower_bound = 0;
   this->import_age_upper_bound = Demographics::MAX_AGE;
@@ -202,7 +202,7 @@ Epidemic::Epidemic(Disease* dis) {
   int test = max(max(1, Global::Places.get_shelter_moving_average_days()),
 		 Global::Places.get_shelter_post_peak_period()+1);
   printf("Epidemic:: Max(max()) = %d. Shelter moving average days: %d, postpeak period: %d\n", test, Global::Places.get_shelter_moving_average_days(), Global::Places.get_shelter_post_peak_period());
-  
+
   for (int i = 0; i < max(max(1, Global::Places.get_shelter_moving_average_days()),
 				  Global::Places.get_shelter_post_peak_period()+1); ++i) {
     printf("Epidemic::Initializing recent_incidence[%d] = 0\n", i);
@@ -213,6 +213,100 @@ Epidemic::Epidemic(Disease* dis) {
   this->average_incidence = 0;
   this->days_of_decline = 0;
   this->current_nursing_home_incidence = 0;
+
+  //Initialize PCR testing variables
+  if (Global::Enable_PCR_Testing == true){
+    // PCR Testing parameters
+    this-> prob_symp_being_tested = 0;
+    this-> prob_asymp_being_tested = 0;
+    this-> symptoms_to_test_delay = 0;
+    this-> min_asymptomatic_infectious_to_test_delay = 0;
+    this-> max_asymptomatic_infectious_to_test_delay = 0;
+    this-> test_results_delay = 0;
+
+    // Test sensitivity
+    this-> test_sensitivity_lenght = 0;
+    this-> test_sensitivity = NULL;
+    this-> test_sensitivity_mean = 0;
+    this-> new_test_sensitivity_mean = 0;
+    //this-> tested_people.clear();
+
+    // New infected people
+    this-> symptomatics_today = 0;
+    this-> total_symptomatics = 0;
+    this-> asymptomatics_today = 0;
+    this-> total_asymptomatics = 0;
+    this-> new_infected_today = 0;
+    this-> total_new_infected = 0;
+
+    // Tested people according to schedule
+    this-> symptomatic_tested_today = 0;
+    this-> total_symptomatic_tested = 0;
+    this-> asymptomatic_tested_today = 0;
+    this-> total_asymptomatic_tested = 0;
+    this-> tested_people_today = 0;
+    this-> total_tested_people = 0;
+
+    // predicted tested people
+    this-> predicted_symptomatic_tested_today = 0;
+    this-> predicted_total_symptomatic_tested = 0;
+    this-> predicted_asymptomatic_tested_today = 0;
+    this-> predicted_total_asymptomatic_tested = 0;
+    this-> predicted_tested_people_today = 0;
+    this-> predicted_total_tested_people = 0;
+    //std::set<Person*> infected_people_detected;
+
+    //Detected people according to schedule
+    this-> symptomatic_detected_today = 0;
+    this-> total_symptomatic_detected = 0;
+    this-> asymptomatic_detected_today = 0;
+    this-> total_asymptomatic_detected = 0;
+    this-> infected_detected_today = 0;
+    this-> total_infected_detected = 0;
+
+    // predicted detected (people for performance monitoring purposes)
+    this-> predicted_symptomatic_detected_today = 0;
+    this-> predicted_total_symptomatic_detected = 0;
+    this-> predicted_asymptomatic_detected_today = 0;
+    this-> predicted_total_asymptomatic_detected = 0;
+    this-> predicted_infected_detected_today = 0;
+    this-> predicted_total_infected_detected = 0;
+
+    // False negatives according to schedule
+    this-> symptomatic_false_negative_today = 0;
+    this-> total_symptomatic_false_negative = 0;
+    this-> asymptomatic_false_negative_today = 0;
+    this-> total_asymptomatic_false_negative = 0;
+    this-> false_negative_today = 0;
+    this-> total_false_negative = 0;
+
+    // predicted false negative (people for performance monitoring purposes)
+    this-> predicted_symptomatic_false_negative_today = 0;
+    this-> predicted_total_symptomatic_false_negative = 0;
+    this-> predicted_asymptomatic_false_negative_today = 0;
+    this-> predicted_total_asymptomatic_false_negative = 0;
+    this-> predicted_false_negative_today = 0;
+    this-> predicted_total_false_negative = 0;
+
+    //this-> daily_tested_list.clear();
+    //this-> daily_detected_list.clear();
+
+    //Positivity calculated per delay days
+    this-> symp_tested_per_delay = NULL;
+    this-> symp_detected_per_delay = NULL;
+    this-> asymp_tested_per_delay = NULL;
+    this-> asymp_detected_per_delay = NULL;
+    this-> total_tested_per_delay = NULL;
+    this-> total_detected_per_delay = NULL;
+
+    // Queues for scheduled testing and results
+    this-> test_symptomatic_event_queue = new Events;
+    this-> detect_symptomatic_event_queue = new Events;
+    this-> false_negative_symptomatic_event_queue = new Events;
+    this-> test_asymptomatic_event_queue = new Events;
+    this-> detect_asymptomatic_event_queue = new Events;
+    this-> false_negative_asymptomatic_event_queue = new Events;
+  }
 }
 
 
@@ -253,7 +347,7 @@ void Epidemic::become_immune(Person* person, bool susceptible, bool infectious, 
   }
   if(symptomatic) {
     this->people_with_current_symptoms--;
-  }  
+  }
   this->immune_people++;
 }
 
@@ -297,7 +391,7 @@ void Epidemic::terminate_person(Person* person, int day) {
       cancel_hospitalization_end(date, person);
     }
   }
-  
+
   date = person->get_infectious_start_date(this->id);
   if(date > day) {
     FRED_VERBOSE(0, "EPIDEMIC CANCEL infectious_start_date %d %d\n", date, day);
@@ -379,7 +473,7 @@ void Epidemic::setup() {
       printf("%s\n", ss.c_str());
     }
   }
-  
+
   if(Global::Enable_Hospitalization_Multiplier_File == true){
     // read time_step_map
     Params::get_param_from_string("hospitalization_duration_timeseries_file", map_file_name);
@@ -423,7 +517,7 @@ void Epidemic::setup() {
       printf("%s\n", ss.c_str());
     }
   }
-  
+
   Params::get_param_from_string("seed_by_age", &temp);
   this->import_by_age = (temp == 0 ? false : true);
   Params::get_param_from_string("seed_age_lower_bound", &import_age_lower_bound);
@@ -462,6 +556,49 @@ void Epidemic::setup() {
     Params::get_param_from_string("nursing_home_incidence_importations_factor", &this->nursing_home_incidence_importations_factor);
     printf("NURSING HOME INCIDENCE IMPORTATIONS FACTOR: %.04f", this->nursing_home_incidence_importations_factor);
   }
+
+  if(Global::Enable_PCR_Testing == true){ //Testing enable
+    //Read external parameters from .txt file
+    Params::get_param_from_string("prob_symp_being_tested", &prob_symp_being_tested);
+    Params::get_param_from_string("prob_asymp_being_tested", &prob_asymp_being_tested);
+    Params::get_param_from_string("symptoms_to_test_delay", &symptoms_to_test_delay);
+    Params::get_param_from_string("min_asymptomatic_infectious_to_test_delay", &min_asymptomatic_infectious_to_test_delay);
+    Params::get_param_from_string("max_asymptomatic_infectious_to_test_delay", &max_asymptomatic_infectious_to_test_delay);
+    Params::get_param_from_string("test_results_delay", &test_results_delay);
+    Params::get_indexed_param(this->disease->get_disease_name(),"test_sensitivity", &test_sensitivity_lenght);
+    this-> test_sensitivity = new double [this->test_sensitivity_lenght];
+    Params::get_indexed_param_vector(this->disease->get_disease_name(), "test_sensitivity", this -> test_sensitivity) -1;
+
+    //Get mean value of original test sensitivity
+    for (int i=0; i< this-> test_sensitivity_lenght; i++){
+      this-> test_sensitivity_mean += this-> test_sensitivity[i];
+      }
+      this-> test_sensitivity_mean /= this-> test_sensitivity_lenght;
+
+    Params::get_param_from_string("new_test_sensitivity_mean", &new_test_sensitivity_mean);
+      if (this-> new_test_sensitivity_mean > 0){
+          set_new_test_sensitivity_mean(this-> new_test_sensitivity_mean);
+      }
+
+    //Declare per_day arrays with size = max testing delay days
+    this-> symp_tested_per_delay = new int [this->test_sensitivity_lenght];
+    this-> symp_detected_per_delay = new int [this->test_sensitivity_lenght];
+    this-> asymp_tested_per_delay = new int [this->test_sensitivity_lenght];
+    this-> asymp_detected_per_delay = new int [this->test_sensitivity_lenght];
+    this-> total_tested_per_delay = new int [this->test_sensitivity_lenght];
+    this-> total_detected_per_delay = new int [this->test_sensitivity_lenght];
+
+    //Initialize per_day arrays with zero
+    for (int i=0; i < this->test_sensitivity_lenght; i++){
+      this-> symp_tested_per_delay[i] = 0;
+      this-> symp_detected_per_delay[i] = 0;
+      this-> asymp_tested_per_delay[i] = 0;
+      this-> asymp_detected_per_delay[i] = 0;
+      this-> total_tested_per_delay[i]  = 0;
+      this-> total_detected_per_delay[i] = 0;
+    }
+  }//Testing enabled
+
 }
 
 Epidemic::~Epidemic() {
@@ -473,13 +610,14 @@ void Epidemic::become_exposed(Person* person, int day) {
 
   // update next event list
   int infectious_start_date = -1;
+
   if(this->disease->get_transmissibility() > 0.0) {
     infectious_start_date = person->get_infectious_start_date(this->id);
     if(0 <= infectious_start_date && infectious_start_date <= day) {
       FRED_VERBOSE(0, "TIME WARP day %d inf %d\n", day, infectious_start_date);
       infectious_start_date = day + 1;
     }
-    this->infectious_start_event_queue->add_event(infectious_start_date, person);    
+    this->infectious_start_event_queue->add_event(infectious_start_date, person);
   } else {
     // This disease is not transmissible, therefore, no one ever becomes
     // infectious.  Consequently, spread_infection is never called. So
@@ -491,10 +629,12 @@ void Epidemic::become_exposed(Person* person, int day) {
   }
 
   int symptoms_start_date = person->get_symptoms_start_date(this->id);
+
   if(0 <= symptoms_start_date && symptoms_start_date <= day) {
     FRED_VERBOSE(0, "TIME WARP day %d symp %d\n", day, symptoms_start_date);
     symptoms_start_date = day + 1;
   }
+
   this->symptoms_start_event_queue->add_event(symptoms_start_date, person);
 
   int hospitalization_start_date = person->get_hospitalization_start_date(this->id);
@@ -503,7 +643,161 @@ void Epidemic::become_exposed(Person* person, int day) {
     hospitalization_start_date = day + 1;
   }
   this->hospitalization_start_event_queue->add_event(hospitalization_start_date, person);
-  
+
+  //Check if PCR Testing is enabled and if exposed person is infectious
+  if(Global::Verbose>0){
+    std::cout << '\n' << '\n'<< "***********************************" << '\n';
+    std::cout << "Person Id " << person->get_id() << " is exposed to disease" << '\n';
+  }
+
+  if(Global::Enable_PCR_Testing == true){ //Testing is enabled
+    double r; //Will be used to draw random numbers
+    int test_application_delay = -1;
+
+    //FRED_VERBOSE(2, "Person Id %d is infected with %d\n", person->get_id(), this->id);
+    if(Global::Verbose>0){
+      std::cout << "Person Id " << person->get_id() <<  " is infected" <<'\n';
+    }
+
+    //Check if person will be symptomatic
+    if( symptoms_start_date >= Global::Simulation_Day ){ //Symptomatic person
+      //FRED_VERBOSE(2, "Person Id %d will be symptomatic from day %d\n", person->get_id(), symptoms_start_date);
+      if(Global::Verbose>0){
+          std::cout << "Person Id " << person->get_id() <<  " will be symptomatic from day " << symptoms_start_date <<'\n';
+      }
+
+      this-> symptomatics_today++;
+
+      //Draw random to Check if symptomatic person will be tested
+      r = Random::draw_random();
+
+      if(r < prob_symp_being_tested ){ //Symptomatic person will be tested
+
+        //Test will be applied on some day after developing symptoms_start_date
+        test_application_delay = this->symptoms_to_test_delay;
+
+        if(test_application_delay<=this->test_sensitivity_lenght){
+          this->symp_tested_per_delay[test_application_delay]++;
+        }
+
+        int test_date = symptoms_start_date + test_application_delay;
+
+        //FRED_VERBOSE(2, "Symptomatic person Id %d will be tested on day %d\n", person->get_id(), test_date);
+        if(Global::Verbose>0){
+          std::cout << "Symptomatic person Id " << person->get_id() << " will be tested on day " << test_date << '\n';
+        }
+
+        this-> test_symptomatic_event_queue->add_event(test_date, person);
+        this-> predicted_symptomatic_tested_today++;
+
+        //Schedule test results
+        int result_date = test_date + this->test_results_delay;
+        person->set_test_result_date(this->id, result_date);
+
+        //Draw probability of test detecting symptomatic based on test test_sensitivity
+        r = Random::draw_random();
+
+        if(r < get_test_sensitivity(test_date - Global::Simulation_Day)){// Tets Detects Symptomatic
+          //FRED_VERBOSE(2, "Symptomatic person Id %d will be detected on day %d \n", person->get_id(), result_date);
+          if(Global::Verbose>0){
+            std::cout << "Symptomatic person Id " << person->get_id() << " will be detected on day " << result_date << '\n';
+          }
+
+          this-> detect_symptomatic_event_queue->add_event(result_date, person);
+          this-> predicted_symptomatic_detected_today++;
+
+          if(test_application_delay<=this->test_sensitivity_lenght){
+            this-> symp_detected_per_delay[test_application_delay]++;
+          }
+
+        } else {//Test does NOT detect symptomatic
+          //FRED_VERBOSE(2, "Symptomatic person Id %d is False Negative \n", person->get_id());
+          if(Global::Verbose>0){
+            std::cout << "Symptomatic person Id " << person->get_id() << " will be false negative on day " << result_date << '\n';
+          }
+
+          this-> false_negative_symptomatic_event_queue->add_event(result_date, person);
+          this-> predicted_symptomatic_false_negative_today++;
+        }//Test does NOT detect symptomatic
+
+      } else { //Symptomatic person will not be tested
+        //FRED_VERBOSE(2, "Symptomatic person Id %d will NOT be tested \n", person->get_id());
+        if(Global::Verbose>0){
+          std::cout << "Symptomatic person Id " << person->get_id() << " will NOT be tested"<< '\n';
+        }
+      }//Symptomatic person will not be tested
+
+    } else{ //Asymptomatic person
+      //FRED_VERBOSE(2, "Person Id %d will be ASYMPTOMATIC\n", person->get_id());
+      if(Global::Verbose>0){
+        std::cout << "Person Id " << person->get_id() << " will be Asymptomatic." << '\n';
+      }
+
+      this-> asymptomatics_today++;
+
+      //Draw probability of asymptomatic being tested
+      r = Random::draw_random();
+
+      if(r < prob_asymp_being_tested){//Asymptomatic is tested
+
+        //draw random delay for asymptomatic being volubtarily tested
+        test_application_delay = Random::draw_random_int(this-> min_asymptomatic_infectious_to_test_delay, this-> max_asymptomatic_infectious_to_test_delay);
+
+        if(test_application_delay<=this->test_sensitivity_lenght){
+          this->asymp_tested_per_delay[test_application_delay]++;
+        }
+
+        int test_date = Global::Simulation_Day + test_application_delay;
+
+        //Person gets in testing queue
+        //FRED_VERBOSE(2, "Asymptomatic person Id %d will be tested on day %d\n", person->get_id(), test_date);
+        if(Global::Verbose>0){
+          std::cout << "Asymptomatic person Id " << person->get_id() << " will be tested on day " << test_date << '\n';
+        }
+
+        this->test_asymptomatic_event_queue->add_event(test_date, person);
+        this->predicted_asymptomatic_tested_today++;
+
+        //Schedule test test results
+        int result_date = test_date + this->test_results_delay;
+
+        //Draw random to check if test detects asymptomatic
+        r = Random::draw_random();
+
+        if(r < get_test_sensitivity(test_date - Global::Simulation_Day)){//Asymptomatic detected by test
+          //FRED_VERBOSE(2, "Asymptomatic person Id %d will be detected on day %d\n", person->get_id(), result_date);
+          if(Global::Verbose>0){
+            std::cout << "Asymptomatic person Id " << person->get_id() << " will be detected on day "<< result_date << '\n';
+          }
+
+          this-> detect_asymptomatic_event_queue->add_event(result_date, person);
+          this-> predicted_asymptomatic_detected_today++;
+
+          if(test_application_delay<=this->test_sensitivity_lenght){
+            this-> asymp_detected_per_delay[test_application_delay]++;
+          }
+
+
+        } else{//Asymptomatic does NOT get detected by test
+          //FRED_VERBOSE(2, "Asymptomatic person Id %d is False Negative \n", person->get_id());
+          if(Global::Verbose>0){
+            std::cout << "Asymptomatic person Id " << person->get_id() << " will be false negative on day "<< result_date << '\n';
+          }
+          this-> false_negative_asymptomatic_event_queue->add_event(result_date, person);
+          this-> predicted_asymptomatic_false_negative_today++;
+        }//Asymptomatic does NOT get detected by test
+
+      } else{//Asymptomatic does NOT get tested
+        //FRED_VERBOSE(2, "Asymptomatic person Id %d will NOT be tested \n", person->get_id());
+        if(Global::Verbose>0){
+          std::cout << "Asymptomatic person Id " << person->get_id() << " will NOT be tested" << '\n';
+        }
+
+      }//Asymptomatic does NOT get tested
+    }//Asymptomatic person
+
+  }// testing is enabled
+
   // update epidemic counters
   this->exposed_people++;
   this->people_becoming_infected_today++;
@@ -600,9 +894,9 @@ void Epidemic::print_stats(int day) {
   }
 
   printf("Epidemic.cc::Size of recent_incidence %lu. People becoming symptomatic today: %d\n", this->recent_incidence.size(), this->people_becoming_symptomatic_today);
-  
+
   //update peak if exceeded
-  
+
   if(recent_incidence.end() - Global::Places.get_shelter_moving_average_days() < recent_incidence.begin()){
     printf("Epidemic.cc:: The size of shelter_moving_average_days is larger than recent_incidence. Can't calculate moving average\n");
     abort();
@@ -646,17 +940,17 @@ void Epidemic::print_stats(int day) {
   this->susceptible_people = this->N - this->infected_not_symp_people - this->people_with_current_symptoms - this->removed_people;
 
   //this->susceptible_people = this->N - this->exposed_people - this->infectious_people - this->removed_people;
-  
+
   track_value(day, (char*)"S", this->susceptible_people);
   track_value(day, (char*)"E", this->exposed_people);
   track_value(day, (char*)"I", this->infectious_people);
   track_value(day, (char*)"Is", this->people_with_current_symptoms);
   track_value(day, (char*)"R", this->removed_people);
   track_value(day, (char*)"PrevInf", this->infected_not_symp_people);
-  
+
   if(this->disease->get_natural_history()->is_case_fatality_enabled()) {
     track_value(day, (char*)"CF", this->daily_case_fatality_count);
-    // Nursing home deaths    
+    // Nursing home deaths
     track_value(day, (char*)"Nursing_Home_CF", this->daily_case_fatality_nursing);
     track_value(day, (char*)"TCF", this->total_case_fatality_count);
     track_value(day, (char*)"CFR", case_fatality_rate);
@@ -674,7 +968,135 @@ void Epidemic::print_stats(int day) {
   track_value(day, (char*)"RR", this->RR);
   track_value(day, (char*)"PkDay", this->peak_day);
   track_value(day, (char*)"PkInc", this->peak_incidence);
-  
+
+  if(Global::Enable_PCR_Testing == true){//Report testing track values
+    //FRED_VERBOSE(2, "Epidemic print stats for Testing %d day %d\n", id, day);
+
+    //Update infected
+    this-> new_infected_today = this-> symptomatics_today + this-> asymptomatics_today;
+    this-> total_new_infected += this-> new_infected_today;
+    this-> total_symptomatics += this-> symptomatics_today;
+    this-> total_asymptomatics += this-> asymptomatics_today;
+
+    //Update tested
+    this-> tested_people_today = this-> symptomatic_tested_today + this-> asymptomatic_tested_today;
+    this-> total_tested_people += this-> tested_people_today;
+    this-> total_symptomatic_tested += this-> symptomatic_tested_today;
+    this-> total_asymptomatic_tested += this-> asymptomatic_tested_today;
+
+    //Update predicted tested
+    this-> predicted_tested_people_today = this->predicted_symptomatic_tested_today + this->predicted_asymptomatic_tested_today;
+    this-> predicted_total_tested_people += this-> predicted_tested_people_today;
+    this-> predicted_total_symptomatic_tested += this-> predicted_symptomatic_tested_today;
+    this-> predicted_total_asymptomatic_tested += this-> predicted_asymptomatic_tested_today;
+
+    //Update detected
+    this-> infected_detected_today = this-> symptomatic_detected_today + this-> asymptomatic_detected_today;
+    this-> total_infected_detected += this-> infected_detected_today;
+    this-> total_symptomatic_detected += this-> symptomatic_detected_today;
+    this-> total_asymptomatic_detected += this-> asymptomatic_detected_today;
+
+    //Update predicted detected
+    this-> predicted_infected_detected_today = this-> predicted_symptomatic_detected_today + this-> predicted_asymptomatic_detected_today;
+    this-> predicted_total_infected_detected += this-> predicted_infected_detected_today;
+    this-> predicted_total_symptomatic_detected += this-> predicted_symptomatic_detected_today;
+    this-> predicted_total_asymptomatic_detected += this-> predicted_asymptomatic_detected_today;
+
+    //Update false negatives
+    this-> total_symptomatic_false_negative+= this->symptomatic_false_negative_today;
+    this-> total_asymptomatic_false_negative+= this->asymptomatic_false_negative_today;
+    this-> false_negative_today = this-> symptomatic_false_negative_today + this-> asymptomatic_false_negative_today;
+    this-> total_false_negative += this-> false_negative_today;
+
+    //Update tracking per test_delay
+    this-> total_tested_per_delay = Epidemic::sum_arrays(this-> symp_tested_per_delay, this-> asymp_tested_per_delay, this->test_sensitivity_lenght);
+    this-> total_detected_per_delay = Epidemic::sum_arrays(this-> symp_detected_per_delay, this-> asymp_detected_per_delay, this->test_sensitivity_lenght);
+
+    //Track infected
+    track_value(day, (char*)"ST",  this-> symptomatics_today);
+    track_value(day, (char*)"TS",  this-> total_symptomatics);
+    track_value(day, (char*)"AT",  this-> asymptomatics_today);
+    track_value(day, (char*)"TA",  this-> total_asymptomatics);
+    track_value(day, (char*)"NIT", this-> new_infected_today);
+    track_value(day, (char*)"TNI", this-> total_new_infected);
+
+    //Track tested
+    track_value(day, (char*)"STT", this-> symptomatic_tested_today);
+    track_value(day, (char*)"TST", this-> total_symptomatic_tested);
+    track_value(day, (char*)"ATT", this-> asymptomatic_tested_today);
+    track_value(day, (char*)"TAT", this-> total_asymptomatic_tested);
+    track_value(day, (char*)"TPT", this-> tested_people_today);
+    track_value(day, (char*)"TTP", this-> total_tested_people);
+
+    //Track predicted tested
+    track_value(day, (char*)"PSTT", this-> predicted_symptomatic_tested_today);
+    track_value(day, (char*)"PTST", this-> predicted_total_symptomatic_tested);
+    track_value(day, (char*)"PATT", this-> predicted_asymptomatic_tested_today);
+    track_value(day, (char*)"PTAT", this-> predicted_total_asymptomatic_tested);
+    track_value(day, (char*)"PTPT", this-> predicted_tested_people_today);
+    track_value(day, (char*)"PTTP", this-> predicted_total_tested_people);
+
+    //Track detected
+    track_value(day, (char*)"SDT", this-> symptomatic_detected_today);
+    track_value(day, (char*)"TSD", this-> total_symptomatic_detected);
+    track_value(day, (char*)"ADT", this-> asymptomatic_detected_today);
+    track_value(day, (char*)"TAD", this-> total_asymptomatic_detected);
+    track_value(day, (char*)"IDT", this-> infected_detected_today);
+    track_value(day, (char*)"TID", this-> total_infected_detected);
+
+    //Track predicted detected
+    track_value(day, (char*)"PSDT", this-> predicted_symptomatic_detected_today);
+    track_value(day, (char*)"PTSD", this-> predicted_total_symptomatic_detected);
+    track_value(day, (char*)"PADT", this-> predicted_asymptomatic_detected_today);
+    track_value(day, (char*)"PTAD", this-> predicted_total_asymptomatic_detected);
+    track_value(day, (char*)"PIDT", this-> predicted_infected_detected_today);
+    track_value(day, (char*)"PTID", this-> predicted_total_infected_detected);
+
+    //Track false negatives
+    track_value(day, (char*)"SFNT", this-> symptomatic_false_negative_today);
+    track_value(day, (char*)"TSFN", this-> total_symptomatic_false_negative);
+    track_value(day, (char*)"AFNT", this-> asymptomatic_false_negative_today);
+    track_value(day, (char*)"TAFN", this-> total_asymptomatic_false_negative);
+    track_value(day, (char*)"FNT",  this-> false_negative_today);
+    track_value(day, (char*)"TFN",  this-> total_false_negative);
+
+    //Track predicted false negatives
+    track_value(day, (char*)"PSFNT", this-> predicted_symptomatic_false_negative_today);
+    track_value(day, (char*)"PTSFN", this-> predicted_total_symptomatic_false_negative);
+    track_value(day, (char*)"PAFNT", this-> predicted_asymptomatic_false_negative_today);
+    track_value(day, (char*)"PTAFN", this-> predicted_total_asymptomatic_false_negative);
+    track_value(day, (char*)"PFNT",  this-> predicted_false_negative_today);
+    track_value(day, (char*)"PTFN",  this-> predicted_total_false_negative);
+
+    //Track testing per_delay
+
+    if(Global::Verbose>0){
+      std::cout << "*****************************" << '\n';
+      std::cout << "Testing summary for simulation day: " <<  Global::Simulation_Day <<'\n';
+
+      std::cout << "New symptomatics today: " <<  this->symptomatics_today <<'\n';
+      std::cout << "New symptomatics tested today : " <<  this->symptomatic_tested_today <<'\n';
+      std::cout << "New symptomatics detected today: " <<  this->symptomatic_detected_today <<'\n';
+      std::cout << "New symptomatics false negative today: " <<  this->symptomatic_false_negative_today <<'\n'<<'\n';
+
+      std::cout << "Total symptomatics: " << this-> total_symptomatics << '\n';
+      std::cout << "Total symptomatics tested: " << this-> total_symptomatic_tested << '\n';
+      std::cout << "Total symptomatics detected: " << this-> total_symptomatic_detected << '\n';
+      std::cout << "Total symptomatics false negative: " << this-> total_symptomatic_false_negative << '\n' << '\n' ;
+
+      std::cout << "New asymptomatics today: " <<  this->asymptomatics_today <<'\n';
+      std::cout << "New asymptomatics tested today: " <<  this->asymptomatic_tested_today <<'\n';
+      std::cout << "New asymptomatics detected today: " <<  this->asymptomatic_detected_today <<'\n';
+      std::cout << "New asymptomatics false negative today: " <<  this->asymptomatic_false_negative_today <<'\n'<<'\n';
+
+      std::cout << "Total asymptomatics: " << this-> total_asymptomatics << '\n';
+      std::cout << "Total asymptomatics tested: " << this-> total_asymptomatic_tested << '\n';
+      std::cout << "Total asymptomatics detected: " << this-> total_asymptomatic_detected << '\n';
+      std::cout << "Total asymptomatics false negative: " << this-> total_asymptomatic_false_negative << '\n' << '\n' ;
+    }
+
+  }// end of Report testing track values
+
   if (Global::Enable_Vector_Layer && Global::Report_Vector_Population) {
     Global::Vectors->report(day, this);
   }
@@ -719,7 +1141,7 @@ void Epidemic::print_stats(int day) {
     FRED_VERBOSE(0, "report serial interval\n");
     report_serial_interval(day);
   }
-  
+
   //Only report AR and ARs on last day
   if(Global::Report_Mean_Household_Stats_Per_Income_Category && day == (Global::Days - 1)) {
     report_household_income_stratified_results(day);
@@ -744,7 +1166,7 @@ void Epidemic::print_stats(int day) {
   if(Global::Verbose) {
     fprintf(Global::Statusfp, "\n");
     fflush(Global::Statusfp);
-  }			  
+  }
 
   // prepare for next day
   this->people_becoming_infected_today = 0;
@@ -755,7 +1177,48 @@ void Epidemic::print_stats(int day) {
   this->daily_infections_list.clear();
   this->daily_symptomatic_list.clear();
   this->daily_hospitalization_list.clear();
-}
+
+  //Reset daily testing counters
+  if(Global::Enable_PCR_Testing == true){
+    //Infected
+    this-> symptomatics_today = 0;
+    this-> asymptomatics_today = 0;
+    this-> new_infected_today = 0;
+    //Tested
+    this-> symptomatic_tested_today = 0;
+    this-> asymptomatic_tested_today = 0;
+    this-> tested_people_today = 0;
+    //predicted tested
+    this-> predicted_symptomatic_tested_today= 0;
+    this-> predicted_asymptomatic_tested_today= 0;
+    this-> predicted_tested_people_today = 0;
+    //Detectec
+    this-> symptomatic_detected_today = 0;
+    this-> asymptomatic_detected_today = 0;
+    this-> infected_detected_today = 0;
+    //predicted Detected
+    this-> predicted_symptomatic_detected_today = 0;
+    this-> predicted_asymptomatic_detected_today = 0;
+    this-> predicted_infected_detected_today = 0;
+    //False negatives
+    this-> symptomatic_false_negative_today =0;
+    this-> asymptomatic_false_negative_today = 0;
+    this-> false_negative_today =0;
+    //predicted false negatives
+    this-> predicted_symptomatic_false_negative_today =0;
+    this-> predicted_asymptomatic_false_negative_today = 0;
+    this-> predicted_false_negative_today =0;
+
+    for (int i=0; i < this->test_sensitivity_lenght; i++){
+      this-> symp_tested_per_delay[i] = 0;
+      this-> symp_detected_per_delay[i] = 0;
+      this-> asymp_tested_per_delay[i] = 0;
+      this-> asymp_detected_per_delay[i] = 0;
+      this-> total_tested_per_delay[i]  = 0;
+      this-> total_detected_per_delay[i] = 0;
+    }
+  } //Reset daily testing counters
+} //Report results per day
 
 void Epidemic::report_age_of_infection(int day) {
   int infants = 0;
@@ -767,7 +1230,7 @@ void Epidemic::report_age_of_infection(int day) {
   int adults = 0;
   int elderly = 0;
   int age_count[Demographics::MAX_AGE + 1];				// age group counts
-  
+
   int infants_Cs = 0;
   int toddlers_Cs = 0;
   int pre_school_Cs = 0;
@@ -777,7 +1240,7 @@ void Epidemic::report_age_of_infection(int day) {
   int adults_Cs = 0;
   int elderly_Cs = 0;
   int age_count_Cs[Demographics::MAX_AGE + 1];				// age group counts
-  
+
   double mean_age = 0.0;
   int count_infections = 0;
   int count_symptomatics = 0;
@@ -786,13 +1249,13 @@ void Epidemic::report_age_of_infection(int day) {
     age_count_Cs[i] = 0;
   }
   // Add symptomatics to this list
-  
+
   for(int i = 0; i < this->people_becoming_infected_today; ++i) {
     Person* infectee = this->daily_infections_list[i];
     int age = infectee->get_age();
     mean_age += age;
     count_infections++;
-    
+
     int age_group = age / 5;
     if(age_group > 20) {
       age_group = 20;
@@ -804,7 +1267,7 @@ void Epidemic::report_age_of_infection(int day) {
       }
     }
     age_count[age_group]++;
-    
+
     double real_age = infectee->get_real_age();
     if(Global::Report_Age_Of_Infection == 1) {
       if(real_age < 0.5) {
@@ -856,14 +1319,14 @@ void Epidemic::report_age_of_infection(int day) {
       }
     }
   }
-  
+
   printf("Epidemic.cc::report_age_of_infection -> There are %d symptomatics, %lu\n", this->people_becoming_symptomatic_today, this->daily_symptomatic_list.size());
-  for(int i = 0; i < this->people_becoming_symptomatic_today; ++i) {    
+  for(int i = 0; i < this->people_becoming_symptomatic_today; ++i) {
     Person* infectee = this->daily_symptomatic_list[i];
-    
+
     int age = infectee->get_age();
     count_symptomatics++;
-    
+
     int age_group = age / 5;
     if(age_group > 20) {
       age_group = 20;
@@ -927,7 +1390,7 @@ void Epidemic::report_age_of_infection(int day) {
       }
     }
   }
-  
+
   if(count_infections > 0) {
     mean_age /= count_infections;
   }
@@ -969,7 +1432,7 @@ void Epidemic::report_age_of_infection(int day) {
     track_value(day, (char*)"Young_adults", young_adults);
     track_value(day, (char*)"Adults", adults);
     track_value(day, (char*)"Elderly", elderly);
-    
+
     track_value(day, (char*)"Infants_Cs", infants_Cs);
     track_value(day, (char*)"Toddlers_Cs", toddlers_Cs);
     track_value(day, (char*)"Pre-k_Cs", pre_school_Cs);
@@ -1050,7 +1513,7 @@ void Epidemic::report_serial_interval(int day) {
     //Write to log file
     Utils::fred_log("\nday %d SERIAL_INTERVAL:", day);
     Utils::fred_log("\n ser_int %.2f\n", mean_serial_interval);
-    
+
     //Store for daily output file
     Global::Daily_Tracker->set_index_key_pair(day,"ser_int", mean_serial_interval);
   }
@@ -1089,7 +1552,7 @@ void Epidemic::report_transmission_by_age_group(int day) {
     int g2 = get_age_group(infectee->get_age());
     age_count[g1][g2]++;
   }
-  
+
   //Store for daily output file
   track_value(day,(char*)"T_4_to_4", age_count[0][0]);
   track_value(day,(char*)"T_4_to_18", age_count[0][1]);
@@ -1107,7 +1570,7 @@ void Epidemic::report_transmission_by_age_group(int day) {
   track_value(day,(char*)"T_99_to_18", age_count[3][1]);
   track_value(day,(char*)"T_99_to_64", age_count[3][2]);
   track_value(day,(char*)"T_99_to_99", age_count[3][3]);
-} 
+}
 
 void Epidemic::report_transmission_by_age_group_to_file(int day) {
   FILE* fp;
@@ -1298,7 +1761,7 @@ void Epidemic::report_group_quarters_incidence(int day) {
   track_value(day, (char*)"College", D);
   track_value(day, (char*)"Prison", J);
   track_value(day, (char*)"Nursing_Home", L);
-  track_value(day, (char*)"Military", B);  
+  track_value(day, (char*)"Military", B);
 }
 
 void Epidemic::report_place_of_infection(int day) {
@@ -1611,7 +2074,7 @@ void Epidemic::report_household_income_stratified_results(int day) {
     int temp_adult_count = 0;
     int temp_adult_inf_count = 0;
     int temp_adult_symp_count = 0;
-    
+
     //AR
     if(Household::count_inhabitants_by_household_income_level_map[i] > 0) {
       Global::Income_Category_Tracker->set_index_key_pair(i, "AR",
@@ -1620,7 +2083,7 @@ void Epidemic::report_household_income_stratified_results(int day) {
     } else {
       Global::Income_Category_Tracker->set_index_key_pair(i, "AR", static_cast<double>(0.0));
     }
-    
+
     //AR_under_18
     if(Household::count_children_by_household_income_level_map[i] > 0) {
       Global::Income_Category_Tracker->set_index_key_pair(i, "AR_under_18",
@@ -1629,7 +2092,7 @@ void Epidemic::report_household_income_stratified_results(int day) {
     } else {
       Global::Income_Category_Tracker->set_index_key_pair(i, "AR_under_18", static_cast<double>(0.0));
     }
-    
+
     //AR_adult
     temp_adult_count = Household::count_inhabitants_by_household_income_level_map[i]
       - Household::count_children_by_household_income_level_map[i];
@@ -1641,7 +2104,7 @@ void Epidemic::report_household_income_stratified_results(int day) {
     } else {
       Global::Income_Category_Tracker->set_index_key_pair(i, "AR_adult", static_cast<double>(0.0));
     }
-    
+
     //ARs
     if(Household::count_inhabitants_by_household_income_level_map[i] > 0) {
       Global::Income_Category_Tracker->set_index_key_pair(i, "ARs",
@@ -1650,7 +2113,7 @@ void Epidemic::report_household_income_stratified_results(int day) {
     } else {
       Global::Income_Category_Tracker->set_index_key_pair(i, "ARs", (double)0.0);
     }
-    
+
     //ARs_under_18
     if(Household::count_children_by_household_income_level_map[i] > 0) {
       Global::Income_Category_Tracker->set_index_key_pair(i, "ARs_under_18",
@@ -1659,7 +2122,7 @@ void Epidemic::report_household_income_stratified_results(int day) {
     } else {
       Global::Income_Category_Tracker->set_index_key_pair(i, "ARs_under_18", static_cast<double>(0.0));
     }
-    
+
     //ARs_adult
     temp_adult_symp_count = this->household_income_infection_counts_map[i].tot_ppl_evr_sympt
       - this->household_income_infection_counts_map[i].tot_chldrn_evr_sympt;
@@ -1680,7 +2143,7 @@ void Epidemic::report_census_tract_stratified_results(int day) {
     int temp_adult_count = 0;
     int temp_adult_inf_count = 0;
     int temp_adult_symp_count = 0;
-    
+
     //AR
     if(Household::count_inhabitants_by_census_tract_map[*census_tract_itr] > 0) {
       Global::Tract_Tracker->set_index_key_pair(*census_tract_itr, "AR",
@@ -1689,7 +2152,7 @@ void Epidemic::report_census_tract_stratified_results(int day) {
     } else {
       Global::Tract_Tracker->set_index_key_pair(*census_tract_itr, "AR", static_cast<double>(0.0));
     }
-    
+
     //AR_under_18
     if(Household::count_children_by_census_tract_map[*census_tract_itr] > 0) {
       Global::Tract_Tracker->set_index_key_pair(*census_tract_itr, "AR_under_18",
@@ -1698,7 +2161,7 @@ void Epidemic::report_census_tract_stratified_results(int day) {
     } else {
       Global::Tract_Tracker->set_index_key_pair(*census_tract_itr, "AR_under_18", static_cast<double>(0.0));
     }
-    
+
     //AR_adult
     temp_adult_count = Household::count_inhabitants_by_census_tract_map[*census_tract_itr]
       - Household::count_children_by_census_tract_map[*census_tract_itr];
@@ -1710,7 +2173,7 @@ void Epidemic::report_census_tract_stratified_results(int day) {
     } else {
       Global::Tract_Tracker->set_index_key_pair(*census_tract_itr, "AR_adult", static_cast<double>(0.0));
     }
-    
+
     //Symptomatic AR
     if(Household::count_inhabitants_by_census_tract_map[*census_tract_itr] > 0) {
       Global::Tract_Tracker->set_index_key_pair(*census_tract_itr, "ARs",
@@ -1719,8 +2182,8 @@ void Epidemic::report_census_tract_stratified_results(int day) {
     } else {
       Global::Tract_Tracker->set_index_key_pair(*census_tract_itr, "ARs", static_cast<double>(0.0));
     }
-    
-    
+
+
     //ARs_under_18
     if(Household::count_children_by_census_tract_map[*census_tract_itr] > 0) {
       Global::Tract_Tracker->set_index_key_pair(*census_tract_itr, "ARs_under_18",
@@ -1729,8 +2192,8 @@ void Epidemic::report_census_tract_stratified_results(int day) {
     } else {
       Global::Tract_Tracker->set_index_key_pair(*census_tract_itr, "ARs_under_18", static_cast<double>(0.0));
     }
-    
-    
+
+
     //ARs_adult
     temp_adult_symp_count = this->census_tract_infection_counts_map[*census_tract_itr].tot_ppl_evr_sympt
       - this->census_tract_infection_counts_map[*census_tract_itr].tot_chldrn_evr_sympt;
@@ -1745,7 +2208,7 @@ void Epidemic::report_census_tract_stratified_results(int day) {
 
 void Epidemic::seed_nursing_home_infections(int day){
   this->N = Global::Pop.get_pop_size();
-  if(Global::Enable_Group_Quarters){    
+  if(Global::Enable_Group_Quarters){
     if(Global::Enable_Nursing_Homes_Importations){
       this->N_nursing_homes = Global::Places.get_number_of_nursing_residents();
       printf("Day %d NURSING HOME residents %d\n", day, this->N_nursing_homes);
@@ -1757,18 +2220,18 @@ void Epidemic::seed_nursing_home_infections(int day){
       int nh_imported_cases = 0;
       // Choose people to infect
       // pick a candidate without replacement
-      for(int i = 0; i < nursing_home_importations; i++){	
+      for(int i = 0; i < nursing_home_importations; i++){
 	int pos_n = Random::draw_random_int(0,N_nursing_homes-1);
 	int infector_n = Random::draw_random_int(0,this->actually_infectious_people.size()-1);
 	Person* infectee_nh = Global::Places.get_nursing_home_resident_ptr(pos_n);
-	
+
 	if(infectee_nh->get_health()->is_susceptible(this->id)) {
 	  // infect the candidate, choose a random person to be the infector
 	  FRED_VERBOSE(0, "infecting candidate %d id %d\n", i, infectee_nh->get_id());
-	  	  
+
 	  infectee_nh->become_exposed(this->id, this->actually_infectious_people[infector_n], infectee_nh->get_household(), day);
 	  FRED_VERBOSE(0, "exposed candidate %d id %d\n", i, infectee_nh->get_id());
-	  
+
 	  become_exposed(infectee_nh, day);
 	  nh_imported_cases++;
 	}
@@ -1779,7 +2242,7 @@ void Epidemic::seed_nursing_home_infections(int day){
   }
 }
 
-void Epidemic::get_imported_infections(int day) { 
+void Epidemic::get_imported_infections(int day) {
   for(int i = 0; i < this->imported_cases_map.size(); ++i) {
     Time_Step_Map* tmap = this->imported_cases_map[i];
     if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
@@ -1798,10 +2261,10 @@ void Epidemic::get_imported_infections(int day) {
       int searches_within_given_location = 1;
       while(searches_within_given_location <= 10) {
 	      FRED_VERBOSE(0,"IMPORT search number %d ", searches_within_given_location);
-	
+
 	      // clear the list of candidates
 	      people.clear();
-	
+
 	      // find households that qualify by distance
 	      int hsize = Global::Places.get_number_of_households();
 	      // printf("IMPORT: houses  %d\n", hsize); fflush(stdout);
@@ -1886,14 +2349,14 @@ void Epidemic::get_imported_infections(int day) {
   }
 }
 
-void Epidemic::get_hospitalization_multiplier_today(int day){ 
+void Epidemic::get_hospitalization_multiplier_today(int day){
   for(int i = 0; i < this->hosp_multiplier_map.size(); ++i) {
     Time_Step_Hosp_Map* tmap = this->hosp_multiplier_map[i];
     if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
       FRED_VERBOSE(0,"HOSP MULT:\n"); // tmap->print();
       if(tmap->hosp_multiplier > 0){
 	this->daily_hospitalization_multiplier = tmap->hosp_multiplier;
-      }      
+      }
     }
   }
 }
@@ -1938,7 +2401,7 @@ void Epidemic::process_infectious_start_events(int day) {
 
     // update person's health chart
     person->become_infectious(this->disease);
-    
+
   }
   this->infectious_start_event_queue->clear_events(day);
 }
@@ -1958,7 +2421,7 @@ void Epidemic::process_infectious_end_events(int day) {
 	recover(person, day);
     }
     // Hospitalizations are as long as symptoms, no need to include here
-    
+
     if(symptoms_end_date == -1){
       recover(person, day);
       this->infected_not_symp_people--;
@@ -1967,14 +2430,102 @@ void Epidemic::process_infectious_end_events(int day) {
   this->infectious_end_event_queue->clear_events(day);
 }
 
+void Epidemic::process_test_symptomatic_events(int day) {//Process test symptomatics
+
+  // GENERAR ACÁ EL REPORTE AL ASEGURARSE DE QUE YA EXISTE TEST DATE, RESUTLADO Y LA VARIABLE DE FLAG YA ES TRUE
+
+  int size = this->test_symptomatic_event_queue->get_size(day);
+  FRED_VERBOSE(2, "TEST_SYMPTOMATIC_EVENT_QUEUE day %d size %d\n", day, size);
+
+  for(int i = 0; i < size; ++i) {
+    Person* person = this->test_symptomatic_event_queue->get_event(day, i);
+    // update epidemic counters
+    person->already_tested_for_disease(this->id);
+    person->set_test_date(this->id, day);
+    this->symptomatic_tested_today++;
+  }//For loop
+  this->test_symptomatic_event_queue->clear_events(day);
+}//Process test symptomatics
+
+void Epidemic::process_detect_symptomatic_events(int day) {//Process detect symptomatics
+  int size = this->detect_symptomatic_event_queue->get_size(day);
+  FRED_VERBOSE(2, "DETECT_SYMPTOMATIC_EVENT_QUEUE day %d size %d\n", day, size);
+
+  for(int i = 0; i < size; ++i) {
+    Person* person = this->detect_symptomatic_event_queue->get_event(day, i);
+    // update epidemic counters
+    person->set_test_result_date(this->id, day);
+    person->set_test_result(this->id, true);
+    this->symptomatic_detected_today++;
+  }//For loop
+  this->detect_symptomatic_event_queue->clear_events(day);
+}//Process detect symptomatics
+
+void Epidemic::process_false_negative_symptomatic_events(int day) {//Process false_negative symptomatics
+  int size = this->false_negative_symptomatic_event_queue->get_size(day);
+  FRED_VERBOSE(2, "FALSE_NEGATIVE_SYMPTOMATIC_EVENT_QUEUE day %d size %d\n", day, size);
+
+  for(int i = 0; i < size; ++i) {
+    Person* person = this->false_negative_symptomatic_event_queue->get_event(day, i);
+    // update epidemic counters
+    person->set_test_result_date(this->id, day);
+    person->set_test_result(this->id, false);
+    this->symptomatic_false_negative_today++;
+  }//For loop
+  this->false_negative_symptomatic_event_queue->clear_events(day);
+}//Process false_negative symptomatics
+
+void Epidemic::process_test_asymptomatic_events(int day) {//Process tet symptomatics
+  int size = this->test_asymptomatic_event_queue->get_size(day);
+  FRED_VERBOSE(2, "TEST_ASYMPTOMATIC_EVENT_QUEUE day %d size %d\n", day, size);
+
+  for(int i = 0; i < size; ++i) {
+    Person* person = this->test_asymptomatic_event_queue->get_event(day, i);
+    // update epidemic counters
+    this->asymptomatic_tested_today++;
+    person->already_tested_for_disease(this->id);
+    person->set_test_date(this->id, day);
+  }//For loop
+  this->test_asymptomatic_event_queue->clear_events(day);
+}//Process tet asymptomatics
+
+void Epidemic::process_detect_asymptomatic_events(int day) {//Process detect symptomatics
+  int size = this->detect_asymptomatic_event_queue->get_size(day);
+  FRED_VERBOSE(2, "DETECT_ASYMPTOMATIC_EVENT_QUEUE day %d size %d\n", day, size);
+
+  for(int i = 0; i < size; ++i) {
+    Person* person = this->detect_asymptomatic_event_queue->get_event(day, i);
+    // update epidemic counters
+    person->set_test_result_date(this->id, day);
+    person->set_test_result(this->id, true);
+    this->asymptomatic_detected_today++;
+  }//For loop
+  this->detect_asymptomatic_event_queue->clear_events(day);
+}//Process detect symptomatics
+
+void Epidemic::process_false_negative_asymptomatic_events(int day) {//Process false_negative symptomatics
+  int size = this->false_negative_asymptomatic_event_queue->get_size(day);
+  FRED_VERBOSE(2, "FALSE_NEGATIVE_ASYMPTOMATIC_EVENT_QUEUE day %d size %d\n", day, size);
+
+  for(int i = 0; i < size; ++i) {
+    Person* person = this->false_negative_asymptomatic_event_queue->get_event(day, i);
+    // update epidemic counters
+    person->set_test_result_date(this->id, day);
+    person->set_test_result(this->id, false);
+    this->asymptomatic_false_negative_today++;
+  }//For loop
+  this->false_negative_asymptomatic_event_queue->clear_events(day);
+}//Process false_negative asymptomatics
+
+
 void Epidemic::recover(Person* person, int day) {
   FRED_VERBOSE(1, "infectious_end_event day %d person %d\n", day, person->get_id());
-  
+
   // remove from active list
   this->potentially_infectious_people.erase(person);
-  
+
   this->removed_people++;
-  
+
   // update person's health chart
   person->recover(day, this->disease);
 
@@ -1990,7 +2541,7 @@ void Epidemic::recover(Person* person, int day) {
 	if(dis_i == this->id){
 	  continue;
 	}
-	if(person->is_immune(dis_i) == false){	  
+	if(person->is_immune(dis_i) == false){
 	  person->become_susceptible(dis_i);
 	}
 	double cross_protection_tmp = Global::Diseases.get_disease(dis_i)->get_natural_history()->get_cross_protection_probability();
@@ -2002,7 +2553,7 @@ void Epidemic::recover(Person* person, int day) {
     }
   }
   // Lose immunity if necessary
-  int immunity_end_date = person->get_immunity_end_date(this->id);  
+  int immunity_end_date = person->get_immunity_end_date(this->id);
   if(immunity_end_date > -1){
     this->immunity_end_event_queue->add_event(immunity_end_date, person);
   }
@@ -2023,9 +2574,9 @@ void Epidemic::process_symptoms_start_events(int day) {
     // update epidemic counters
     this->people_with_current_symptoms++;
     this->people_becoming_symptomatic_today++;
-    
+
     this->infected_not_symp_people--;
-    
+
     if(Global::Report_Mean_Household_Stats_Per_Income_Category) {
       if(person->get_household() != NULL) {
 	      int income_level = static_cast<Household*>(person->get_household())->get_household_income_code();
@@ -2067,7 +2618,7 @@ void Epidemic::process_symptoms_start_events(int day) {
 	      }
       }
     }
-    
+
     // update person's health chart
     person->become_symptomatic(this->disease);
     this->daily_symptomatic_list.push_back(person);
@@ -2087,7 +2638,7 @@ void Epidemic::process_symptoms_end_events(int day) {
 
     // update person's health chart
     person->resolve_symptoms(this->disease);
-        
+
     // check to see if person has fully recovered:
     int infectious_end_date = person->get_infectious_end_date(this->id);
     if (-1 < infectious_end_date && infectious_end_date <= day) {
@@ -2111,8 +2662,8 @@ void Epidemic::process_hospitalization_start_events(int day) {
 
     // update epidemic counters
     this->people_with_current_hospitalization++;
-    this->people_becoming_hospitalized_today++;    
-        
+    this->people_becoming_hospitalized_today++;
+
     // update person's health chart
     person->become_hospitalized(this->disease);
     this->daily_hospitalization_list.push_back(person);
@@ -2133,7 +2684,7 @@ void Epidemic::process_hospitalization_end_events(int day) {
 
     // update person's health chart
     person->resolve_hospitalization(this->disease);
-        
+
     // check to see if person has fully recovered:
     int infectious_end_date = person->get_infectious_end_date(this->id);
     if (-1 < infectious_end_date && infectious_end_date <= day) {
@@ -2153,7 +2704,7 @@ void Epidemic::process_immunity_start_events(int day) {
 
     // update epidemic counters
     this->immune_people++;
-    
+
     // update person's health chart
     Disease* disease_tmp = Global::Diseases.get_disease(this->id);
     person->become_immune(disease_tmp);
@@ -2166,7 +2717,7 @@ void Epidemic::process_immunity_start_events(int day) {
 	  if(dis_i == this->id){
 	    continue;
 	  }
-	  if(person->is_immune(dis_i) == false){	  
+	  if(person->is_immune(dis_i) == false){
 	    person->become_susceptible(dis_i);
 	  }
 	  double cross_protection_tmp = Global::Diseases.get_disease(dis_i)->get_natural_history()->get_cross_protection_probability();
@@ -2202,10 +2753,10 @@ void Epidemic::process_immunity_end_events(int day) {
     }
     // update epidemic counters
     this->immune_people--;
-    
+
     // update epidemic counters
     this->removed_people++;
-    
+
     // update person's health chart
     if(person->is_alive()){
       person->become_susceptible_by_natural_waning(this->id);
@@ -2228,7 +2779,7 @@ void Epidemic::update(int day) {
 
   if(Global::Enable_Hospitalization_Multiplier_File == true){
     get_hospitalization_multiplier_today(day);
-  }  
+  }
   // import infections from unknown sources
   get_imported_infections(day);
   // Utils::fred_print_epidemic_timer("imported infections");
@@ -2263,6 +2814,16 @@ void Epidemic::update(int day) {
   // transition to susceptible
   process_immunity_end_events(day);
 
+  //Process Epidemic testing events
+  if(Global::Enable_PCR_Testing){
+      process_test_symptomatic_events(day);
+      process_detect_symptomatic_events(day);
+      process_false_negative_symptomatic_events(day);
+      process_test_asymptomatic_events(day);
+      process_detect_asymptomatic_events(day);
+      process_false_negative_asymptomatic_events(day);
+  }
+
   //Update sheltering houses
   //TODO: Should the following line be inthe place_list class?
   if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
@@ -2273,21 +2834,21 @@ void Epidemic::update(int day) {
 					       this->days_of_decline);
     }
   }
-  
+
   if(Global::Enable_School_Reduced_Capacity == true && Global::School_reduced_capacity_day <= day){
     printf("School capacity reduced enabled to %.2f day %d\n",Global::School_reduced_capacity, day);
   }
   /*
     UPDATE FACEMASK WEARING
    */
-  
+
   if(Global::Enable_Face_Mask_Usage && Global::Enable_Face_Mask_Timeseries_File){
     // Only update on disease = 0, otherwise it will update too many times
     if(this->id == 0){
       Global::Places.update_face_mask_compliance(day);
     }
   }
-  
+
   // Utils::fred_print_epidemic_timer("transition events");
 
   // update list of infected people
@@ -2321,7 +2882,7 @@ void Epidemic::update(int day) {
       // update person's mixing group infection counters
       person->update_household_counts(day, this->id);
       person->update_school_counts(day, this->id);
-      // move on the next infected person    
+      // move on the next infected person
       ++it;
     }
   }
@@ -2376,10 +2937,10 @@ void Epidemic::update(int day) {
       Utils::fred_print_epidemic_timer(msg);
     }
   }
-  
+
   //After updating infectious people, seed infections
   seed_nursing_home_infections(day);
-  
+
   FRED_VERBOSE(0, "epidemic update finished for disease %d day %d\n", id, day);
   return;
 }
@@ -2423,7 +2984,7 @@ void Epidemic::find_active_places_of_type(int day, int place_type) {
       this->active_places.insert(place);
     }
   }
-  
+
   // vector transmission mode (for dengue and chikungunya)
   if(strcmp("vector",this->disease->get_transmission_mode()) == 0) {
 
@@ -2473,7 +3034,7 @@ void Epidemic::find_active_places_of_type(int day, int place_type) {
   FRED_VERBOSE(0, "find_active_places_of_type %d day %d found %d\n", place_type, day,  this->active_place_vec.size());
 
 }
-  
+
 void Epidemic::spread_infection_in_active_places(int day) {
   FRED_VERBOSE(0, "spread_infection__active_places day %d\n", day);
   for(int i = 0; i < this->active_place_vec.size(); ++i) {
@@ -2515,4 +3076,3 @@ void Epidemic::cancel_immunity_start(int day, Person* person) {
 void Epidemic::cancel_immunity_end(int day, Person* person) {
   this->immunity_end_event_queue->delete_event(day, person);
 }
-

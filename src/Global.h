@@ -76,7 +76,7 @@ class Sexual_Transmission_Network;
  */
 class Global {
 public:
-  
+
   // Output codes
   static const int OUTPUT_S = 0;
   static const int OUTPUT_E = 1;
@@ -100,7 +100,7 @@ public:
   static const int SCHOOL_AGE = 5;
   static const int RETIREMENT_AGE = 67;
   // MAX_NUM_DISEASES sets the size of stl::bitsets and static arrays used throughout FRED
-  // to store disease-specific flags and pointers; set to the visualizationest possible value 
+  // to store disease-specific flags and pointers; set to the visualizationest possible value
   // for optimal performance and memory usage
   static const int MAX_NUM_DISEASES = 4;
   // Change this constant and recompile to allow more threads.  For efficiency should be
@@ -265,10 +265,11 @@ public:
   static bool Report_Serial_Interval;
   static bool Report_Incidence_By_County;
   static bool Report_Incidence_By_Census_Tract;
-  static bool Report_Symptomatic_Incidence_By_Census_Tract; 
+  static bool Report_Symptomatic_Incidence_By_Census_Tract;
   static bool Report_County_Demographic_Information;
   static bool Assign_Teachers;
   static bool Enable_Household_Shelter;
+  static bool Enable_PCR_Testing;
   static bool Enable_Household_Shelter_File;
   static bool Enable_Hospitalization_Multiplier_File;
   static bool Enable_Household_Shelter_By_Age;
@@ -335,6 +336,8 @@ public:
   static FILE* Householdfp;
   static FILE* Tractfp;
   static FILE* IncomeCatfp;
+  //Crear file para testing
+  static FILE* Global::TestingResults;
 
   /**
    * Fills the static variables with values from the parameter file.
@@ -342,7 +345,7 @@ public:
   static void get_global_parameters();
 };
 
-/* 
+/*
  * Put fred's global typedefs in namespace fred.
  */
 
@@ -368,23 +371,23 @@ namespace fred {
       assert(n_bits <= sizeof(BitType) * 8);
       reset();
     }
-      
+
     void reset() {
       bits = 0;
     }
-      
+
     void reset(int pos) {
       bits  &= ~((BitType)1 << pos);
     }
-      
+
     void set() {
       bits = ~0;
     }
-      
+
     void set(int pos) {
       bits |= ((BitType)1 << pos);
     }
-      
+
     int size() {
       // Published in 1988, the C Programming Language 2nd Ed. (by Brian W.
       // Kernighan and Dennis M. Ritchie) mentions this in exercise 2-9.
@@ -397,15 +400,15 @@ namespace fred {
       }
       return c;
     }
-      
+
     bool any() const {
       return bits > 0;
     }
-      
+
     bool none() const {
       return bits == 0;
     }
-      
+
     bool test(int pos) const {
       return bits & ((BitType)1 << pos);
     }
@@ -413,10 +416,10 @@ namespace fred {
 
 
 
-  /* 
+  /*
    * bitset big enough to store flags for MAX_NUM_DISEASES
    * Global::MAX_NUM_DISEASES should be equal to number of diseases
-   * for efficiency. 
+   * for efficiency.
    * IMPORTANT NOTE TO THE PROGRAMMER: Number of actual diseases may be less than
    * 'MAX_NUM_DISEASES' so care should be taken when performing operations
    * (such as any(), flip(), reset(), etc.) on a disease_bitset to avoid
@@ -433,43 +436,43 @@ namespace fred {
     Update_Health = 'H',
     Travel = 'T'
   };
-  
+
   ////////////////////// OpenMP Utilities
   ////////////////////// mutexes, status, etc.
 
 #ifdef _OPENMP
-  
+
 #include <omp.h>
   struct Mutex {
     Mutex() {
       omp_init_lock(&lock);
     }
-      
+
     ~Mutex() {
       omp_destroy_lock(&lock);
     }
-    
+
     void Lock() {
       omp_set_lock(&lock);
     }
-      
+
     void Unlock() {
       omp_unset_lock(&lock);
     }
-   
+
     Mutex(const Mutex &) {
       omp_init_lock(&lock);
     }
-      
+
     Mutex & operator=(const Mutex &) {
       return *(this);
     }
-      
+
     omp_lock_t lock;
   };
 
 #else
-  
+
   /// Dummy Mutex when _OPENMP not defined
   struct Mutex {
     void Lock() {}
@@ -477,7 +480,7 @@ namespace fred {
   };
 
   static int omp_get_max_threads() {
-    return 1; 
+    return 1;
   }
 
   static int omp_get_num_threads() {
@@ -494,11 +497,11 @@ namespace fred {
     explicit Scoped_Lock(Mutex & m) : mut(m), locked(true) {
       mut.Lock();
     }
-      
+
     ~Scoped_Lock() {
       Unlock();
     }
-      
+
     void Unlock() {
       if(!locked) {
         return;
@@ -506,7 +509,7 @@ namespace fred {
       locked = false;
       mut.Unlock();
     }
-      
+
     void LockAgain() {
       if(locked) {
         return;
@@ -514,7 +517,7 @@ namespace fred {
       mut.Lock();
       locked = true;
     }
-      
+
   private:
     Mutex & mut;
     bool locked;
@@ -523,13 +526,13 @@ namespace fred {
   };
 
   // compare and swap currently only available using GCC atomic builtin
-  // need to define behavior for other compilers 
+  // need to define behavior for other compilers
 #ifdef __GNUC__
   template<typename T>
   inline static T compare_and_swap(T* p, T a, T b) {
     return __sync_bool_compare_and_swap(p, a, b);
   }
-    
+
   // Spin_Lock/Spin_Mutex:
   // This is a much lighter weight mutex.  The omp mutex defined above
   // requires 64 bytes of memory.  This spin mutex requires only 1.
@@ -540,16 +543,16 @@ namespace fred {
     Spin_Mutex() {
       locked = false;
     }
-      
+
     void Lock() {
       locked = true;
     }
-      
+
     void Unlock() {
       locked = false;
     }
   };
-    
+
   // since we don't have compare and swap without the gcc builtin, other
   // compilers default back to the omp locks.  Until compare and swap is
   // available for other compilers, gcc should be preferred.
@@ -560,7 +563,7 @@ namespace fred {
         //Do Nothing
       }
     }
-      
+
     ~Spin_Lock() {
 #pragma omp atomic
       m.locked &= false;

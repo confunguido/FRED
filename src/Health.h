@@ -145,8 +145,8 @@ public:
   int get_total_number_of_infections(){
     return this->total_number_of_infections;
   }
-  
-  int get_days_symptomatic() { 
+
+  int get_days_symptomatic() {
     return this->days_symptomatic;
   }
   int get_exposure_date(int disease_id) const;
@@ -239,12 +239,12 @@ public:
   bool is_on_av_for_disease(int day, int disease_id) const;
 
   // Personal Health Behaviors
-  bool is_wearing_face_mask() { 
-    return this->wears_face_mask_today; 
+  bool is_wearing_face_mask() {
+    return this->wears_face_mask_today;
   }
 
-  bool is_washing_hands() { 
-    return this->washes_hands; 
+  bool is_washing_hands() {
+    return this->washes_hands;
   }
 
   bool is_newly_infected(int day, int disease_id) {
@@ -320,8 +320,8 @@ public:
     }
   }
 
-  int get_vaccinated_id() const;    
-  
+  int get_vaccinated_id() const;
+
   int is_vaccine_effective_any() const;
   int get_vaccination_any_effective_day() const;
 
@@ -363,7 +363,7 @@ public:
 
   int get_current_vaccine_dose(int i);
   int get_days_to_next_dose(int i);
-  
+
   // MODIFIERS
 
   /**
@@ -506,14 +506,14 @@ public:
   void set_has_heart_disease(bool has_cond) {
     set_has_chronic_condition(Chronic_condition_index::HEART_DISEASE, has_cond);
   }
-    
+
   /**
    * @return <code>true</code> if agent has hypertension, <code>false</code> otherwise
    */
   bool has_hypertension() {
     return has_chronic_condition(Chronic_condition_index::HYPERTENSION);
   }
-    
+
   /**
    * Sets whether or not the agent has hypertension
    * @param has_cond whether or not the agent has hypertension
@@ -530,8 +530,8 @@ public:
   }
 
   /**
-   * Sets whether or not the agent has hypercholestrolemia 
-   * @param has_cond whether or not the agent has hypercholestrolemia 
+   * Sets whether or not the agent has hypercholestrolemia
+   * @param has_cond whether or not the agent has hypercholestrolemia
    */
   void set_has_hypercholestrolemia(bool has_cond) {
     set_has_chronic_condition(Chronic_condition_index::HYPERCHOLESTROLEMIA, has_cond);
@@ -595,7 +595,7 @@ public:
    * Initialize any static variables needed by the Health class
    */
   static void initialize_static_variables();
-    
+
   static const char* chronic_condition_lookup(Chronic_condition_index::e idx) {
     assert(idx >= 0);
     assert(idx < Chronic_condition_index::CHRONIC_MEDICAL_CONDITIONS);
@@ -715,6 +715,38 @@ public:
     return this->health_condition[disease_id].next_transition_day;
   }
 
+  bool is_tested_for_disease(int disease_id){
+    return this->tested_for_disease[disease_id];
+  }
+
+  void already_tested_for_disease(int disease_id){
+    this->tested_for_disease[disease_id] = true;
+  }
+
+  int get_test_date(int disease_id){
+    return this->test_date[disease_id];
+  }
+
+  void set_test_date(int disease_id, int day){
+    this->test_date[disease_id] = day;
+  }
+
+  int get_test_result_date(int disease_id){
+    return this->test_result_date[disease_id];
+  }
+
+  void set_test_result_date(int disease_id, int day){
+    this->test_result_date[disease_id] = day;
+  }
+
+  bool get_test_result(int disease_id){
+    return this->test_result[disease_id];
+  }
+
+  void set_test_result(int disease_id, bool result){
+    this->test_result[disease_id] = result;
+  }
+
   void update_health_conditions(int day);
 
 private:
@@ -738,6 +770,11 @@ private:
   int days_symptomatic; 			// over all diseases
   int days_hospitalization;
   int total_number_of_infections;
+  //Testing data
+  bool* tested_for_disease;
+  int* test_date;
+  int* test_result_date;
+  bool* test_result;
 
   // living or not?
   bool alive;
@@ -810,7 +847,7 @@ private:
   static Age_Map* heart_disease_prob;
   static Age_Map* hypertension_prob;
   static Age_Map* hypercholestrolemia_prob;
-    
+
   static Age_Map* asthma_hospitalization_prob_mult;
   static Age_Map* COPD_hospitalization_prob_mult;
   static Age_Map* chronic_renal_disease_hospitalization_prob_mult;
@@ -834,7 +871,7 @@ private:
   static int Days_to_wear_face_masks;
   static int Min_age_wear_face_masks;
   static int Day_start_wearing_face_masks;
-  static std::unordered_map<string,double> Face_mask_compliance;  
+  static std::unordered_map<string,double> Face_mask_compliance;
   static double Hand_washing_compliance;
 
   static double Hh_income_susc_mod_floor;

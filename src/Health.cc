@@ -105,7 +105,7 @@ void Health::initialize_static_variables() {
 
     printf("N_face_mask_locations: %d and N_face_mask_compliance: %d\n", N_face_mask_locations, N_face_mask_compliance);
     char fm_str[MAX_PARAM_SIZE];
-    Params::get_param((char*)"face_mask_compliance", fm_str);    
+    Params::get_param((char*)"face_mask_compliance", fm_str);
     std::vector<string> face_mask_locations_arr;
     std::vector<double> face_mask_compliance_arr;
     Params::get_param_vector_from_string((char*)"face_mask_locations", face_mask_locations_arr);
@@ -294,6 +294,11 @@ Health::Health() {
   this->health_condition = NULL;
   this->health_state.clear();
   this->total_number_of_infections = 0;
+  //Testing data
+  this->tested_for_disease = NULL;
+  this->test_date = NULL;
+  this->test_result_date = NULL;
+  this->test_result = NULL;
 }
 
 void Health::setup(Person* self) {
@@ -312,18 +317,18 @@ void Health::setup(Person* self) {
 
   // Determines if the agent is at risk
   this->at_risk = fred::disease_bitset();
-  
+
   // Determine if the agent washes hands
   this->washes_hands = false;
   if(Health::Hand_washing_compliance > 0.0) {
     this->washes_hands = (Random::draw_random() < Health::Hand_washing_compliance);
   }
-  
+
   // Facemasks defaults
   this->has_face_mask_behavior_anywhere = false;
   this->wears_face_mask_today = false;
   this->days_wearing_face_mask = 0;
-  
+
   this->case_fatality = fred::disease_bitset();
   int diseases = Global::Diseases.get_number_of_diseases();
   FRED_VERBOSE(1, "Health::setup diseases %d\n", diseases);
@@ -336,6 +341,11 @@ void Health::setup(Person* self) {
   this->immunity_end_date = new int [diseases];
   this->past_infections = new past_infections_type [diseases];
   this->health_condition = new health_condition_t [diseases];
+  //Testing data
+  this->tested_for_disease = new bool [diseases];
+  this->test_date = new int [diseases];
+  this->test_result_date = new int [diseases];
+  this->test_result = new bool [diseases];
 
   for(int disease_id = 0; disease_id < diseases; ++disease_id) {
     this->recovered.reset(disease_id);
@@ -353,6 +363,11 @@ void Health::setup(Person* self) {
     this->health_condition[disease_id].last_transition_day = -1;
     this->health_condition[disease_id].next_state = -1;
     this->health_condition[disease_id].next_transition_day = -1;
+
+    this->tested_for_disease[disease_id] = false;
+    this->test_date[disease_id] = -1;
+    this->test_result_date[disease_id] = -1;
+    this->test_result[disease_id] = false;
 
     Disease* disease = Global::Diseases.get_disease(disease_id);
     if (disease->assume_susceptible()) {
@@ -438,7 +453,7 @@ void Health::become_susceptible(int disease_id) {
 			    Date::get_date_string().c_str(),
 			    myself->get_id(), disease_id);
     return;
-  }  
+  }
   if(this->infection[disease_id] != NULL){
     printf("HEALTH CHART: %s person %d has an active infection for disease %d\n",
 	   Date::get_date_string().c_str(),
@@ -459,7 +474,7 @@ void Health::become_susceptible_by_natural_waning(int disease_id) {
   if(this->susceptible.test(disease_id)) {
     this->immunity.reset(disease_id);
     return;
-  }  
+  }
   if(this->infection[disease_id] == NULL) {
     // not already infected
     this->susceptibility_multp[disease_id] = 1.0;
@@ -582,7 +597,7 @@ void Health::become_exposed(int disease_id, Person* infector, Mixing_Group* mixi
       this->hospitalized.reset(dis_i);
       this->immunity_end_date[dis_i] = -1;
       this->immunity.reset(dis_i);
-      become_unsusceptible(Global::Diseases.get_disease(dis_i));      
+      become_unsusceptible(Global::Diseases.get_disease(dis_i));
     }
   }
   if(Global::Enable_Vector_Transmission && Global::Diseases.get_number_of_diseases() > 1) {
@@ -645,7 +660,7 @@ void Health::become_infectious(Disease* disease) {
 			  myself->get_id(), disease_id);
 
   /*
-    If facemasks enabled, then decide if will wear facemasks 
+    If facemasks enabled, then decide if will wear facemasks
   */
 
   // Determine if the agent will wear a face mask
@@ -662,7 +677,7 @@ void Health::become_infectious(Disease* disease) {
 	}
       }
     }else{
-      for (auto it = Face_mask_compliance.begin(); it != Face_mask_compliance.end(); ++it) {  
+      for (auto it = Face_mask_compliance.begin(); it != Face_mask_compliance.end(); ++it) {
 	if((it->second > 0.0) && Random::draw_random() < it->second) {
 	  this->has_face_mask_behavior[it->first] = true;
 	  this->has_face_mask_behavior_anywhere = true;
@@ -831,15 +846,15 @@ void Health::become_case_fatality(int disease_id, int day) {
 			   Date::get_date_string().c_str(),
 			   myself->get_id(), disease_id);
 
-  /* EDIT: We have to TERMINATE a fatality case before become_removed() because 
+  /* EDIT: We have to TERMINATE a fatality case before become_removed() because
      become removed cleans all the disease information...
    */
-  
+
   //Have to figure out a way to remove all events from all diseases when people die
   //Right now if a person dies from one disease, the other diseases don't update
   Global::Diseases.get_disease(disease_id)->terminate_person(myself, day);
-  
-  
+
+
   become_removed(disease_id, day);
 
   // update household counts
@@ -859,18 +874,18 @@ void Health::become_case_fatality(int disease_id, int day) {
 }
 
 void Health::update_infection(int day, int disease_id) {
-  
+
   if(this->has_face_mask_behavior_anywhere) {
     update_face_mask_decision(day, disease_id);
   }
-  
+
   if(this->infection[disease_id] == NULL) {
     return;
   }
-  
+
   FRED_VERBOSE(1, "update_infection %d on day %d person %d\n", disease_id, day, myself->get_id());
   this->infection[disease_id]->update(day);
-  
+
   // update days_symptomatic if needed
   if(this->is_symptomatic(disease_id)) {
     int days_symp_so_far = (day - this->get_symptoms_start_date(disease_id));
@@ -887,12 +902,12 @@ void Health::update_infection(int day, int disease_id) {
     }
   }
 
-  
+
   // case_fatality?
   if(this->infection[disease_id]->is_fatal(day)) {
     become_case_fatality(disease_id, day);
   }
-  
+
   FRED_VERBOSE(1,"update_infection %d FINISHED on day %d person %d\n",
 	       disease_id, day, myself->get_id());
 
@@ -904,10 +919,10 @@ void Health::update_face_mask_decision(int day, int disease_id) {
   Disease* disease = Global::Diseases.get_disease(disease_id);
 
   /*
-    IF TIMESTEP IS NOT BEING READ, then use basic model, 
+    IF TIMESTEP IS NOT BEING READ, then use basic model,
     IF TIMESTEP BEING READ, then go to Global::Places and get the daily probability
   */
-  
+
   // should we start use face mask?
   if((!disease->get_face_mask_symptomatic_only() || this->is_symptomatic(day))
      && this->days_wearing_face_mask == 0
@@ -937,7 +952,7 @@ void Health::update_vaccine_interventions(int day){
     for(int i = 0; i < size; ++i) {
       (*this->vaccine_health)[i]->update(day, myself->get_real_age());
     }
-  }  
+  }
 }
 
 int Health::is_vaccine_effective_any() const{
@@ -1297,7 +1312,7 @@ void Health::take_vaccine(Vaccine* vaccine, int day, Vaccine_Manager* vm) {
       vaccine_health_for_dose = (*this->vaccine_health)[ivh];
     }
   }
-  
+
   if(vaccine_health_for_dose == NULL) { // This is our first dose of this vaccine
     this->vaccine_health->push_back(new Vaccine_Health(day, vaccine, real_age, myself, vm));
     this->intervention_flags[Intervention_flag::TAKES_VACCINE] = true;
@@ -1311,7 +1326,7 @@ void Health::take_vaccine(Vaccine* vaccine, int day, Vaccine_Manager* vm) {
     (*this->vaccine_health)[this->vaccine_health->size() - 1]->printTrace();
     fprintf(Global::VaccineTracefp, "\n");
   }
-  
+
   return;
 }
 
@@ -1345,10 +1360,10 @@ int Health::get_av_start_day(int i) const {
 
 void Health::infect(Person* infectee, int disease_id, Mixing_Group* mixing_group, int day) {
   infectee->become_exposed(disease_id, myself, mixing_group, day);
-  
+
 #pragma omp atomic
   ++(this->infectee_count[disease_id]);
-  
+
   int exp_day = this->get_exposure_date(disease_id);
   assert(0 <= exp_day);
   Disease* disease = Global::Diseases.get_disease(disease_id);
@@ -1414,8 +1429,8 @@ void Health::update_health_conditions(int day) {
   for(int disease_id = 0; disease_id < Global::Diseases.get_number_of_diseases(); ++disease_id) {
     if(this->health_condition[disease_id].state > -1) {
       Global::Diseases.get_disease(disease_id)->get_epidemic()->transition_person(this->myself, day, this->health_condition[disease_id].state);
-    }    
-  }  
+    }
+  }
 }
 
 int Health::get_vaccinated_id() const {

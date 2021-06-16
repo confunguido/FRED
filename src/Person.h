@@ -39,7 +39,7 @@ public:
 
   Person();
   ~Person();
-  
+
   /**
    * Make this agent unsusceptible to the given disease
    * @param disease_id the id of the disease to reference
@@ -365,7 +365,7 @@ public:
 
   int get_total_number_of_infections() {
     return this->health.get_total_number_of_infections();
-  }  
+  }
 
   bool is_immune(int disease_id) {
     return this->health.is_immune(disease_id);
@@ -374,7 +374,7 @@ public:
   bool is_immune_to_symptoms(int disease_id) {
     return this->health.is_immune_to_symptoms(disease_id);
   }
-  
+
   bool is_immune_to_hospitalization(int disease_id) {
     return this->health.is_immune_to_hospitalization(disease_id);
   }
@@ -451,7 +451,7 @@ public:
    * @param disease the disease to check
    * @return the simulation day that this agent became exposed to disease
    */
-  
+
   int get_exposure_date(int disease) const {
     return this->health.get_exposure_date(disease);
   }
@@ -699,12 +699,12 @@ public:
   Past_Infection* get_past_infection(int disease, int i) {
     return this->health.get_past_infection(disease, i);
   }
-  
+
   void clear_past_infections(int disease) {
     this->health.clear_past_infections(disease);
   }
 
-  //void add_past_infection(int d, Past_Infection *pi){ health.add_past_infection(d, pi); }  
+  //void add_past_infection(int d, Past_Infection *pi){ health.add_past_infection(d, pi); }
   void add_past_infection(int strain_id, int recovery_date, int age_at_exposure, Disease* dis) {
     this->health.add_past_infection(strain_id, recovery_date, age_at_exposure, dis);
   }
@@ -1013,7 +1013,7 @@ public:
   void clear_network(Network* network) {
     return this->activities.clear_network(network);
   }
-  
+
   Person* get_end_of_link(int n, Network* network) {
     return this->activities.get_end_of_link(n, network);
   }
@@ -1044,6 +1044,38 @@ public:
 
   void update_health_conditions(int day) {
     this->health.update_health_conditions(day);
+  }
+
+  bool is_tested_for_disease(int disease_id){
+    return this->health.is_tested_for_disease(disease_id);
+  }
+
+  void already_tested_for_disease(int disease_id){
+    this->health.already_tested_for_disease(disease_id);
+  }
+
+  int get_test_date(int disease_id){
+    return this->health.get_test_date(disease_id);
+  }
+
+  void set_test_date(int disease_id, int day){
+    this-> health.set_test_date(disease_id, day);
+  }
+
+  int get_test_result_date(int disease_id){
+    return this->health.get_test_result_date(disease_id);
+  }
+
+  void set_test_result_date(int disease_id, int day){
+    this->health.set_test_result_date(disease_id, day);
+  }
+
+  bool get_test_result(int disease_id){
+    return health.get_test_result(disease_id);
+  }
+
+  void set_test_result(int disease_id, bool result){
+    this->health.set_test_result(disease_id, result);
   }
 
 private:
