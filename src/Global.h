@@ -337,7 +337,7 @@ public:
   static FILE* Tractfp;
   static FILE* IncomeCatfp;
   //Crear file para testing
-  static FILE* Global::TestingResults;
+  static FILE* TestingResults;
 
   /**
    * Fills the static variables with values from the parameter file.
