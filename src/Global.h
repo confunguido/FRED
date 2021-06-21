@@ -337,7 +337,7 @@ public:
   static FILE* Tractfp;
   static FILE* IncomeCatfp;
   //Crear file para testing
-  static FILE* TestingResults;
+  //static FILE* Testingfp;
 
   /**
    * Fills the static variables with values from the parameter file.

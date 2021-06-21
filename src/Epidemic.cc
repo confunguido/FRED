@@ -644,24 +644,24 @@ void Epidemic::become_exposed(Person* person, int day) {
   }
   this->hospitalization_start_event_queue->add_event(hospitalization_start_date, person);
 
-  //Check if PCR Testing is enabled and if exposed person is infectious
-  if(Global::Verbose>0){
-    std::cout << '\n' << '\n'<< "***********************************" << '\n';
-    std::cout << "Person Id " << person->get_id() << " is exposed to disease" << '\n';
-  }
 
   if(Global::Enable_PCR_Testing == true){ //Testing is enabled
     double r; //Will be used to draw random numbers
     int test_application_delay = -1;
+    //std::stringstream infStrS;
+    //infStrS.precision(3);
 
-    //FRED_VERBOSE(2, "Person Id %d is infected with %d\n", person->get_id(), this->id);
+    //infStrS << fixed << "day " << day << " person " << person->get_id() << " is exposed";
+
     if(Global::Verbose>0){
       std::cout << "Person Id " << person->get_id() <<  " is infected" <<'\n';
     }
 
     //Check if person will be symptomatic
     if( symptoms_start_date >= Global::Simulation_Day ){ //Symptomatic person
-      //FRED_VERBOSE(2, "Person Id %d will be symptomatic from day %d\n", person->get_id(), symptoms_start_date);
+
+      //infStrS << " symptomatic 1";
+
       if(Global::Verbose>0){
           std::cout << "Person Id " << person->get_id() <<  " will be symptomatic from day " << symptoms_start_date <<'\n';
       }
@@ -676,13 +676,14 @@ void Epidemic::become_exposed(Person* person, int day) {
         //Test will be applied on some day after developing symptoms_start_date
         test_application_delay = this->symptoms_to_test_delay;
 
+        //infStrS << " tested 1 after " << test_application_delay << " days";
+
         if(test_application_delay<=this->test_sensitivity_lenght){
           this->symp_tested_per_delay[test_application_delay]++;
         }
 
         int test_date = symptoms_start_date + test_application_delay;
 
-        //FRED_VERBOSE(2, "Symptomatic person Id %d will be tested on day %d\n", person->get_id(), test_date);
         if(Global::Verbose>0){
           std::cout << "Symptomatic person Id " << person->get_id() << " will be tested on day " << test_date << '\n';
         }
@@ -698,7 +699,9 @@ void Epidemic::become_exposed(Person* person, int day) {
         r = Random::draw_random();
 
         if(r < get_test_sensitivity(test_date - Global::Simulation_Day)){// Tets Detects Symptomatic
-          //FRED_VERBOSE(2, "Symptomatic person Id %d will be detected on day %d \n", person->get_id(), result_date);
+
+          //infStrS << " detected 1";
+
           if(Global::Verbose>0){
             std::cout << "Symptomatic person Id " << person->get_id() << " will be detected on day " << result_date << '\n';
           }
@@ -711,7 +714,9 @@ void Epidemic::become_exposed(Person* person, int day) {
           }
 
         } else {//Test does NOT detect symptomatic
-          //FRED_VERBOSE(2, "Symptomatic person Id %d is False Negative \n", person->get_id());
+
+          //infStrS << " detected 0";
+
           if(Global::Verbose>0){
             std::cout << "Symptomatic person Id " << person->get_id() << " will be false negative on day " << result_date << '\n';
           }
@@ -721,14 +726,18 @@ void Epidemic::become_exposed(Person* person, int day) {
         }//Test does NOT detect symptomatic
 
       } else { //Symptomatic person will not be tested
-        //FRED_VERBOSE(2, "Symptomatic person Id %d will NOT be tested \n", person->get_id());
+
+        //infStrS << " tested 0 after -1 days detected -1";
+
         if(Global::Verbose>0){
           std::cout << "Symptomatic person Id " << person->get_id() << " will NOT be tested"<< '\n';
         }
       }//Symptomatic person will not be tested
 
     } else{ //Asymptomatic person
-      //FRED_VERBOSE(2, "Person Id %d will be ASYMPTOMATIC\n", person->get_id());
+
+      //infStrS << " symptomatic 0";
+
       if(Global::Verbose>0){
         std::cout << "Person Id " << person->get_id() << " will be Asymptomatic." << '\n';
       }
@@ -749,8 +758,8 @@ void Epidemic::become_exposed(Person* person, int day) {
 
         int test_date = Global::Simulation_Day + test_application_delay;
 
-        //Person gets in testing queue
-        //FRED_VERBOSE(2, "Asymptomatic person Id %d will be tested on day %d\n", person->get_id(), test_date);
+        //infStrS << " tested 1 after " << test_application_delay << " days";
+
         if(Global::Verbose>0){
           std::cout << "Asymptomatic person Id " << person->get_id() << " will be tested on day " << test_date << '\n';
         }
@@ -765,7 +774,9 @@ void Epidemic::become_exposed(Person* person, int day) {
         r = Random::draw_random();
 
         if(r < get_test_sensitivity(test_date - Global::Simulation_Day)){//Asymptomatic detected by test
-          //FRED_VERBOSE(2, "Asymptomatic person Id %d will be detected on day %d\n", person->get_id(), result_date);
+
+          //infStrS << " detected 1";
+
           if(Global::Verbose>0){
             std::cout << "Asymptomatic person Id " << person->get_id() << " will be detected on day "<< result_date << '\n';
           }
@@ -779,7 +790,9 @@ void Epidemic::become_exposed(Person* person, int day) {
 
 
         } else{//Asymptomatic does NOT get detected by test
-          //FRED_VERBOSE(2, "Asymptomatic person Id %d is False Negative \n", person->get_id());
+
+          //infStrS << " detected 0";
+
           if(Global::Verbose>0){
             std::cout << "Asymptomatic person Id " << person->get_id() << " will be false negative on day "<< result_date << '\n';
           }
@@ -788,14 +801,16 @@ void Epidemic::become_exposed(Person* person, int day) {
         }//Asymptomatic does NOT get detected by test
 
       } else{//Asymptomatic does NOT get tested
-        //FRED_VERBOSE(2, "Asymptomatic person Id %d will NOT be tested \n", person->get_id());
+
+        //infStrS << " tested 0 after -1 days detected -1";
+
         if(Global::Verbose>0){
           std::cout << "Asymptomatic person Id " << person->get_id() << " will NOT be tested" << '\n';
         }
-
       }//Asymptomatic does NOT get tested
     }//Asymptomatic person
-
+    //infStrS << "\n";
+	  //fprintf(Global::Testingfp, "%s", infStrS.str().c_str());
   }// testing is enabled
 
   // update epidemic counters
