@@ -558,6 +558,11 @@ void Epidemic::setup() {
   }
 
   if(Global::Enable_PCR_Testing == true){ //Testing enable
+    FILE* fp = NULL;
+    char PCR_availability_file[FRED_STRING_SIZE];
+    int PCR_day;
+    int PCR_ammount;
+
     //Read external parameters from .txt file
     Params::get_param_from_string("prob_symp_being_tested", &prob_symp_being_tested);
     Params::get_param_from_string("prob_asymp_being_tested", &prob_asymp_being_tested);
@@ -587,8 +592,9 @@ void Epidemic::setup() {
     this-> asymp_detected_per_delay = new int [this->test_sensitivity_lenght];
     this-> total_tested_per_delay = new int [this->test_sensitivity_lenght];
     this-> total_detected_per_delay = new int [this->test_sensitivity_lenght];
+    this-> available_tests_day = new int[Global::Days+1];
 
-    //Initialize per_day arrays with zero
+    //Initialize per_delay arrays with zero
     for (int i=0; i < this->test_sensitivity_lenght; i++){
       this-> symp_tested_per_delay[i] = 0;
       this-> symp_detected_per_delay[i] = 0;
@@ -597,6 +603,28 @@ void Epidemic::setup() {
       this-> total_tested_per_delay[i]  = 0;
       this-> total_detected_per_delay[i] = 0;
     }
+
+    // initialize the available_tests_day array
+    for(int j = 0; j <= Global::Days; ++j) {
+      this->available_tests_day[j] = 0;
+    }
+
+    // read PCR_availability_file
+    Params::get_param_from_string("PCR_availability_file", PCR_availability_file);
+    fp = Utils::fred_open_file(PCR_availability_file);
+    if (fp == NULL) {
+      fprintf(Global::Statusfp, "PCR_availability_file %s not found\n", PCR_availability_file);
+      exit(1);
+    }
+
+    //Fill up available_tests_day array
+    while(fscanf(fp, "%d %d", &PCR_day, &PCR_ammount) == 2) {
+      if(PCR_day >= 0 && PCR_day <= Global::Days && PCR_ammount >= 0) {
+        this->available_tests_day[PCR_day] = PCR_ammount;
+      }
+    }
+    fclose(fp);
+
   }//Testing enabled
 
 }

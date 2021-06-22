@@ -505,6 +505,9 @@ protected:
   double new_test_sensitivity_mean;
   //std::set<Person*> tested_people;
 
+  //Available Tests per day
+  int* available_tests_day;
+
   //Positivity calculated per delay days
   int* symp_tested_per_delay; //
   int* symp_detected_per_delay; //
