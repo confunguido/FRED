@@ -593,6 +593,7 @@ void Epidemic::setup() {
     this-> total_tested_per_delay = new int [this->test_sensitivity_lenght];
     this-> total_detected_per_delay = new int [this->test_sensitivity_lenght];
     this-> available_tests_day = new int[Global::Days+1];
+    this-> remaining_tests_day = new int[Global::Days+1];
 
     //Initialize per_delay arrays with zero
     for (int i=0; i < this->test_sensitivity_lenght; i++){
@@ -607,6 +608,7 @@ void Epidemic::setup() {
     // initialize the available_tests_day array
     for(int j = 0; j <= Global::Days; ++j) {
       this->available_tests_day[j] = 0;
+      this-> remaining_tests_day[j] = 0;
     }
 
     // read PCR_availability_file
@@ -621,6 +623,7 @@ void Epidemic::setup() {
     while(fscanf(fp, "%d %d", &PCR_day, &PCR_ammount) == 2) {
       if(PCR_day >= 0 && PCR_day <= Global::Days && PCR_ammount >= 0) {
         this->available_tests_day[PCR_day] = PCR_ammount;
+        this->remaining_tests_day[PCR_day] = PCR_ammount;
       }
     }
     fclose(fp);
@@ -676,10 +679,11 @@ void Epidemic::become_exposed(Person* person, int day) {
   if(Global::Enable_PCR_Testing == true){ //Testing is enabled
     double r; //Will be used to draw random numbers
     int test_application_delay = -1;
-    //std::stringstream infStrS;
-    //infStrS.precision(3);
+    int flag_symptoms = -1;
+    int flag_tested = -1;
+    int flag_delay = -1;
+    int flag_detected = -1;
 
-    //infStrS << fixed << "day " << day << " person " << person->get_id() << " is exposed";
 
     if(Global::Verbose>0){
       std::cout << "Person Id " << person->get_id() <<  " is infected" <<'\n';
@@ -688,7 +692,7 @@ void Epidemic::become_exposed(Person* person, int day) {
     //Check if person will be symptomatic
     if( symptoms_start_date >= Global::Simulation_Day ){ //Symptomatic person
 
-      //infStrS << " symptomatic 1";
+      flag_symptoms = 1;
 
       if(Global::Verbose>0){
           std::cout << "Person Id " << person->get_id() <<  " will be symptomatic from day " << symptoms_start_date <<'\n';
@@ -704,7 +708,8 @@ void Epidemic::become_exposed(Person* person, int day) {
         //Test will be applied on some day after developing symptoms_start_date
         test_application_delay = this->symptoms_to_test_delay;
 
-        //infStrS << " tested 1 after " << test_application_delay << " days";
+        flag_tested = 1;
+        flag_delay = test_application_delay;
 
         if(test_application_delay<=this->test_sensitivity_lenght){
           this->symp_tested_per_delay[test_application_delay]++;
@@ -728,7 +733,7 @@ void Epidemic::become_exposed(Person* person, int day) {
 
         if(r < get_test_sensitivity(test_date - Global::Simulation_Day)){// Tets Detects Symptomatic
 
-          //infStrS << " detected 1";
+          flag_detected = 1;
 
           if(Global::Verbose>0){
             std::cout << "Symptomatic person Id " << person->get_id() << " will be detected on day " << result_date << '\n';
@@ -743,7 +748,7 @@ void Epidemic::become_exposed(Person* person, int day) {
 
         } else {//Test does NOT detect symptomatic
 
-          //infStrS << " detected 0";
+          flag_detected = 0;
 
           if(Global::Verbose>0){
             std::cout << "Symptomatic person Id " << person->get_id() << " will be false negative on day " << result_date << '\n';
@@ -755,7 +760,7 @@ void Epidemic::become_exposed(Person* person, int day) {
 
       } else { //Symptomatic person will not be tested
 
-        //infStrS << " tested 0 after -1 days detected -1";
+        flag_tested = 0;
 
         if(Global::Verbose>0){
           std::cout << "Symptomatic person Id " << person->get_id() << " will NOT be tested"<< '\n';
@@ -764,7 +769,7 @@ void Epidemic::become_exposed(Person* person, int day) {
 
     } else{ //Asymptomatic person
 
-      //infStrS << " symptomatic 0";
+      flag_symptoms = 0;
 
       if(Global::Verbose>0){
         std::cout << "Person Id " << person->get_id() << " will be Asymptomatic." << '\n';
@@ -786,7 +791,8 @@ void Epidemic::become_exposed(Person* person, int day) {
 
         int test_date = Global::Simulation_Day + test_application_delay;
 
-        //infStrS << " tested 1 after " << test_application_delay << " days";
+        flag_tested = 1;
+        flag_delay = test_application_delay;
 
         if(Global::Verbose>0){
           std::cout << "Asymptomatic person Id " << person->get_id() << " will be tested on day " << test_date << '\n';
@@ -803,7 +809,7 @@ void Epidemic::become_exposed(Person* person, int day) {
 
         if(r < get_test_sensitivity(test_date - Global::Simulation_Day)){//Asymptomatic detected by test
 
-          //infStrS << " detected 1";
+          flag_detected = 1;
 
           if(Global::Verbose>0){
             std::cout << "Asymptomatic person Id " << person->get_id() << " will be detected on day "<< result_date << '\n';
@@ -819,7 +825,7 @@ void Epidemic::become_exposed(Person* person, int day) {
 
         } else{//Asymptomatic does NOT get detected by test
 
-          //infStrS << " detected 0";
+          flag_detected = 0;
 
           if(Global::Verbose>0){
             std::cout << "Asymptomatic person Id " << person->get_id() << " will be false negative on day "<< result_date << '\n';
@@ -830,15 +836,30 @@ void Epidemic::become_exposed(Person* person, int day) {
 
       } else{//Asymptomatic does NOT get tested
 
-        //infStrS << " tested 0 after -1 days detected -1";
+        flag_tested = 0;
 
         if(Global::Verbose>0){
           std::cout << "Asymptomatic person Id " << person->get_id() << " will NOT be tested" << '\n';
         }
       }//Asymptomatic does NOT get tested
     }//Asymptomatic person
-    //infStrS << "\n";
-	  //fprintf(Global::Testingfp, "%s", infStrS.str().c_str());
+
+    if(Global::Track_testing_events == true){
+      std::stringstream infStrS;
+      infStrS.precision(3);
+
+      infStrS << fixed
+              << "day " << day
+              << " person " << person->get_id()
+              << " symptoms " << flag_symptoms
+              << " tested " << flag_tested
+              << " delay " << flag_delay
+              << " detected " << flag_detected
+              << "\n";
+  	  fprintf(Global::Testingfp, "%s", infStrS.str().c_str());
+    }
+
+
   }// testing is enabled
 
   // update epidemic counters

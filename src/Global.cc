@@ -170,6 +170,7 @@ Sexual_Transmission_Network* Global::Sexual_Partner_Network = NULL;
 
 //Global testing enable flag
 bool Global:: Enable_PCR_Testing = false;
+bool Global:: Track_testing_events = false;
 
 // global file pointers
 FILE* Global::Statusfp = NULL;
@@ -187,7 +188,7 @@ FILE* Global::Immunityfp = NULL;
 FILE* Global::Householdfp = NULL;
 FILE* Global::Tractfp = NULL;
 FILE* Global::IncomeCatfp = NULL;
-//FILE* Global::Testingfp = NULL;
+FILE* Global::Testingfp = NULL;
 
 void Global::get_global_parameters() {
   Params::get_param_from_string("verbose", &Global::Verbose);
@@ -370,4 +371,7 @@ void Global::get_global_parameters() {
 
   Params::get_param_from_string("enable_PCR_testing", &temp_int);
   Global::Enable_PCR_Testing = (temp_int ==0? false: true);
+
+  Params::get_param_from_string("track_testing_events", &temp_int);
+  Global::Track_testing_events = (temp_int ==0? false: true);
 }

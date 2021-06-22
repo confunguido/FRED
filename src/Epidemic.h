@@ -507,6 +507,7 @@ protected:
 
   //Available Tests per day
   int* available_tests_day;
+  int* remaining_tests_day;
 
   //Positivity calculated per delay days
   int* symp_tested_per_delay; //

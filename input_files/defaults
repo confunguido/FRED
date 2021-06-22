@@ -1346,4 +1346,12 @@ accept_vaccine_dose_for_child_barriers_odds_ratio = 1
 
 #include $FRED_HOME/input_files/params.influenza_ramp
 
+#############################################################
+#
+# PCR Testing
+#
+#############################################################
+enable_PCR_testing = 0
+track_testing_events = 0
+
 

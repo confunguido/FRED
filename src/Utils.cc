@@ -196,12 +196,21 @@ void Utils::fred_open_output_files(){
       Utils::fred_abort("Can't open %s\n", filename);
     }
   }
-  
+
   Global::IncomeCatfp = NULL;
   if(Global::Report_Mean_Household_Stats_Per_Income_Category) {
     sprintf(filename,"%s/income_category%d.txt",directory,run);
     Global::IncomeCatfp = fopen(filename,"w");
     if(Global::IncomeCatfp == NULL) {
+      Utils::fred_abort("Can't open %s\n", filename);
+    }
+  }
+
+Global::Testingfp = NULL;
+  if(Global::Track_testing_events == true) {
+    sprintf(filename, "%s/PCRtesting%d.txt", directory, run);
+    Global::Testingfp = fopen(filename, "w");
+    if(Global::Testingfp == NULL) {
       Utils::fred_abort("Can't open %s\n", filename);
     }
   }
@@ -458,7 +467,7 @@ void Utils::fred_print_resource_usage(int day) {
  * Notes: It is assumed that empty strings do not have white space
  * between commas. Newlines in the input string are ignored, so the
  * output string contains no newlines.
- *        
+ *
  */
 void Utils::replace_csv_missing_data(char* out_str, char* in_str, const char* replacement) {
   // printf("in = |%s|replacement = %s\n",in_str,replacement);
@@ -539,7 +548,7 @@ void Utils::get_next_token(char* out_string, char** input_string) {
 void Utils::delete_char(char* s, char c, int maxlen) {
   int len = std::strlen(s);
 
-  // abort if greater than or equal to maximum length 
+  // abort if greater than or equal to maximum length
   if(len >= maxlen) {
     return;
   }
@@ -689,8 +698,8 @@ void Utils::track_value(int day, char* key, int value, int id) {
   }
   Global::Daily_Tracker->set_index_key_pair(day, key_str, value);
 }
-  
-  
+
+
 void Utils::track_value(int day, char* key, double value, int id) {
   char key_str[80];
   if(id == 0) {
@@ -700,8 +709,8 @@ void Utils::track_value(int day, char* key, double value, int id) {
   }
   Global::Daily_Tracker->set_index_key_pair(day, key_str, value);
 }
-  
-  
+
+
 void Utils::track_value(int day, char* key, string value, int id) {
   char key_str[80];
   if(id == 0) {
@@ -711,7 +720,3 @@ void Utils::track_value(int day, char* key, string value, int id) {
   }
   Global::Daily_Tracker->set_index_key_pair(day, key_str, value);
 }
-
-
-
-

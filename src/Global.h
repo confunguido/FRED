@@ -270,6 +270,7 @@ public:
   static bool Assign_Teachers;
   static bool Enable_Household_Shelter;
   static bool Enable_PCR_Testing;
+  static bool Track_testing_events;
   static bool Enable_Household_Shelter_File;
   static bool Enable_Hospitalization_Multiplier_File;
   static bool Enable_Household_Shelter_By_Age;
@@ -337,7 +338,7 @@ public:
   static FILE* Tractfp;
   static FILE* IncomeCatfp;
   //Crear file para testing
-  //static FILE* Testingfp;
+  static FILE* Testingfp;
 
   /**
    * Fills the static variables with values from the parameter file.
