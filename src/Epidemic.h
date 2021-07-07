@@ -502,11 +502,14 @@ protected:
   int max_asymptomatic_infectious_to_test_delay;
   int test_results_delay;
 
-  // Test sensitivity
+  // Test sensitivity and specificity
   int test_sensitivity_lenght;
   double* test_sensitivity;
+  double* test_specificity;
   double test_sensitivity_mean;
-  double new_test_sensitivity_mean;
+  //double test_specificity_mean;
+  //double new_test_sensitivity_mean;
+  double false_positive_rate;
   //std::set<Person*> tested_people;
 
   //Available Tests per day

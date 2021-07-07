@@ -231,8 +231,12 @@ Epidemic::Epidemic(Disease* dis) {
     // Test sensitivity
     this-> test_sensitivity_lenght = 0;
     this-> test_sensitivity = NULL;
+    //this-> test_specificity = NULL;
     this-> test_sensitivity_mean = 0;
-    this-> new_test_sensitivity_mean = 0;
+    //this-> new_test_sensitivity_mean = 0;
+    this-> test_specificity_mean = 0;
+    this-> new_test_specificity_mean = 0;
+    this-> false_positive_rate = 0;
     //this-> tested_people.clear();
 
     // New infected people
@@ -578,20 +582,38 @@ void Epidemic::setup() {
     Params::get_param_from_string("min_asymptomatic_infectious_to_test_delay", &min_asymptomatic_infectious_to_test_delay);
     Params::get_param_from_string("max_asymptomatic_infectious_to_test_delay", &max_asymptomatic_infectious_to_test_delay);
     Params::get_param_from_string("test_results_delay", &test_results_delay);
+    Params::get_param_from_string("false_positive_rate", &false_positive_rate);
     Params::get_indexed_param(this->disease->get_disease_name(),"test_sensitivity", &test_sensitivity_lenght);
     this-> test_sensitivity = new double [this->test_sensitivity_lenght];
+    //this-> test_specificity = new double [this->test_sensitivity_lenght];
     Params::get_indexed_param_vector(this->disease->get_disease_name(), "test_sensitivity", this -> test_sensitivity) -1;
+    //Params::get_indexed_param_vector(this->disease->get_disease_name(), "test_specificity", this -> test_specificity) -1;
 
     //Get mean value of original test sensitivity
     for (int i=0; i< this-> test_sensitivity_lenght; i++){
       this-> test_sensitivity_mean += this-> test_sensitivity[i];
       }
-      this-> test_sensitivity_mean /= this-> test_sensitivity_lenght;
+    this-> test_sensitivity_mean /= this-> test_sensitivity_lenght;
 
     Params::get_param_from_string("new_test_sensitivity_mean", &new_test_sensitivity_mean);
       if (this-> new_test_sensitivity_mean > 0){
           set_new_test_sensitivity_mean(this-> new_test_sensitivity_mean);
       }
+
+      //Section commented until specificity over time is calculated
+      //Meanwhile, false_positive_rate is used
+      //Get mean value of original test specificity
+      /*
+      for (int i=0; i< this-> test_sensitivity_lenght; i++){
+        this-> test_specificity_mean += this-> test_specificity[i];
+        }
+      this-> test_specificity_mean /= this-> test_sensitivity_lenght;
+
+      Params::get_param_from_string("new_test_specificity_mean", &new_test_specificity_mean);
+        if (this-> new_test_specificity_mean > 0){
+            set_new_test_specificity_mean(this-> new_test_specificity_mean);
+        }
+      */
 
     //Declare per_day arrays with size = max testing delay days
     this-> symp_tested_per_delay = new int [this->test_sensitivity_lenght];
