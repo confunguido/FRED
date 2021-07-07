@@ -217,6 +217,10 @@ Epidemic::Epidemic(Disease* dis) {
   //Initialize PCR testing variables
   if (Global::Enable_PCR_Testing == true){
     // PCR Testing parameters
+    this-> prob_healthy_want_test = 0;
+    this-> prob_symp_want_test = 0;
+    this-> prob_asympt_want_test = 0;
+    this-> prob_healthy_being_tested = 0;
     this-> prob_symp_being_tested = 0;
     this-> prob_asymp_being_tested = 0;
     this-> symptoms_to_test_delay = 0;
@@ -564,6 +568,10 @@ void Epidemic::setup() {
     int PCR_ammount;
 
     //Read external parameters from .txt file
+    Params::get_param_from_string("prob_healthy_want_test", &prob_healthy_want_test);
+    Params::get_param_from_string("prob_symp_want_test", &prob_symp_want_test);
+    Params::get_param_from_string("prob_asympt_want_test", &prob_asympt_want_test);
+    Params::get_param_from_string("prob_healthy_being_tested", &prob_healthy_being_tested);
     Params::get_param_from_string("prob_symp_being_tested", &prob_symp_being_tested);
     Params::get_param_from_string("prob_asymp_being_tested", &prob_asymp_being_tested);
     Params::get_param_from_string("symptoms_to_test_delay", &symptoms_to_test_delay);

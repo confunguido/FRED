@@ -491,6 +491,10 @@ protected:
 
   // ******* Parameters from txt input
   // PCR Testing parameters
+  double prob_healthy_want_test;
+  double prob_symp_want_test;
+  double prob_asympt_want_test;
+  double prob_healthy_being_tested;
   double prob_symp_being_tested;
   double prob_asymp_being_tested;
   int symptoms_to_test_delay;

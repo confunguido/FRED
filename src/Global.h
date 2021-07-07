@@ -269,8 +269,6 @@ public:
   static bool Report_County_Demographic_Information;
   static bool Assign_Teachers;
   static bool Enable_Household_Shelter;
-  static bool Enable_PCR_Testing;
-  static bool Track_testing_events;
   static bool Enable_Household_Shelter_File;
   static bool Enable_Hospitalization_Multiplier_File;
   static bool Enable_Household_Shelter_By_Age;
@@ -282,6 +280,8 @@ public:
   static bool Enable_Disease_Cross_Protection;
   static bool Enable_School_Reduced_Capacity;
   static bool Enable_School_Classroom_Size_Array;
+  static bool Enable_PCR_Testing;
+  static bool Track_testing_events;
   static double School_reduced_capacity;
   static int School_reduced_capacity_day;
   static bool Enable_Nursing_Homes_Importations;
