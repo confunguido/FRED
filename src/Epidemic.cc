@@ -219,7 +219,7 @@ Epidemic::Epidemic(Disease* dis) {
     // PCR Testing parameters
     this-> prob_healthy_want_test = 0;
     this-> prob_symp_want_test = 0;
-    this-> prob_asympt_want_test = 0;
+    this-> prob_asymp_want_test = 0;
     this-> prob_healthy_being_tested = 0;
     this-> prob_symp_being_tested = 0;
     this-> prob_asymp_being_tested = 0;
@@ -234,9 +234,10 @@ Epidemic::Epidemic(Disease* dis) {
     //this-> test_specificity = NULL;
     this-> test_sensitivity_mean = 0;
     //this-> new_test_sensitivity_mean = 0;
-    this-> test_specificity_mean = 0;
-    this-> new_test_specificity_mean = 0;
-    this-> false_positive_rate = 0;
+    //this-> test_specificity_mean = 0;
+    //this-> new_test_specificity_mean = 0;
+    this-> min_false_positive_rate = 0;
+    this-> max_false_positive_rate = 0;
     //this-> tested_people.clear();
 
     // New infected people
@@ -308,12 +309,10 @@ Epidemic::Epidemic(Disease* dis) {
     this-> total_detected_per_delay = NULL;
 
     // Queues for scheduled testing and results
-    this-> test_symptomatic_event_queue = new Events;
-    this-> detect_symptomatic_event_queue = new Events;
-    this-> false_negative_symptomatic_event_queue = new Events;
-    this-> test_asymptomatic_event_queue = new Events;
-    this-> detect_asymptomatic_event_queue = new Events;
-    this-> false_negative_asymptomatic_event_queue = new Events;
+    this-> infected_want_test_event_queue = new Events;
+    this-> test_infected_event_queue = new Events;
+    this-> detect_infected_event_queue = new Events;
+    this-> false_negative_event_queue = new Events;
   }
 }
 
@@ -574,7 +573,7 @@ void Epidemic::setup() {
     //Read external parameters from .txt file
     Params::get_param_from_string("prob_healthy_want_test", &prob_healthy_want_test);
     Params::get_param_from_string("prob_symp_want_test", &prob_symp_want_test);
-    Params::get_param_from_string("prob_asympt_want_test", &prob_asympt_want_test);
+    Params::get_param_from_string("prob_asymp_want_test", &prob_asymp_want_test);
     Params::get_param_from_string("prob_healthy_being_tested", &prob_healthy_being_tested);
     Params::get_param_from_string("prob_symp_being_tested", &prob_symp_being_tested);
     Params::get_param_from_string("prob_asymp_being_tested", &prob_asymp_being_tested);
@@ -582,7 +581,8 @@ void Epidemic::setup() {
     Params::get_param_from_string("min_asymptomatic_infectious_to_test_delay", &min_asymptomatic_infectious_to_test_delay);
     Params::get_param_from_string("max_asymptomatic_infectious_to_test_delay", &max_asymptomatic_infectious_to_test_delay);
     Params::get_param_from_string("test_results_delay", &test_results_delay);
-    Params::get_param_from_string("false_positive_rate", &false_positive_rate);
+    Params::get_param_from_string("min_false_positive_rate", &min_false_positive_rate);
+    Params::get_param_from_string("max_false_positive_rate", &max_false_positive_rate);
     Params::get_indexed_param(this->disease->get_disease_name(),"test_sensitivity", &test_sensitivity_lenght);
     this-> test_sensitivity = new double [this->test_sensitivity_lenght];
     //this-> test_specificity = new double [this->test_sensitivity_lenght];
@@ -709,11 +709,7 @@ void Epidemic::become_exposed(Person* person, int day) {
   if(Global::Enable_PCR_Testing == true){ //Testing is enabled
     double r; //Will be used to draw random numbers
     int test_application_delay = -1;
-    int flag_symptoms = -1;
-    int flag_tested = -1;
-    int flag_delay = -1;
-    int flag_detected = -1;
-
+    int test_date = -1;
 
     if(Global::Verbose>0){
       std::cout << "Person Id " << person->get_id() <<  " is infected" <<'\n';
@@ -722,175 +718,34 @@ void Epidemic::become_exposed(Person* person, int day) {
     //Check if person will be symptomatic
     if( symptoms_start_date >= Global::Simulation_Day ){ //Symptomatic person
 
-      flag_symptoms = 1;
+      person->set_will_be_symptomatic(this->id);
+
+      this-> symptomatics_today++;
+
+      test_application_delay = this->symptoms_to_test_delay;
+      person->set_test_delay(this->id, test_application_delay);
+
+      test_date = Global::Simulation_Day + test_application_delay;
+      this-> infected_want_test_event_queue->add_event(test_date, person);
 
       if(Global::Verbose>0){
           std::cout << "Person Id " << person->get_id() <<  " will be symptomatic from day " << symptoms_start_date <<'\n';
       }
 
-      this-> symptomatics_today++;
+    }//Symptomatic person
+    else{//Asymptomatic person
+      test_application_delay = Random::draw_random_int(this-> min_asymptomatic_infectious_to_test_delay, this-> max_asymptomatic_infectious_to_test_delay);
 
-      //Draw random to Check if symptomatic person will be tested
-      r = Random::draw_random();
+      person->set_test_delay(this->id, test_application_delay);
 
-      if(r < prob_symp_being_tested ){ //Symptomatic person will be tested
-
-        //Test will be applied on some day after developing symptoms_start_date
-        test_application_delay = this->symptoms_to_test_delay;
-
-        flag_tested = 1;
-        flag_delay = test_application_delay;
-
-        if(test_application_delay<=this->test_sensitivity_lenght){
-          this->symp_tested_per_delay[test_application_delay]++;
-        }
-
-        int test_date = symptoms_start_date + test_application_delay;
-
-        if(Global::Verbose>0){
-          std::cout << "Symptomatic person Id " << person->get_id() << " will be tested on day " << test_date << '\n';
-        }
-
-        this-> test_symptomatic_event_queue->add_event(test_date, person);
-        this-> predicted_symptomatic_tested_today++;
-
-        //Schedule test results
-        int result_date = test_date + this->test_results_delay;
-        person->set_test_result_date(this->id, result_date);
-
-        //Draw probability of test detecting symptomatic based on test test_sensitivity
-        r = Random::draw_random();
-
-        if(r < get_test_sensitivity(test_date - Global::Simulation_Day)){// Tets Detects Symptomatic
-
-          flag_detected = 1;
-
-          if(Global::Verbose>0){
-            std::cout << "Symptomatic person Id " << person->get_id() << " will be detected on day " << result_date << '\n';
-          }
-
-          this-> detect_symptomatic_event_queue->add_event(result_date, person);
-          this-> predicted_symptomatic_detected_today++;
-
-          if(test_application_delay<=this->test_sensitivity_lenght){
-            this-> symp_detected_per_delay[test_application_delay]++;
-          }
-
-        } else {//Test does NOT detect symptomatic
-
-          flag_detected = 0;
-
-          if(Global::Verbose>0){
-            std::cout << "Symptomatic person Id " << person->get_id() << " will be false negative on day " << result_date << '\n';
-          }
-
-          this-> false_negative_symptomatic_event_queue->add_event(result_date, person);
-          this-> predicted_symptomatic_false_negative_today++;
-        }//Test does NOT detect symptomatic
-
-      } else { //Symptomatic person will not be tested
-
-        flag_tested = 0;
-
-        if(Global::Verbose>0){
-          std::cout << "Symptomatic person Id " << person->get_id() << " will NOT be tested"<< '\n';
-        }
-      }//Symptomatic person will not be tested
-
-    } else{ //Asymptomatic person
-
-      flag_symptoms = 0;
+      test_date = Global::Simulation_Day + test_application_delay;
+      this-> infected_want_test_event_queue->add_event(test_date, person);
 
       if(Global::Verbose>0){
-        std::cout << "Person Id " << person->get_id() << " will be Asymptomatic." << '\n';
+          std::cout << "Person Id " << person->get_id() <<  " will be asymptomatic" <<'\n';
       }
-
-      this-> asymptomatics_today++;
-
-      //Draw probability of asymptomatic being tested
-      r = Random::draw_random();
-
-      if(r < prob_asymp_being_tested){//Asymptomatic is tested
-
-        //draw random delay for asymptomatic being volubtarily tested
-        test_application_delay = Random::draw_random_int(this-> min_asymptomatic_infectious_to_test_delay, this-> max_asymptomatic_infectious_to_test_delay);
-
-        if(test_application_delay<=this->test_sensitivity_lenght){
-          this->asymp_tested_per_delay[test_application_delay]++;
-        }
-
-        int test_date = Global::Simulation_Day + test_application_delay;
-
-        flag_tested = 1;
-        flag_delay = test_application_delay;
-
-        if(Global::Verbose>0){
-          std::cout << "Asymptomatic person Id " << person->get_id() << " will be tested on day " << test_date << '\n';
-        }
-
-        this->test_asymptomatic_event_queue->add_event(test_date, person);
-        this->predicted_asymptomatic_tested_today++;
-
-        //Schedule test test results
-        int result_date = test_date + this->test_results_delay;
-
-        //Draw random to check if test detects asymptomatic
-        r = Random::draw_random();
-
-        if(r < get_test_sensitivity(test_date - Global::Simulation_Day)){//Asymptomatic detected by test
-
-          flag_detected = 1;
-
-          if(Global::Verbose>0){
-            std::cout << "Asymptomatic person Id " << person->get_id() << " will be detected on day "<< result_date << '\n';
-          }
-
-          this-> detect_asymptomatic_event_queue->add_event(result_date, person);
-          this-> predicted_asymptomatic_detected_today++;
-
-          if(test_application_delay<=this->test_sensitivity_lenght){
-            this-> asymp_detected_per_delay[test_application_delay]++;
-          }
-
-
-        } else{//Asymptomatic does NOT get detected by test
-
-          flag_detected = 0;
-
-          if(Global::Verbose>0){
-            std::cout << "Asymptomatic person Id " << person->get_id() << " will be false negative on day "<< result_date << '\n';
-          }
-          this-> false_negative_asymptomatic_event_queue->add_event(result_date, person);
-          this-> predicted_asymptomatic_false_negative_today++;
-        }//Asymptomatic does NOT get detected by test
-
-      } else{//Asymptomatic does NOT get tested
-
-        flag_tested = 0;
-
-        if(Global::Verbose>0){
-          std::cout << "Asymptomatic person Id " << person->get_id() << " will NOT be tested" << '\n';
-        }
-      }//Asymptomatic does NOT get tested
     }//Asymptomatic person
-
-    if(Global::Track_testing_events == true){
-      std::stringstream infStrS;
-      infStrS.precision(3);
-
-      infStrS << fixed
-              << "day " << day
-              << " person " << person->get_id()
-              << " symptoms " << flag_symptoms
-              << " tested " << flag_tested
-              << " delay " << flag_delay
-              << " detected " << flag_detected
-              << "\n";
-  	  fprintf(Global::Testingfp, "%s", infStrS.str().c_str());
-    }
-
-
-  }// testing is enabled
+  }//Testing is enabled
 
   // update epidemic counters
   this->exposed_people++;
@@ -2524,92 +2379,212 @@ void Epidemic::process_infectious_end_events(int day) {
   this->infectious_end_event_queue->clear_events(day);
 }
 
-void Epidemic::process_test_symptomatic_events(int day) {//Process test symptomatics
+void Epidemic::process_decide_infected_want_test_events(int day) {//Decide if infected wants to be tested
+  double r; //random number to decide if person wants to be tested
 
-  // GENERAR ACÁ EL REPORTE AL ASEGURARSE DE QUE YA EXISTE TEST DATE, RESUTLADO Y LA VARIABLE DE FLAG YA ES TRUE
+  int size = this-> infected_want_test_event_queue->get_size(day);
+  FRED_VERBOSE(2, "DECIDE_PEOPLE_WANT_TEST_EVENT_QUEUE day %d size %d\n", day, size);
 
-  int size = this->test_symptomatic_event_queue->get_size(day);
-  FRED_VERBOSE(2, "TEST_SYMPTOMATIC_EVENT_QUEUE day %d size %d\n", day, size);
+  for(int i = 0; i < size; ++i) {//Loop over infected wanting test
+    Person* person = this->infected_want_test_event_queue->get_event(day, i);
 
-  for(int i = 0; i < size; ++i) {
-    Person* person = this->test_symptomatic_event_queue->get_event(day, i);
+    r = Random::draw_random(); //For deciding getting tested
+
+    //By this day, symptomatic peole will aready have symptoms + delay
+    if( (person->is_symptomatic() == true) & (r < this-> prob_symp_want_test) ){ //Symptomatic decides getting tested
+
+      person->set_wants_being_tested(this->id);
+
+      r = Random::draw_random(); //For getting tested
+
+      if( (r < this-> prob_symp_being_tested) & (this-> remaining_tests_day[day] > 0)){ //Symptomatic actually gets tested
+        this-> test_infected_event_queue-> add_event(day, person);
+
+        if(person->get_test_delay(this->id) <= this->test_sensitivity_lenght){
+          this->symp_tested_per_delay[person->get_test_delay(this->id)]++;
+        }
+
+        if(Global::Verbose>0){
+          std::cout << "Symptomatic person Id " << person->get_id() << " is tested on day " << person->get_test_date(this->id) << '\n';
+        }
+
+        this-> predicted_symptomatic_tested_today++;
+        this-> remaining_tests_day[day]--;
+      } else {//Symptomatic does not get tested despite wanting it
+
+      }//Symptomatic does not get tested despite wanting it
+    } else if( (person->is_symptomatic() == false) & (r < this-> prob_asymp_want_test) ){//Asymptomatic wants test
+
+      person->set_wants_being_tested(this->id);
+
+      r = Random::draw_random(); //For getting tested
+
+      if( (r < this-> prob_asymp_being_tested) & (this-> remaining_tests_day[day] > 0)){//Asymptomatic gets tested
+        this-> test_infected_event_queue-> add_event(day, person);
+
+        if(person->get_test_delay(this->id) <= this->test_sensitivity_lenght){
+          this->asymp_tested_per_delay[person->get_test_delay(this->id)]++;
+        }
+
+        if(Global::Verbose>0){
+          std::cout << "Asymptomatic person Id " << person->get_id() << " is tested on day " << person->get_test_date(this->id) << '\n';
+        }
+
+        this-> predicted_asymptomatic_tested_today++;
+        this-> remaining_tests_day[day]--;
+      }else {//Asymptomatic does not get tested despite wanting it
+
+      }//Asymptomatic does not get tested despite wanting it
+    }//Asymptomatic wants test
+  }//Loop over infected wanting test
+  this->infected_want_test_event_queue->clear_events(day);
+}//Decide if infected wants to be tested
+
+void Epidemic::process_test_infected_events(int day){//process_test_infected_events
+  double r; //Random probability
+  int result_date;
+
+  int size = this->test_infected_event_queue->get_size(day);
+  FRED_VERBOSE(2, "TEST_INFECTED_EVENT_QUEUE day %d size %d\n", day, size);
+
+  for(int i = 0; i < size; ++i) {//Loop over tested people
+    Person* person = this->test_infected_event_queue->get_event(day, i);
+    person-> set_tested_for_disease(this->id);
+
+    //Draw probability of test detecting infected based on test test_sensitivity
+    r = Random::draw_random();
+
+    if(r < (get_test_sensitivity(person->get_exposure_date(this->id) - day)) ){//Test detects infected
+
+      //Schedule test results
+      result_date = day + this->test_results_delay;
+
+      person->set_test_result(this->id);
+      person->set_test_result_date(this->id, result_date);
+
+      this->detect_infected_event_queue->add_event(result_date, person);
+    }//Test detects infected
+    else{// Infected is false negative
+      this->false_negative_event_queue->add_event(result_date, person);
+
+      if(person->is_symptomatic(this->id) == true){//False negative is symptomatic
+        if(Global::Verbose>0){
+          std::cout << "Symptomatic person Id " << person->get_id() << " is false negative on day " << result_date << '\n';
+        }
+        this-> predicted_symptomatic_false_negative_today++;
+      }//False negative is symptomatic
+      else if(person->is_symptomatic(this->id) == false){//False negative is asymptomatic
+        if(Global::Verbose>0){
+          std::cout << "Asymptomatic person Id " << person->get_id() << " is false negative on day " << result_date << '\n';
+        }
+        this-> predicted_asymptomatic_false_negative_today++;
+      }//False negative is asymptomatic
+    }// Infected is false negative
+  }//Loop over tested people
+  this->test_infected_event_queue->clear_events(day);
+}//process_test_infected_events
+
+
+void Epidemic::process_detect_infected_events(int day) {//Process detect infected
+  int size = this->detect_infected_event_queue->get_size(day);
+  FRED_VERBOSE(2, "DETECT_INFECTED_EVENT_QUEUE day %d size %d\n", day, size);
+
+  for(int i = 0; i < size; ++i) {//Loop over detected
+    Person* person = this->detect_infected_event_queue->get_event(day, i);
+    person->set_detected_by_test(this->id);
+
+    if(person->is_symptomatic(this->id) == true){// Detected is symptomatic
+      this-> predicted_symptomatic_detected_today++;
+
+      if(person-> get_test_delay(this->id) <= this->test_sensitivity_lenght){
+        this-> symp_detected_per_delay[person->get_test_delay(this->id)]++;
+      }
+
+      if(Global::Verbose>0){
+        std::cout << "Symptomatic person Id " << person->get_id() << " is detected on day " << person->get_test_result_date(this->id) << '\n';
+      }
+    }// Detected is symptomatic
+    else if(person->is_symptomatic(this->id) == false){// Detected is asymptomatic
+      this-> predicted_asymptomatic_detected_today++;
+
+      if(person->get_test_delay(this->id) <= this->test_sensitivity_lenght){
+        this-> asymp_detected_per_delay[person->get_test_delay(this->id)]++;
+      }
+
+      if(Global::Verbose>0){
+        std::cout << "Asymptomatic person Id " << person->get_id() << " is detected on day " << person->get_test_result_date(this->id) << '\n';
+      }
+    }// Detected is asymptomatic
     // update epidemic counters
-    person->already_tested_for_disease(this->id);
-    person->set_test_date(this->id, day);
-    this->symptomatic_tested_today++;
-  }//For loop
-  this->test_symptomatic_event_queue->clear_events(day);
-}//Process test symptomatics
-
-void Epidemic::process_detect_symptomatic_events(int day) {//Process detect symptomatics
-  int size = this->detect_symptomatic_event_queue->get_size(day);
-  FRED_VERBOSE(2, "DETECT_SYMPTOMATIC_EVENT_QUEUE day %d size %d\n", day, size);
-
-  for(int i = 0; i < size; ++i) {
-    Person* person = this->detect_symptomatic_event_queue->get_event(day, i);
-    // update epidemic counters
-    person->set_test_result_date(this->id, day);
-    person->set_test_result(this->id, true);
     this->symptomatic_detected_today++;
-  }//For loop
-  this->detect_symptomatic_event_queue->clear_events(day);
-}//Process detect symptomatics
 
-void Epidemic::process_false_negative_symptomatic_events(int day) {//Process false_negative symptomatics
-  int size = this->false_negative_symptomatic_event_queue->get_size(day);
-  FRED_VERBOSE(2, "FALSE_NEGATIVE_SYMPTOMATIC_EVENT_QUEUE day %d size %d\n", day, size);
+    if(Global::Track_testing_events == true){
+      report_track_testing_events(day, person);
+    }
 
-  for(int i = 0; i < size; ++i) {
-    Person* person = this->false_negative_symptomatic_event_queue->get_event(day, i);
+  }//Loop over detected
+  this->detect_infected_event_queue->clear_events(day);
+}//Process detect infected
+
+void Epidemic::process_false_negative_events(int day) {//Process false_negatives
+  int size = this->false_negative_event_queue->get_size(day);
+  FRED_VERBOSE(2, "FALSE_NEGATIVES_EVENT_QUEUE day %d size %d\n", day, size);
+
+  for(int i = 0; i < size; ++i) {//Loop over false negatives
+    Person* person = this->false_negative_event_queue->get_event(day, i);
+    person->set_false_negative(this->id);
+
     // update epidemic counters
-    person->set_test_result_date(this->id, day);
-    person->set_test_result(this->id, false);
     this->symptomatic_false_negative_today++;
-  }//For loop
-  this->false_negative_symptomatic_event_queue->clear_events(day);
+
+    if(Global::Track_testing_events == true){
+      report_track_testing_events(day, person);
+    }
+
+  }//Loop over false negatives
+  this->false_negative_event_queue->clear_events(day);
 }//Process false_negative symptomatics
 
-void Epidemic::process_test_asymptomatic_events(int day) {//Process tet symptomatics
-  int size = this->test_asymptomatic_event_queue->get_size(day);
-  FRED_VERBOSE(2, "TEST_ASYMPTOMATIC_EVENT_QUEUE day %d size %d\n", day, size);
+void Epidemic::report_track_testing_events(int day, Person* person){
+  int disease_id = this->id;
+  int id = person->get_id();
+  int flag_symptoms = person->is_symptomatic(disease_id)? 1 : 0;
+  int flag_tested = person->get_tested_for_disease(disease_id)? 1 : 0;
+  int flag_delay = person->get_test_delay(disease_id)? 1 : 0;
+  int flag_detected = person->get_detected_by_test(disease_id)? 1 : 0;
+  std::stringstream infStrS;
 
-  for(int i = 0; i < size; ++i) {
-    Person* person = this->test_asymptomatic_event_queue->get_event(day, i);
-    // update epidemic counters
-    this->asymptomatic_tested_today++;
-    person->already_tested_for_disease(this->id);
-    person->set_test_date(this->id, day);
-  }//For loop
-  this->test_asymptomatic_event_queue->clear_events(day);
-}//Process tet asymptomatics
+  infStrS.precision(3);
 
-void Epidemic::process_detect_asymptomatic_events(int day) {//Process detect symptomatics
-  int size = this->detect_asymptomatic_event_queue->get_size(day);
-  FRED_VERBOSE(2, "DETECT_ASYMPTOMATIC_EVENT_QUEUE day %d size %d\n", day, size);
+  infStrS << fixed
+          << "day " << day
+          << " person " << person->get_id()
+          << " symptoms " << flag_symptoms
+          << " tested " << flag_tested
+          << " delay " << flag_delay
+          << " detected " << flag_detected
+          << "\n";
+  fprintf(Global::Testingfp, "%s", infStrS.str().c_str());
 
-  for(int i = 0; i < size; ++i) {
-    Person* person = this->detect_asymptomatic_event_queue->get_event(day, i);
-    // update epidemic counters
-    person->set_test_result_date(this->id, day);
-    person->set_test_result(this->id, true);
-    this->asymptomatic_detected_today++;
-  }//For loop
-  this->detect_asymptomatic_event_queue->clear_events(day);
-}//Process detect symptomatics
+}
 
-void Epidemic::process_false_negative_asymptomatic_events(int day) {//Process false_negative symptomatics
-  int size = this->false_negative_asymptomatic_event_queue->get_size(day);
-  FRED_VERBOSE(2, "FALSE_NEGATIVE_ASYMPTOMATIC_EVENT_QUEUE day %d size %d\n", day, size);
+void Epidemic::distribute_pcr_day(int day) { //Defines how many pcr tests will be used on asympts and healthy
+  return;
+}
 
-  for(int i = 0; i < size; ++i) {
-    Person* person = this->false_negative_asymptomatic_event_queue->get_event(day, i);
-    // update epidemic counters
-    person->set_test_result_date(this->id, day);
-    person->set_test_result(this->id, false);
-    this->asymptomatic_false_negative_today++;
-  }//For loop
-  this->false_negative_asymptomatic_event_queue->clear_events(day);
-}//Process false_negative asymptomatics
+void Epidemic::adjust_testing_probs(int day){
+  return;
+}
+
+void Epidemic::test_healthy_people(int day){
+  int healthy_people_tests = 0;
+  int false_positive_tests = 0;
+  double percent_false_positive = 0;
+
+  percent_false_positive = Random::draw_random(this->min_false_positive_rate, this->max_false_positive_rate);
+  false_positive_tests = (int) ((double)false_positive_tests*percent_false_positive);
+  this->remaining_tests_day[day] -= false_positive_tests;
+}
 
 
 void Epidemic::recover(Person* person, int day) {
@@ -2908,16 +2883,6 @@ void Epidemic::update(int day) {
   // transition to susceptible
   process_immunity_end_events(day);
 
-  //Process Epidemic testing events
-  if(Global::Enable_PCR_Testing){
-      process_test_symptomatic_events(day);
-      process_detect_symptomatic_events(day);
-      process_false_negative_symptomatic_events(day);
-      process_test_asymptomatic_events(day);
-      process_detect_asymptomatic_events(day);
-      process_false_negative_asymptomatic_events(day);
-  }
-
   //Update sheltering houses
   //TODO: Should the following line be inthe place_list class?
   if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
@@ -3034,6 +2999,17 @@ void Epidemic::update(int day) {
 
   //After updating infectious people, seed infections
   seed_nursing_home_infections(day);
+
+  //Process Epidemic testing events
+  if(Global::Enable_PCR_Testing){
+    distribute_pcr_day(day);
+    adjust_testing_probs(day);
+    test_healthy_people(day);
+    process_decide_infected_want_test_events(day);
+    process_test_infected_events(day);
+    process_detect_infected_events(day);
+    process_false_negative_events(day);
+  }
 
   FRED_VERBOSE(0, "epidemic update finished for disease %d day %d\n", id, day);
   return;

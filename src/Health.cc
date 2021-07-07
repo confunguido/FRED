@@ -297,6 +297,7 @@ Health::Health() {
   //Testing data
   this->tested_for_disease = NULL;
   this->test_date = NULL;
+  this->test_delay = NULL;
   this->test_result_date = NULL;
   this->test_result = NULL;
 }
@@ -342,10 +343,17 @@ void Health::setup(Person* self) {
   this->past_infections = new past_infections_type [diseases];
   this->health_condition = new health_condition_t [diseases];
   //Testing data
+  this->will_be_symptomatic = new bool [diseases];
+  this->wants_being_tested = new bool [diseases];
   this->tested_for_disease = new bool [diseases];
-  this->test_date = new int [diseases];
-  this->test_result_date = new int [diseases];
   this->test_result = new bool [diseases];
+  this->detected_by_test = new bool [diseases];
+  this->false_negative = new bool [diseases];
+  this->test_date = new int [diseases];
+  this->test_delay = new int [diseases];
+  this->test_result_date = new int [diseases];
+
+
 
   for(int disease_id = 0; disease_id < diseases; ++disease_id) {
     this->recovered.reset(disease_id);
@@ -364,10 +372,17 @@ void Health::setup(Person* self) {
     this->health_condition[disease_id].next_state = -1;
     this->health_condition[disease_id].next_transition_day = -1;
 
+    this-> will_be_symptomatic[disease_id] = false;
+    this-> wants_being_tested[disease_id] = false;
     this->tested_for_disease[disease_id] = false;
-    this->test_date[disease_id] = -1;
-    this->test_result_date[disease_id] = -1;
     this->test_result[disease_id] = false;
+    this->detected_by_test[disease_id] = false;
+    this->false_negative[disease_id] = false;
+    this->test_date[disease_id] = -1;
+    this->test_delay[disease_id] = -1;
+    this->test_result_date[disease_id] = -1;
+
+
 
     Disease* disease = Global::Diseases.get_disease(disease_id);
     if (disease->assume_susceptible()) {

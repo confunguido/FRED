@@ -1046,12 +1046,12 @@ public:
     this->health.update_health_conditions(day);
   }
 
-  bool is_tested_for_disease(int disease_id){
-    return this->health.is_tested_for_disease(disease_id);
+  bool get_tested_for_disease(int disease_id){
+    return this->health.get_tested_for_disease(disease_id);
   }
 
-  void already_tested_for_disease(int disease_id){
-    this->health.already_tested_for_disease(disease_id);
+  void set_tested_for_disease(int disease_id){
+    this->health.set_tested_for_disease(disease_id);
   }
 
   int get_test_date(int disease_id){
@@ -1060,6 +1060,14 @@ public:
 
   void set_test_date(int disease_id, int day){
     this-> health.set_test_date(disease_id, day);
+  }
+
+  int get_test_delay(int disease_id){
+    return this->health.get_test_delay(disease_id);
+  }
+
+  void set_test_delay(int disease_id, int day){
+    this-> health.set_test_delay(disease_id, day);
   }
 
   int get_test_result_date(int disease_id){
@@ -1074,8 +1082,40 @@ public:
     return health.get_test_result(disease_id);
   }
 
-  void set_test_result(int disease_id, bool result){
-    this->health.set_test_result(disease_id, result);
+  void set_test_result(int disease_id){
+    this->health.set_test_result(disease_id);
+  }
+
+  bool get_will_be_symptomatic(int disease_id){
+    return health.get_will_be_symptomatic(disease_id);
+  }
+
+  void set_will_be_symptomatic(int disease_id){
+    this->health.set_will_be_symptomatic(disease_id);
+  }
+
+  bool get_wants_being_tested(int disease_id){
+    return health.get_wants_being_tested(disease_id);
+  }
+
+  void set_wants_being_tested(int disease_id){
+    this->health.set_wants_being_tested(disease_id);
+  }
+
+  bool get_false_negative(int disease_id){
+    return health.get_false_negative(disease_id);
+  }
+
+  void set_false_negative(int disease_id){
+    this->health.set_false_negative(disease_id);
+  }
+
+  bool get_detected_by_test(int disease_id){
+    return health.get_detected_by_test(disease_id);
+  }
+
+  void set_detected_by_test(int disease_id){
+    this->health.set_detected_by_test(disease_id);
   }
 
 private:

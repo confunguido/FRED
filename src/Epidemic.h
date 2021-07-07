@@ -353,12 +353,14 @@ public:
   virtual void end_of_run() {}
   virtual void terminate_person(Person* person, int day);
 
-  void process_test_symptomatic_events(int day);
-  void process_detect_symptomatic_events(int day);
-  void process_false_negative_symptomatic_events(int day);
-  void process_test_asymptomatic_events(int day);
-  void process_detect_asymptomatic_events(int day);
-  void process_false_negative_asymptomatic_events(int day);
+  void process_decide_infected_want_test_events(int day);
+  void process_test_infected_events(int day);
+  void process_detect_infected_events(int day);
+  void process_false_negative_events(int day);
+  void report_track_testing_events(int day, Person* person);
+  void distribute_pcr_day(int day);
+  void test_healthy_people(int day);
+  void adjust_testing_probs(int day);
 
 protected:
   Disease* disease;
@@ -493,7 +495,7 @@ protected:
   // PCR Testing parameters
   double prob_healthy_want_test;
   double prob_symp_want_test;
-  double prob_asympt_want_test;
+  double prob_asymp_want_test;
   double prob_healthy_being_tested;
   double prob_symp_being_tested;
   double prob_asymp_being_tested;
@@ -507,9 +509,11 @@ protected:
   double* test_sensitivity;
   double* test_specificity;
   double test_sensitivity_mean;
+  double new_test_sensitivity_mean;
   //double test_specificity_mean;
-  //double new_test_sensitivity_mean;
-  double false_positive_rate;
+  //double new_test_specificity_mean;
+  double min_false_positive_rate;
+  double max_false_positive_rate;
   //std::set<Person*> tested_people;
 
   //Available Tests per day
@@ -589,13 +593,10 @@ protected:
   //vector<Person*> daily_detected_list;
 
   // Queues for scheduled testing and results
-  Events* test_symptomatic_event_queue;
-  Events* detect_symptomatic_event_queue;
-  Events* false_negative_symptomatic_event_queue;
-  Events* test_asymptomatic_event_queue;
-  Events* detect_asymptomatic_event_queue;
-  Events* false_negative_asymptomatic_event_queue;
-
+  Events* infected_want_test_event_queue;
+  Events* test_infected_event_queue;
+  Events* detect_infected_event_queue;
+  Events* false_negative_event_queue;
 };
 
 #endif // _FRED_EPIDEMIC_H

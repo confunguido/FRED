@@ -715,16 +715,24 @@ public:
     return this->health_condition[disease_id].next_transition_day;
   }
 
-  bool is_tested_for_disease(int disease_id){
+  bool get_tested_for_disease(int disease_id){
     return this->tested_for_disease[disease_id];
   }
 
-  void already_tested_for_disease(int disease_id){
+  void set_tested_for_disease(int disease_id){
     this->tested_for_disease[disease_id] = true;
   }
 
   int get_test_date(int disease_id){
     return this->test_date[disease_id];
+  }
+
+  int get_test_delay(int disease_id){
+    return this->test_delay[disease_id];
+  }
+
+  void set_test_delay(int disease_id, int day){
+    this->test_delay[disease_id] = day;
   }
 
   void set_test_date(int disease_id, int day){
@@ -743,8 +751,40 @@ public:
     return this->test_result[disease_id];
   }
 
-  void set_test_result(int disease_id, bool result){
-    this->test_result[disease_id] = result;
+  void set_test_result(int disease_id){
+    this->test_result[disease_id] = true;
+  }
+
+  bool get_will_be_symptomatic(int disease_id){
+    return this->will_be_symptomatic[disease_id];
+  }
+
+  void set_will_be_symptomatic(int disease_id){
+    this->will_be_symptomatic[disease_id] = true;
+  }
+
+  bool get_wants_being_tested(int disease_id){
+    return this->wants_being_tested[disease_id];
+  }
+
+  void set_wants_being_tested(int disease_id){
+    this->wants_being_tested[disease_id] = true;
+  }
+
+  bool get_false_negative(int disease_id){
+    return this->false_negative[disease_id];
+  }
+
+  void set_false_negative(int disease_id){
+    this->false_negative[disease_id] = true;
+  }
+
+  bool get_detected_by_test(int disease_id){
+    return this->detected_by_test[disease_id];
+  }
+
+  void set_detected_by_test(int disease_id){
+    this->detected_by_test[disease_id] = true;
   }
 
   void update_health_conditions(int day);
@@ -771,10 +811,15 @@ private:
   int days_hospitalization;
   int total_number_of_infections;
   //Testing data
+  bool* will_be_symptomatic;
+  bool* wants_being_tested;
   bool* tested_for_disease;
-  int* test_date;
-  int* test_result_date;
   bool* test_result;
+  bool* detected_by_test;
+  bool* false_negative;
+  int* test_date;
+  int* test_delay;
+  int* test_result_date;
 
   // living or not?
   bool alive;
