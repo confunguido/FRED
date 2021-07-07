@@ -347,7 +347,6 @@ void Health::setup(Person* self) {
   this->wants_being_tested = new bool [diseases];
   this->tested_for_disease = new bool [diseases];
   this->test_result = new bool [diseases];
-  this->detected_by_test = new bool [diseases];
   this->false_negative = new bool [diseases];
   this->test_date = new int [diseases];
   this->test_delay = new int [diseases];
@@ -376,7 +375,6 @@ void Health::setup(Person* self) {
     this-> wants_being_tested[disease_id] = false;
     this->tested_for_disease[disease_id] = false;
     this->test_result[disease_id] = false;
-    this->detected_by_test[disease_id] = false;
     this->false_negative[disease_id] = false;
     this->test_date[disease_id] = -1;
     this->test_delay[disease_id] = -1;

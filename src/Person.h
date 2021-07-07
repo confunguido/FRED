@@ -1110,14 +1110,6 @@ public:
     this->health.set_false_negative(disease_id);
   }
 
-  bool get_detected_by_test(int disease_id){
-    return health.get_detected_by_test(disease_id);
-  }
-
-  void set_detected_by_test(int disease_id){
-    this->health.set_detected_by_test(disease_id);
-  }
-
 private:
 
   // id: Person's unique identifier (never reused)

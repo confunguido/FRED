@@ -779,14 +779,6 @@ public:
     this->false_negative[disease_id] = true;
   }
 
-  bool get_detected_by_test(int disease_id){
-    return this->detected_by_test[disease_id];
-  }
-
-  void set_detected_by_test(int disease_id){
-    this->detected_by_test[disease_id] = true;
-  }
-
   void update_health_conditions(int day);
 
 private:
@@ -815,7 +807,6 @@ private:
   bool* wants_being_tested;
   bool* tested_for_disease;
   bool* test_result;
-  bool* detected_by_test;
   bool* false_negative;
   int* test_date;
   int* test_delay;

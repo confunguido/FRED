@@ -711,6 +711,7 @@ void Epidemic::become_exposed(Person* person, int day) {
     int test_application_delay = -1;
     int test_date = -1;
 
+
     if(Global::Verbose>0){
       std::cout << "Person Id " << person->get_id() <<  " is infected" <<'\n';
     }
@@ -722,7 +723,7 @@ void Epidemic::become_exposed(Person* person, int day) {
 
       this-> symptomatics_today++;
 
-      test_application_delay = this->symptoms_to_test_delay;
+      test_application_delay = symptoms_start_date + this->symptoms_to_test_delay - Global::Simulation_Day;
       person->set_test_delay(this->id, test_application_delay);
 
       test_date = Global::Simulation_Day + test_application_delay;
@@ -734,6 +735,7 @@ void Epidemic::become_exposed(Person* person, int day) {
 
     }//Symptomatic person
     else{//Asymptomatic person
+      this-> asymptomatics_today++;
       test_application_delay = Random::draw_random_int(this-> min_asymptomatic_infectious_to_test_delay, this-> max_asymptomatic_infectious_to_test_delay);
 
       person->set_test_delay(this->id, test_application_delay);
@@ -2391,7 +2393,7 @@ void Epidemic::process_decide_infected_want_test_events(int day) {//Decide if in
     r = Random::draw_random(); //For deciding getting tested
 
     //By this day, symptomatic peole will aready have symptoms + delay
-    if( (person->is_symptomatic() == true) & (r < this-> prob_symp_want_test) ){ //Symptomatic decides getting tested
+    if( (person->get_will_be_symptomatic(this->id) == true) & (r < this-> prob_symp_want_test) ){ //Symptomatic decides getting tested
 
       person->set_wants_being_tested(this->id);
 
@@ -2413,7 +2415,7 @@ void Epidemic::process_decide_infected_want_test_events(int day) {//Decide if in
       } else {//Symptomatic does not get tested despite wanting it
 
       }//Symptomatic does not get tested despite wanting it
-    } else if( (person->is_symptomatic() == false) & (r < this-> prob_asymp_want_test) ){//Asymptomatic wants test
+    } else if( (person->get_will_be_symptomatic(this->id) == false) & (r < this-> prob_asymp_want_test) ){//Asymptomatic wants test
 
       person->set_wants_being_tested(this->id);
 
@@ -2454,15 +2456,19 @@ void Epidemic::process_test_infected_events(int day){//process_test_infected_eve
     //Draw probability of test detecting infected based on test test_sensitivity
     r = Random::draw_random();
 
-    if(r < (get_test_sensitivity(person->get_exposure_date(this->id) - day)) ){//Test detects infected
+    //Schedule test results
+    result_date = day + this->test_results_delay;
+    person->set_test_result_date(this->id, result_date);
 
-      //Schedule test results
-      result_date = day + this->test_results_delay;
+    if(person->is_symptomatic(this->id) == true){this-> symptomatic_tested_today++;}
+    else if(person->is_symptomatic(this->id) == false){this-> asymptomatic_tested_today++;}
+
+    if(r < get_test_sensitivity(person->get_test_delay(this->id)) ){//Test detects infected
 
       person->set_test_result(this->id);
-      person->set_test_result_date(this->id, result_date);
-
       this->detect_infected_event_queue->add_event(result_date, person);
+
+
     }//Test detects infected
     else{// Infected is false negative
       this->false_negative_event_queue->add_event(result_date, person);
@@ -2491,7 +2497,6 @@ void Epidemic::process_detect_infected_events(int day) {//Process detect infecte
 
   for(int i = 0; i < size; ++i) {//Loop over detected
     Person* person = this->detect_infected_event_queue->get_event(day, i);
-    person->set_detected_by_test(this->id);
 
     if(person->is_symptomatic(this->id) == true){// Detected is symptomatic
       this-> predicted_symptomatic_detected_today++;
@@ -2551,7 +2556,7 @@ void Epidemic::report_track_testing_events(int day, Person* person){
   int flag_symptoms = person->is_symptomatic(disease_id)? 1 : 0;
   int flag_tested = person->get_tested_for_disease(disease_id)? 1 : 0;
   int flag_delay = person->get_test_delay(disease_id)? 1 : 0;
-  int flag_detected = person->get_detected_by_test(disease_id)? 1 : 0;
+  int flag_detected = person->get_test_result(disease_id)? 1 : 0;
   std::stringstream infStrS;
 
   infStrS.precision(3);
@@ -2581,9 +2586,9 @@ void Epidemic::test_healthy_people(int day){
   int false_positive_tests = 0;
   double percent_false_positive = 0;
 
-  percent_false_positive = Random::draw_random(this->min_false_positive_rate, this->max_false_positive_rate);
-  false_positive_tests = (int) ((double)false_positive_tests*percent_false_positive);
-  this->remaining_tests_day[day] -= false_positive_tests;
+  //percent_false_positive = Random::draw_random(this->min_false_positive_rate, this->max_false_positive_rate);
+  //false_positive_tests = (int) ((double)false_positive_tests*percent_false_positive);
+  //this->remaining_tests_day[day] -= false_positive_tests;
 }
 
 
