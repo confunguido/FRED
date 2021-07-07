@@ -2569,11 +2569,11 @@ void Epidemic::report_track_testing_events(int day, Person* person){
 }
 
 void Epidemic::distribute_pcr_day(int day) { //Defines how many pcr tests will be used on asympts and healthy
-  return;
+  int x;
 }
 
 void Epidemic::adjust_testing_probs(int day){
-  return;
+  int x;
 }
 
 void Epidemic::test_healthy_people(int day){
