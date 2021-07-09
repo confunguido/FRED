@@ -545,14 +545,6 @@ protected:
   int tested_people_today;
   int total_tested_people;
 
-  // predicted tested (people for performance monitoring purposes)
-  // Tested people are calculated as soon as person become_exposed
-  int predicted_symptomatic_tested_today;
-  int predicted_total_symptomatic_tested;
-  int predicted_asymptomatic_tested_today;
-  int predicted_total_asymptomatic_tested;
-  int predicted_tested_people_today;
-  int predicted_total_tested_people;
   //std::set<Person*> infected_people_detected;
 
   //Detected people according to schedule
@@ -563,15 +555,6 @@ protected:
   int infected_detected_today;
   int total_infected_detected;
 
-  // predicted detected (people for performance monitoring purposes)
-  // Detected people are calculated as soon as person become_exposed
-  int predicted_symptomatic_detected_today;
-  int predicted_total_symptomatic_detected;
-  int predicted_asymptomatic_detected_today;
-  int predicted_total_asymptomatic_detected;
-  int predicted_infected_detected_today;
-  int predicted_total_infected_detected;
-
   // False negatives according to schedule
   int symptomatic_false_negative_today;
   int total_symptomatic_false_negative;
@@ -579,15 +562,6 @@ protected:
   int total_asymptomatic_false_negative;
   int false_negative_today;
   int total_false_negative;
-
-  // predicted false negative (people for performance monitoring purposes)
-  // false negative people are calculated as soon as person become_exposed
-  int predicted_symptomatic_false_negative_today;
-  int predicted_total_symptomatic_false_negative;
-  int predicted_asymptomatic_false_negative_today;
-  int predicted_total_asymptomatic_false_negative;
-  int predicted_false_negative_today;
-  int predicted_total_false_negative;
 
   //vector<Person*> daily_tested_list;
   //vector<Person*> daily_detected_list;
