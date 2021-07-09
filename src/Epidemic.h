@@ -358,8 +358,7 @@ public:
   void process_detect_infected_events(int day);
   void process_false_negative_events(int day);
   void report_track_testing_events(int day, Person* person);
-  void distribute_pcr_day(int day);
-  void test_healthy_people(int day);
+  void test_susceptible_day(int day);
   void adjust_testing_probs(int day);
 
 protected:
@@ -493,27 +492,24 @@ protected:
 
   // ******* Parameters from txt input
   // PCR Testing parameters
-  double prob_healthy_want_test;
+  double prob_susceptible_want_test;
+  double prob_susceptible_being_tested;
   double prob_symp_want_test;
-  double prob_asymp_want_test;
-  double prob_healthy_being_tested;
   double prob_symp_being_tested;
+  double prob_asymp_want_test;
   double prob_asymp_being_tested;
   int symptoms_to_test_delay;
   int min_asymptomatic_infectious_to_test_delay;
   int max_asymptomatic_infectious_to_test_delay;
   int test_results_delay;
 
+
   // Test sensitivity and specificity
   int test_sensitivity_lenght;
   double* test_sensitivity;
-  double* test_specificity;
+  double test_specificity;
   double test_sensitivity_mean;
   double new_test_sensitivity_mean;
-  //double test_specificity_mean;
-  //double new_test_specificity_mean;
-  double min_false_positive_rate;
-  double max_false_positive_rate;
   //std::set<Person*> tested_people;
 
   //Available Tests per day
@@ -528,7 +524,6 @@ protected:
   int* total_tested_per_delay;
   int* total_detected_per_delay;
 
-  // ******* Internal parameters
   // New infected people
   int symptomatics_today;
   int total_symptomatics;
@@ -537,7 +532,19 @@ protected:
   int new_infected_today;
   int total_new_infected;
 
+  //People wanting test
+  int susceptible_want_test_today;
+  int total_susceptible_want_test;
+  int symptomatic_want_test_today;
+  int total_symptomatic_want_test;
+  int asymptomatic_want_test_today;
+  int total_asymptomatic_want_test;
+  int people_want_test_today;
+  int total_people_want_test;
+
   // Tested people according to schedule
+  int susceptible_tested_today;
+  int total_susceptible_tested;
   int symptomatic_tested_today;
   int total_symptomatic_tested;
   int asymptomatic_tested_today;
@@ -562,6 +569,14 @@ protected:
   int total_asymptomatic_false_negative;
   int false_negative_today;
   int total_false_negative;
+
+  // True negatives according to schedule
+  int true_negative_today;
+  int total_true_negative;
+
+  // False positives according to schedule
+  int false_positive_today;
+  int total_false_positive;
 
   //vector<Person*> daily_tested_list;
   //vector<Person*> daily_detected_list;
