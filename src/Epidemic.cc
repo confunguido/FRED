@@ -217,95 +217,93 @@ Epidemic::Epidemic(Disease* dis) {
   //Initialize PCR testing variables
   if (Global::Enable_PCR_Testing == true){
     // PCR Testing parameters
-    this-> prob_susceptible_want_test = 0;
-    this-> prob_symp_want_test = 0;
-    this-> prob_asymp_want_test = 0;
-    this-> prob_susceptible_being_tested = 0;
-    this-> prob_symp_being_tested = 0;
-    this-> prob_asymp_being_tested = 0;
-    this-> symptoms_to_test_delay = 0;
-    this-> min_asymptomatic_infectious_to_test_delay = 0;
-    this-> max_asymptomatic_infectious_to_test_delay = 0;
-    this-> test_results_delay = 0;
+    this->prob_susceptible_want_test = 0;
+    this->prob_symp_want_test = 0;
+    this->prob_asymp_want_test = 0;
+    this->symptoms_to_test_delay = 0;
+    this->min_asymptomatic_infectious_to_test_delay = 0;
+    this->max_asymptomatic_infectious_to_test_delay = 0;
+    this->test_results_delay = 0;
 
     // Test sensitivity
-    this-> test_sensitivity_lenght = 0;
-    this-> test_sensitivity = NULL;
-    this-> test_specificity = 0;
-    this-> test_sensitivity_mean = 0;
-    this-> new_test_sensitivity_mean = 0;
+    this->test_sensitivity_lenght = 0;
+    this->test_sensitivity = NULL;
+    this->test_specificity = 0;
+    this->test_sensitivity_mean = 0;
+    this->new_test_sensitivity_mean = 0;
     //this-> tested_people.clear();
 
     // New infected people
-    this-> symptomatics_today = 0;
-    this-> total_symptomatics = 0;
-    this-> asymptomatics_today = 0;
-    this-> total_asymptomatics = 0;
-    this-> new_infected_today = 0;
-    this-> total_new_infected = 0;
+    this->symptomatics_today = 0;
+    this->total_symptomatics = 0;
+    this->asymptomatics_today = 0;
+    this->total_asymptomatics = 0;
+    this->new_infected_today = 0;
+    this->total_new_infected = 0;
 
     // People wanting test
-    this-> susceptible_want_test_today = 0;
-    this-> total_susceptible_want_test = 0;
-    this-> symptomatic_want_test_today = 0;
-    this-> total_symptomatic_want_test = 0;
-    this-> asymptomatic_want_test_today = 0;
-    this-> total_asymptomatic_want_test = 0;
-    this-> people_want_test_today = 0;
-    this-> total_people_want_test = 0;
+    this->susceptible_want_test_today = 0;
+    this->total_susceptible_want_test = 0;
+    this->symptomatic_want_test_today = 0;
+    this->total_symptomatic_want_test = 0;
+    this->asymptomatic_want_test_today = 0;
+    this->total_asymptomatic_want_test = 0;
+    this->people_want_test_today = 0;
+    this->total_people_want_test = 0;
+    this->proportion_want_to_get_test_today = 0.0;
 
     // Tested people according to schedule
-    this-> susceptible_tested_today = 0;
-    this-> total_susceptible_tested = 0;
-    this-> symptomatic_tested_today = 0;
-    this-> total_symptomatic_tested = 0;
-    this-> asymptomatic_tested_today = 0;
-    this-> total_asymptomatic_tested = 0;
-    this-> tested_people_today = 0;
-    this-> total_tested_people = 0;
+    this->susceptible_tested_today = 0;
+    this->total_susceptible_tested = 0;
+    this->symptomatic_tested_today = 0;
+    this->total_symptomatic_tested = 0;
+    this->asymptomatic_tested_today = 0;
+    this->total_asymptomatic_tested = 0;
+    this->tested_people_today = 0;
+    this->total_tested_people = 0;
 
     //std::set<Person*> infected_people_detected;
 
     //Detected people according to schedule
-    this-> symptomatic_detected_today = 0;
-    this-> total_symptomatic_detected = 0;
-    this-> asymptomatic_detected_today = 0;
-    this-> total_asymptomatic_detected = 0;
-    this-> infected_detected_today = 0;
-    this-> total_infected_detected = 0;
+    this->symptomatic_detected_today = 0;
+    this->total_symptomatic_detected = 0;
+    this->asymptomatic_detected_today = 0;
+    this->total_asymptomatic_detected = 0;
+    this->infected_detected_today = 0;
+    this->total_infected_detected = 0;
 
     // False negatives according to schedule
-    this-> symptomatic_false_negative_today = 0;
-    this-> total_symptomatic_false_negative = 0;
-    this-> asymptomatic_false_negative_today = 0;
-    this-> total_asymptomatic_false_negative = 0;
-    this-> false_negative_today = 0;
-    this-> total_false_negative = 0;
+    this->symptomatic_false_negative_today = 0;
+    this->total_symptomatic_false_negative = 0;
+    this->asymptomatic_false_negative_today = 0;
+    this->total_asymptomatic_false_negative = 0;
+    this->false_negative_today = 0;
+    this->total_false_negative = 0;
 
     //True negatives acording to schedule
-    this-> true_negative_today = 0;
-    this-> total_true_negative = 0;
+    this->true_negative_today = 0;
+    this->total_true_negative = 0;
 
     // False positive according to schedule
-    this-> false_positive_today = 0;
-    this-> total_false_positive = 0;
+    this->false_positive_today = 0;
+    this->total_false_positive = 0;
 
     //this-> daily_tested_list.clear();
     //this-> daily_detected_list.clear();
 
     //Positivity calculated per delay days
-    this-> symp_tested_per_delay = NULL;
-    this-> symp_detected_per_delay = NULL;
-    this-> asymp_tested_per_delay = NULL;
-    this-> asymp_detected_per_delay = NULL;
-    this-> total_tested_per_delay = NULL;
-    this-> total_detected_per_delay = NULL;
+    this->symp_tested_per_delay = NULL;
+    this->symp_detected_per_delay = NULL;
+    this->asymp_tested_per_delay = NULL;
+    this->asymp_detected_per_delay = NULL;
+    this->total_tested_per_delay = NULL;
+    this->total_detected_per_delay = NULL;
 
     // Queues for scheduled testing and results
-    this-> infected_want_test_event_queue = new Events;
-    this-> test_infected_event_queue = new Events;
-    this-> detect_infected_event_queue = new Events;
-    this-> false_negative_event_queue = new Events;
+    this->infected_want_test_event_queue = new Events;
+    this->test_infected_event_queue = new Events;
+    this->detect_infected_event_queue = new Events;
+    this->false_negative_event_queue = new Events;
   }
 }
 
@@ -567,9 +565,6 @@ void Epidemic::setup() {
     Params::get_param_from_string("prob_susceptible_want_test", &prob_susceptible_want_test);
     Params::get_param_from_string("prob_symp_want_test", &prob_symp_want_test);
     Params::get_param_from_string("prob_asymp_want_test", &prob_asymp_want_test);
-    Params::get_param_from_string("prob_susceptible_being_tested", &prob_susceptible_being_tested);
-    Params::get_param_from_string("prob_symp_being_tested", &prob_symp_being_tested);
-    Params::get_param_from_string("prob_asymp_being_tested", &prob_asymp_being_tested);
     Params::get_param_from_string("symptoms_to_test_delay", &symptoms_to_test_delay);
     Params::get_param_from_string("min_asymptomatic_infectious_to_test_delay", &min_asymptomatic_infectious_to_test_delay);
     Params::get_param_from_string("max_asymptomatic_infectious_to_test_delay", &max_asymptomatic_infectious_to_test_delay);
@@ -599,7 +594,6 @@ void Epidemic::setup() {
     this-> total_tested_per_delay = new int [this->test_sensitivity_lenght];
     this-> total_detected_per_delay = new int [this->test_sensitivity_lenght];
     this-> available_tests_day = new int[Global::Days+1];
-    this-> remaining_tests_day = new int[Global::Days+1];
 
     //Initialize per_delay arrays with zero
     for (int i=0; i < this->test_sensitivity_lenght; i++){
@@ -614,7 +608,6 @@ void Epidemic::setup() {
     // initialize the available_tests_day array
     for(int j = 0; j <= Global::Days; ++j) {
       this->available_tests_day[j] = 0;
-      this-> remaining_tests_day[j] = 0;
     }
 
     // read PCR_availability_file
@@ -629,7 +622,6 @@ void Epidemic::setup() {
     while(fscanf(fp, "%d %d", &PCR_day, &PCR_ammount) == 2) {
       if(PCR_day >= 0 && PCR_day <= Global::Days && PCR_ammount >= 0) {
         this->available_tests_day[PCR_day] = PCR_ammount;
-        this->remaining_tests_day[PCR_day] = PCR_ammount;
       }
     }
     fclose(fp);
@@ -703,7 +695,14 @@ void Epidemic::become_exposed(Person* person, int day) {
       person->set_test_delay(this->id, test_application_delay);
 
       test_date = Global::Simulation_Day + test_application_delay;
-      this-> infected_want_test_event_queue->add_event(test_date, person);
+
+      r = Random::draw_random();
+
+      if(r < this-> prob_symp_want_test){ //Symptomatic decides getting tested
+        person->set_wants_being_tested(this->id);
+        this->infected_want_test_event_queue->add_event(test_date, person);
+        this->symptomatic_want_test_today++;
+      }
 
       if(Global::Verbose>0){
           std::cout << "Person Id " << person->get_id() <<  " will be symptomatic from day " << symptoms_start_date <<'\n';
@@ -717,7 +716,14 @@ void Epidemic::become_exposed(Person* person, int day) {
       person->set_test_delay(this->id, test_application_delay);
 
       test_date = Global::Simulation_Day + test_application_delay;
-      this-> infected_want_test_event_queue->add_event(test_date, person);
+
+      r = Random::draw_random();
+
+      if(r < this-> prob_asymp_want_test){ //Symptomatic decides getting tested
+        person->set_wants_being_tested(this->id);
+        this->infected_want_test_event_queue->add_event(test_date, person);
+        this->asymptomatic_want_test_today++;
+      }
 
       if(Global::Verbose>0){
           std::cout << "Person Id " << person->get_id() <<  " will be asymptomatic" <<'\n';
@@ -909,7 +915,6 @@ void Epidemic::print_stats(int day) {
     this-> total_susceptible_want_test += this-> susceptible_want_test_today;
     this-> total_symptomatic_want_test += this-> symptomatic_want_test_today;
     this-> total_asymptomatic_want_test += this-> asymptomatic_want_test_today;
-    this-> people_want_test_today = this-> susceptible_want_test_today + this-> symptomatic_want_test_today + this-> asymptomatic_want_test_today;
     this-> total_people_want_test += this-> people_want_test_today;
 
     //Update tested
@@ -942,56 +947,56 @@ void Epidemic::print_stats(int day) {
     this-> total_detected_per_delay = Epidemic::sum_arrays(this-> symp_detected_per_delay, this-> asymp_detected_per_delay, this->test_sensitivity_lenght);
 
     //Track infected
-    track_value(day, (char*)"ST",  this-> symptomatics_today);
-    track_value(day, (char*)"TS",  this-> total_symptomatics);
-    track_value(day, (char*)"AT",  this-> asymptomatics_today);
-    track_value(day, (char*)"TA",  this-> total_asymptomatics);
-    track_value(day, (char*)"NIT", this-> new_infected_today);
-    track_value(day, (char*)"TNI", this-> total_new_infected);
+    track_value(day, (char*)"ST",  this->symptomatics_today);
+    track_value(day, (char*)"TS",  this->total_symptomatics);
+    track_value(day, (char*)"AT",  this->asymptomatics_today);
+    track_value(day, (char*)"TA",  this->total_asymptomatics);
+    track_value(day, (char*)"NIT", this->new_infected_today);
+    track_value(day, (char*)"TNI", this->total_new_infected);
 
     //Track people wanting test
-    track_value(day, (char*)"SuWTT", this-> susceptible_want_test_today);
-    track_value(day, (char*)"TSuWT", this-> total_susceptible_want_test);
-    track_value(day, (char*)"SWTT", this-> symptomatic_want_test_today);
-    track_value(day, (char*)"TSWT", this-> total_symptomatic_want_test);
-    track_value(day, (char*)"AWTT", this-> asymptomatic_want_test_today);
-    track_value(day, (char*)"TAWT", this-> total_asymptomatic_want_test);
-    track_value(day, (char*)"PWTT", this-> people_want_test_today);
-    track_value(day, (char*)"TPWT", this-> total_people_want_test);
+    track_value(day, (char*)"SuWTT", this->susceptible_want_test_today);
+    track_value(day, (char*)"TSuWT", this->total_susceptible_want_test);
+    track_value(day, (char*)"SWTT", this->symptomatic_want_test_today);
+    track_value(day, (char*)"TSWT", this->total_symptomatic_want_test);
+    track_value(day, (char*)"AWTT", this->asymptomatic_want_test_today);
+    track_value(day, (char*)"TAWT", this->total_asymptomatic_want_test);
+    track_value(day, (char*)"PWTT", this->people_want_test_today);
+    track_value(day, (char*)"TPWT", this->total_people_want_test);
 
     //Track tested
-    track_value(day, (char*)"SuTT", this-> susceptible_tested_today);
-    track_value(day, (char*)"TSuT", this-> total_susceptible_tested);
-    track_value(day, (char*)"STT", this-> symptomatic_tested_today);
-    track_value(day, (char*)"TST", this-> total_symptomatic_tested);
-    track_value(day, (char*)"ATT", this-> asymptomatic_tested_today);
-    track_value(day, (char*)"TAT", this-> total_asymptomatic_tested);
-    track_value(day, (char*)"TPT", this-> tested_people_today);
-    track_value(day, (char*)"TTP", this-> total_tested_people);
+    track_value(day, (char*)"SuTT", this->susceptible_tested_today);
+    track_value(day, (char*)"TSuT", this->total_susceptible_tested);
+    track_value(day, (char*)"STT", this->symptomatic_tested_today);
+    track_value(day, (char*)"TST", this->total_symptomatic_tested);
+    track_value(day, (char*)"ATT", this->asymptomatic_tested_today);
+    track_value(day, (char*)"TAT", this->total_asymptomatic_tested);
+    track_value(day, (char*)"TPT", this->tested_people_today);
+    track_value(day, (char*)"TTP", this->total_tested_people);
 
     //Track detected
-    track_value(day, (char*)"SDT", this-> symptomatic_detected_today);
-    track_value(day, (char*)"TSD", this-> total_symptomatic_detected);
-    track_value(day, (char*)"ADT", this-> asymptomatic_detected_today);
-    track_value(day, (char*)"TAD", this-> total_asymptomatic_detected);
-    track_value(day, (char*)"IDT", this-> infected_detected_today);
-    track_value(day, (char*)"TID", this-> total_infected_detected);
+    track_value(day, (char*)"SDT", this->symptomatic_detected_today);
+    track_value(day, (char*)"TSD", this->total_symptomatic_detected);
+    track_value(day, (char*)"ADT", this->asymptomatic_detected_today);
+    track_value(day, (char*)"TAD", this->total_asymptomatic_detected);
+    track_value(day, (char*)"IDT", this->infected_detected_today);
+    track_value(day, (char*)"TID", this->total_infected_detected);
 
     //Track false negatives
-    track_value(day, (char*)"SFNT", this-> symptomatic_false_negative_today);
-    track_value(day, (char*)"TSFN", this-> total_symptomatic_false_negative);
-    track_value(day, (char*)"AFNT", this-> asymptomatic_false_negative_today);
-    track_value(day, (char*)"TAFN", this-> total_asymptomatic_false_negative);
-    track_value(day, (char*)"FNT",  this-> false_negative_today);
-    track_value(day, (char*)"TFN",  this-> total_false_negative);
+    track_value(day, (char*)"SFNT", this->symptomatic_false_negative_today);
+    track_value(day, (char*)"TSFN", this->total_symptomatic_false_negative);
+    track_value(day, (char*)"AFNT", this->asymptomatic_false_negative_today);
+    track_value(day, (char*)"TAFN", this->total_asymptomatic_false_negative);
+    track_value(day, (char*)"FNT",  this->false_negative_today);
+    track_value(day, (char*)"TFN",  this->total_false_negative);
 
     //Track true negatives
-    track_value(day, (char*)"TNT",  this-> true_negative_today);
-    track_value(day, (char*)"TTN",  this-> total_true_negative);
+    track_value(day, (char*)"TNT",  this->true_negative_today);
+    track_value(day, (char*)"TTN",  this->total_true_negative);
 
     //Track false positives
-    track_value(day, (char*)"FPT",  this-> false_positive_today);
-    track_value(day, (char*)"TFP",  this-> total_false_positive);
+    track_value(day, (char*)"FPT",  this->false_positive_today);
+    track_value(day, (char*)"TFP",  this->total_false_positive);
 
     if(Global::Verbose>0){
       std::cout << "*****************************" << '\n';
@@ -2357,112 +2362,66 @@ void Epidemic::process_infectious_end_events(int day) {
   this->infectious_end_event_queue->clear_events(day);
 }
 
-void Epidemic::process_decide_infected_want_test_events(int day) {//Decide if infected wants to be tested
-  double r; //random number to decide if person wants to be tested
-
-  int size = this-> infected_want_test_event_queue->get_size(day);
-  FRED_VERBOSE(2, "DECIDE_PEOPLE_WANT_TEST_EVENT_QUEUE day %d size %d\n", day, size);
-
-  for(int i = 0; i < size; ++i) {//Loop over infected wanting test
-    Person* person = this->infected_want_test_event_queue->get_event(day, i);
-
-    r = Random::draw_random(); //For deciding getting tested
-
-    //By this day, symptomatic peole will aready have symptoms + delay
-    if( (person->get_will_be_symptomatic(this->id) == true) & (r < this-> prob_symp_want_test) ){ //Symptomatic decides getting tested
-
-      person->set_wants_being_tested(this->id);
-
-      r = Random::draw_random(); //For getting tested
-
-      if( (r < this-> prob_symp_being_tested) & (this-> remaining_tests_day[day] > 0)){ //Symptomatic actually gets tested
-        this-> test_infected_event_queue-> add_event(day, person);
-
-        if(person->get_test_delay(this->id) <= this->test_sensitivity_lenght){
-          this->symp_tested_per_delay[person->get_test_delay(this->id)]++;
-        }
-
-        if(Global::Verbose>0){
-          std::cout << "Symptomatic person Id " << person->get_id() << " is tested on day " << person->get_test_date(this->id) << '\n';
-        }
-
-        this-> remaining_tests_day[day]--;
-      } else {//Symptomatic does not get tested despite wanting it
-
-      }//Symptomatic does not get tested despite wanting it
-    } else if( (person->get_will_be_symptomatic(this->id) == false) & (r < this-> prob_asymp_want_test) ){//Asymptomatic wants test
-
-      person->set_wants_being_tested(this->id);
-
-      r = Random::draw_random(); //For getting tested
-
-      if( (r < this-> prob_asymp_being_tested) & (this-> remaining_tests_day[day] > 0)){//Asymptomatic gets tested
-        this-> test_infected_event_queue-> add_event(day, person);
-
-        if(person->get_test_delay(this->id) <= this->test_sensitivity_lenght){
-          this->asymp_tested_per_delay[person->get_test_delay(this->id)]++;
-        }
-
-        if(Global::Verbose>0){
-          std::cout << "Asymptomatic person Id " << person->get_id() << " is tested on day " << person->get_test_date(this->id) << '\n';
-        }
-
-        this-> remaining_tests_day[day]--;
-      }else {//Asymptomatic does not get tested despite wanting it
-
-      }//Asymptomatic does not get tested despite wanting it
-    }//Asymptomatic wants test
-  }//Loop over infected wanting test
-  this->infected_want_test_event_queue->clear_events(day);
-}//Decide if infected wants to be tested
-
 void Epidemic::process_test_infected_events(int day){//process_test_infected_events
   double r; //Random probability
   int result_date;
+  int infected_get_tested;
 
-  int size = this->test_infected_event_queue->get_size(day);
+  int size = this->infected_want_test_event_queue->get_size(day);
   FRED_VERBOSE(2, "TEST_INFECTED_EVENT_QUEUE day %d size %d\n", day, size);
 
-  for(int i = 0; i < size; ++i) {//Loop over tested people
-    Person* person = this->test_infected_event_queue->get_event(day, i);
-    person-> set_tested_for_disease(this->id);
+  if (size > 0){ // if(size > 0)
+    // randomize the order of processing the infected list
+    std::vector<int> shuffle_index;
+    shuffle_index.reserve(size);
+    for(int i = 0; i < size; ++i) {
+      shuffle_index[i] = i;
+    }
+    FYShuffle<int>(shuffle_index);
 
-    //Draw probability of test detecting infected based on test test_sensitivity
-    r = Random::draw_random();
+    infected_get_tested = static_cast<int>(this->proportion_want_to_get_test_today * static_cast<double>(size));
 
-    //Schedule test results
-    result_date = day + this->test_results_delay;
-    person->set_test_result_date(this->id, result_date);
+    for(int i = 0; i < infected_get_tested; ++i) {//Loop over randomly picked people
+      Person* person = this->infected_want_test_event_queue->get_event(day, shuffle_index[i]);
 
-    if(person->is_symptomatic(this->id) == true){this-> symptomatic_tested_today++;}
-    else if(person->is_symptomatic(this->id) == false){this-> asymptomatic_tested_today++;}
+      this->test_infected_event_queue->add_event(day, person);
+      person-> set_tested_for_disease(this->id);
 
-    if(r < get_test_sensitivity(person->get_test_delay(this->id)) ){//Test detects infected
+      //Schedule test results
+      result_date = day + this->test_results_delay;
+      person->set_test_result_date(this->id, result_date);
 
-      person->set_test_result(this->id);
-      this->detect_infected_event_queue->add_event(result_date, person);
+      if(person->is_symptomatic(this->id) == true){this-> symptomatic_tested_today++;}
+      else if(person->is_symptomatic(this->id) == false){this-> asymptomatic_tested_today++;}
 
-      if(person->is_symptomatic(this->id) == true){this-> symptomatic_detected_today++;}
-      else if(person->is_symptomatic(this->id) == false){this-> asymptomatic_detected_today++;}
+      r = Random::draw_random(); //Draw for test sensitivity
+      if(r < get_test_sensitivity(person->get_test_delay(this->id)) ){//Test detects infected
 
-    }//Test detects infected
-    else{// Infected is false negative
-      this->false_negative_event_queue->add_event(result_date, person);
+        person->set_test_result(this->id);
+        this->detect_infected_event_queue->add_event(result_date, person);
 
-      if(person->is_symptomatic(this->id) == true){//False negative is symptomatic
-        this->symptomatic_false_negative_today++;
-        if(Global::Verbose>0){
-          std::cout << "Symptomatic person Id " << person->get_id() << " is false negative on day " << result_date << '\n';
-        }
-      }//False negative is symptomatic
-      else if(person->is_symptomatic(this->id) == false){//False negative is asymptomatic
-        this->symptomatic_false_negative_today++;
-        if(Global::Verbose>0){
-          std::cout << "Asymptomatic person Id " << person->get_id() << " is false negative on day " << result_date << '\n';
-        }
-      }//False negative is asymptomatic
-    }// Infected is false negative
-  }//Loop over tested people
+        if(person->is_symptomatic(this->id) == true){this-> symptomatic_detected_today++;}
+        else if(person->is_symptomatic(this->id) == false){this-> asymptomatic_detected_today++;}
+
+      }//Test detects infected
+      else{// Infected is false negative
+        this->false_negative_event_queue->add_event(result_date, person);
+
+        if(person->is_symptomatic(this->id) == true){//False negative is symptomatic
+          this->symptomatic_false_negative_today++;
+          if(Global::Verbose>0){
+            std::cout << "Symptomatic person Id " << person->get_id() << " is false negative on day " << result_date << '\n';
+          }
+        }//False negative is asymptomatic
+        else if(person->is_symptomatic(this->id) == false){//False negative is asymptomatic
+          this->asymptomatic_false_negative_today++;
+          if(Global::Verbose>0){
+            std::cout << "Asymptomatic person Id " << person->get_id() << " is false negative on day " << result_date << '\n';
+          }
+        }//False negative is asymptomatic
+      }// Infected is false negative
+    }//Loop over tested people
+  }// if(size > 0)
   this->test_infected_event_queue->clear_events(day);
 }//process_test_infected_events
 
@@ -2525,7 +2484,7 @@ void Epidemic::report_track_testing_events(int day, Person* person){
   int id = person->get_id();
   int flag_symptoms = person->is_symptomatic(disease_id)? 1 : 0;
   int flag_tested = person->get_tested_for_disease(disease_id)? 1 : 0;
-  int flag_delay = person->get_test_delay(disease_id)? 1 : 0;
+  int flag_delay = person->get_test_delay(disease_id);
   int flag_detected = person->get_test_result(disease_id)? 1 : 0;
   std::stringstream infStrS;
 
@@ -2543,16 +2502,21 @@ void Epidemic::report_track_testing_events(int day, Person* person){
 
 }
 
-void Epidemic::test_susceptible_day(int day) { //Defines how many pcr tests will be used on asympts and healthy
-  this-> susceptible_want_test_today = static_cast<int>( static_cast<double>(this->susceptible_people) * this-> prob_susceptible_want_test );
-  this-> susceptible_tested_today = static_cast<int>( static_cast<double>(this-> susceptible_want_test_today) * this-> prob_susceptible_being_tested );
-  this-> remaining_tests_day[day] -= this-> susceptible_tested_today;
-  this-> true_negative_today = static_cast<int>( static_cast<double>(this-> susceptible_tested_today) * this-> test_specificity );
-  this-> false_positive_today = this-> susceptible_tested_today - this-> true_negative_today;
+void Epidemic::compute_testing_proportion(int day){
+  this->susceptible_want_test_today = static_cast<int>( static_cast<double>(this->susceptible_people) * this->prob_susceptible_want_test );
+  this->people_want_test_today = this->susceptible_want_test_today + this->symptomatic_want_test_today + this->asymptomatic_want_test_today;
+
+  if(this->people_want_test_today > this->available_tests_day[day]){
+      this->proportion_want_to_get_test_today = static_cast<double>(this->available_tests_day[day] / this->people_want_test_today);
+  } else {
+    this->proportion_want_to_get_test_today = 1.0;
+  }
 }
 
-void Epidemic::adjust_testing_probs(int day){
-  int x;
+void Epidemic::test_susceptible_day(int day) { //Defines how many pcr tests will be used on asympts and healthy
+  this->susceptible_tested_today = static_cast<int>( static_cast<double>(this->susceptible_want_test_today) * this->proportion_want_to_get_test_today );
+  this->true_negative_today = static_cast<int>( static_cast<double>(this-> susceptible_tested_today) * this->test_specificity );
+  this->false_positive_today = this->susceptible_tested_today - this->true_negative_today;
 }
 
 
@@ -2971,9 +2935,8 @@ void Epidemic::update(int day) {
 
   //Process Epidemic testing events
   if(Global::Enable_PCR_Testing){
+    compute_testing_proportion(day);
     test_susceptible_day(day);
-    adjust_testing_probs(day);
-    process_decide_infected_want_test_events(day);
     process_test_infected_events(day);
     process_detect_infected_events(day);
     process_false_negative_events(day);

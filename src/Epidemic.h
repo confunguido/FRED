@@ -353,13 +353,12 @@ public:
   virtual void end_of_run() {}
   virtual void terminate_person(Person* person, int day);
 
-  void process_decide_infected_want_test_events(int day);
+  void compute_testing_proportion(int day);
+  void test_susceptible_day(int day);
   void process_test_infected_events(int day);
   void process_detect_infected_events(int day);
   void process_false_negative_events(int day);
   void report_track_testing_events(int day, Person* person);
-  void test_susceptible_day(int day);
-  void adjust_testing_probs(int day);
 
 protected:
   Disease* disease;
@@ -493,11 +492,8 @@ protected:
   // ******* Parameters from txt input
   // PCR Testing parameters
   double prob_susceptible_want_test;
-  double prob_susceptible_being_tested;
   double prob_symp_want_test;
-  double prob_symp_being_tested;
   double prob_asymp_want_test;
-  double prob_asymp_being_tested;
   int symptoms_to_test_delay;
   int min_asymptomatic_infectious_to_test_delay;
   int max_asymptomatic_infectious_to_test_delay;
@@ -514,7 +510,6 @@ protected:
 
   //Available Tests per day
   int* available_tests_day;
-  int* remaining_tests_day;
 
   //Positivity calculated per delay days
   int* symp_tested_per_delay; //
@@ -541,6 +536,7 @@ protected:
   int total_asymptomatic_want_test;
   int people_want_test_today;
   int total_people_want_test;
+  double proportion_want_to_get_test_today;
 
   // Tested people according to schedule
   int susceptible_tested_today;
