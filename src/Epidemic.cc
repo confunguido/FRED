@@ -946,6 +946,9 @@ void Epidemic::print_stats(int day) {
     this-> total_tested_per_delay = Epidemic::sum_arrays(this-> symp_tested_per_delay, this-> asymp_tested_per_delay, this->test_sensitivity_lenght);
     this-> total_detected_per_delay = Epidemic::sum_arrays(this-> symp_detected_per_delay, this-> asymp_detected_per_delay, this->test_sensitivity_lenght);
 
+    //Track proportion_want_to_get_test_today
+    track_value(day, (char*)"PropWT",  this->proportion_want_to_get_test_today);
+
     //Track infected
     track_value(day, (char*)"ST",  this->symptomatics_today);
     track_value(day, (char*)"TS",  this->total_symptomatics);
@@ -2503,11 +2506,11 @@ void Epidemic::report_track_testing_events(int day, Person* person){
 }
 
 void Epidemic::compute_testing_proportion(int day){
-  this->susceptible_want_test_today = static_cast<int>( static_cast<double>(this->susceptible_people) * this->prob_susceptible_want_test );
-  this->people_want_test_today = this->susceptible_want_test_today + this->symptomatic_want_test_today + this->asymptomatic_want_test_today;
+  this->susceptible_want_test_today = static_cast<int>( this->prob_susceptible_want_test * static_cast<double>(this->susceptible_people));
+  this->people_want_test_today = (this->susceptible_want_test_today) + (this->symptomatic_want_test_today) + (this->asymptomatic_want_test_today);
 
-  if(this->people_want_test_today > this->available_tests_day[day]){
-      this->proportion_want_to_get_test_today = static_cast<double>(this->available_tests_day[day] / this->people_want_test_today);
+  if(this->people_want_test_today > (this->available_tests_day[day])){
+      this->proportion_want_to_get_test_today = static_cast<double>(this->available_tests_day[day]) / static_cast<double>(this->people_want_test_today);
   } else {
     this->proportion_want_to_get_test_today = 1.0;
   }
