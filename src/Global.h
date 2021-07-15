@@ -280,6 +280,8 @@ public:
   static bool Enable_Disease_Cross_Protection;
   static bool Enable_School_Reduced_Capacity;
   static bool Enable_School_Classroom_Size_Array;
+  static bool Enable_Retiree_Random_Place;
+  static double Retiree_Random_Place_Prob;
   static double School_reduced_capacity;
   static int School_reduced_capacity_day;
   static bool Enable_Nursing_Homes_Importations;

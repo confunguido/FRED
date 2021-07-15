@@ -202,7 +202,16 @@ void Population::setup() {
   }
   this->av_manager->reset();
   //this->vacc_manager->reset();
-
+  std::map<int,int> pop_activity_places;
+  std::map<int,std::map<char,int>> pop_activity_profile;
+  std::set<char>total_profiles;
+  total_profiles.clear();
+  
+  printf("READY TO COUNT AGEs\n");
+  int count[20];
+  for(int c = 0; c < 20; ++c) {
+    count[c] = 0;
+  }
   // record age-specific popsize
   for(int age = 0; age <= Demographics::MAX_AGE; ++age) {
     Global::Popsize_by_age[age] = 0;
@@ -210,14 +219,51 @@ void Population::setup() {
   for(int p = 0; p < this->get_index_size(); ++p) {
     Person* person = get_person_by_index(p);
     if(person != NULL) {
+      //char prof_tmp = 'R';
       int age = person->get_age();
+      char prof_tmp = person->get_profile();
+      int num_places = person->get_activities()->get_daily_activity_locations().size();
+      total_profiles.insert(prof_tmp);
+      //printf("PROFILE: %c AGE: %d\n", prof_tmp, age);
       if(age > Demographics::MAX_AGE) {
 	      age = Demographics::MAX_AGE;
       }
       Global::Popsize_by_age[age]++;
+      
+      int n = age / 5;
+      if(n < 20) {
+	pop_activity_profile[n][prof_tmp]++;
+	pop_activity_places[n] += num_places;
+	count[n]++;
+      } else {
+	count[19]++;
+	pop_activity_profile[19][prof_tmp]++;
+	pop_activity_places[19] += num_places;
+      }      
     }
   }
 
+  printf("READY TO REPORT ACTIVITY PROFILES\n");
+  
+  for(auto itprof=total_profiles.begin(); itprof!=total_profiles.end();++itprof){
+    char tmp_prof = *itprof;
+    for(int c = 0; c < 20; ++c) {
+      int total_prof_tmp = 0;
+      if(pop_activity_profile[c].find(tmp_prof) != pop_activity_profile[c].end()){
+	total_prof_tmp = pop_activity_profile[c][tmp_prof];
+      }
+      printf("ACTIVITIES: age %2d to %d: profile %c total %d out of %d (%.2f\%)\n", 5*c,5*(c+1) -1, tmp_prof, total_prof_tmp, count[c], 100*((double)total_prof_tmp/(double)count[c]));
+      //printf("ACTIVITIES: age %2d to %d: profile %s total %d\n",5*c,5*(c+1) - 1, tmp_prof,total_prof_tmp);
+    }
+  }
+
+  for(int c = 0; c < 20; ++c) {
+    int total_places_tmp = 0;
+    if(pop_activity_places.find(c) != pop_activity_places.end()){
+      total_places_tmp = pop_activity_places[c];
+    }
+    printf("PLACES ACTIVITIES: age %2d to %d: total places %d out of %d (%.2f)\n", 5*c,5*(c+1) -1, total_places_tmp, count[c], ((double)total_places_tmp/(double)count[c]));
+  }
   FRED_STATUS(0, "population setup finished\n", "");
 }
 

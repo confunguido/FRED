@@ -123,6 +123,8 @@ bool Global::Enable_Disease_Cross_Protection = false;
 bool Global::Enable_Face_Mask_Usage = false;
 bool Global::Enable_School_Reduced_Capacity = false;
 bool Global::Enable_School_Classroom_Size_Array = false;
+bool Global::Enable_Retiree_Random_Place = false;
+double Global::Retiree_Random_Place_Prob = 0.0;
 double Global::School_reduced_capacity = 1.0;
 int Global::School_reduced_capacity_day = 10000;
 bool Global::Enable_Household_Shelter_By_Age = false;
@@ -341,6 +343,9 @@ void Global::get_global_parameters() {
   Global::Enable_Household_Shelter_Relax_Post_Peak_Threshold = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_isolation", &temp_int);
   Global::Enable_Isolation = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_retiree_random_place", &temp_int);
+  Global::Enable_Retiree_Random_Place = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("retiree_random_place_prob", &Global::Retiree_Random_Place_Prob);
   Params::get_param_from_string("school_reduced_capacity", &Global::School_reduced_capacity);
   Params::get_param_from_string("school_reduced_capacity_day", &Global::School_reduced_capacity_day);
 
