@@ -59,6 +59,25 @@ void Vaccines::setup(void) {
     stringstream name;
     name << "Vaccine#"<<iv+1;
     vaccines.push_back(new Vaccine(name.str(),iv,0,ta,apd,std,nstrains,strains));
+    vaccines[iv]->set_disease_specific_efficacy();
+    int tmp_int = 0;
+    Params::disable_abort_on_failure();
+    int found = Params::get_indexed_param("vaccine_enable_differential_efficacy",iv,&tmp_int);
+    Params::set_abort_on_failure();
+    printf("VACCINE ENABLE DIFF> EFF FOUND %d ENABLED %d\n", found, tmp_int);
+
+    if (found == 1 && tmp_int == 1) {
+      int max_num_vax_modifier;
+      Params::get_indexed_param("vaccine_disease_efficacy_modifier",iv,
+				&max_num_vax_modifier);
+      double* vax_modifier_per_disease = new double[max_num_vax_modifier];
+      Params::get_indexed_param_vector("vaccine_disease_efficacy_modifier",iv,
+				       vax_modifier_per_disease);
+      for(int dis_i = 0; dis_i < max_num_vax_modifier; dis_i++){
+	printf("Setting differential efficacy for vaccine %d dis %d eff %.2f\n", iv, dis_i, vax_modifier_per_disease[dis_i]);
+	vaccines[iv]->set_disease_specific_efficacy(dis_i,vax_modifier_per_disease[dis_i]);
+      }
+    }
     
     for(int id=0;id<num_doses;id++) {
       Age_Map* efficacy_map = new Age_Map("Dose Efficacy");
@@ -125,7 +144,7 @@ void Vaccines::print() const {
   cout <<"There are "<<vaccines.size() <<" vaccines in the package\n";
   fflush(stdout);
   for(unsigned int i=0;i<vaccines.size(); i++){
-    vaccines[i]->print();
+    vaccines[i]->print();    
   }
   fflush(stdout);
 }

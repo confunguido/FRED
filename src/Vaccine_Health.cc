@@ -91,7 +91,8 @@ void Vaccine_Health::printTrace() const {
 }
 
 void Vaccine_Health::update(int day, double age){
-  // First check for immunity 
+  // First check for immunity
+  // CHECK ON VACCINE DIFFERENTIAL EFFICACY AGAINST DISEASE IDS
   if (is_effective()) {
     if (day == vaccination_effective_day) {
       for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
@@ -100,7 +101,13 @@ void Vaccine_Health::update(int day, double age){
 	}
 	Disease* disease = Global::Diseases.get_disease(dis_id);
 	if (person->is_infected(disease->get_id())==false) {
-	  person->become_immune(disease);
+	  if(Global::Enable_Disease_Cross_Protection == true && dis_id > 0){
+	    if(Random::draw_random() <  vaccine->get_disease_specific_efficacy(dis_id)) {
+	      person->become_immune(disease);
+	    }
+	  }else{
+	    person->become_immune(disease);
+	  }
 	  effective = true;
 	  if(Global::Verbose > 0) {
 	    cout << "Agent " << person->get_id() 
@@ -149,7 +156,11 @@ void Vaccine_Health::update(int day, double age){
 	Disease* disease = Global::Diseases.get_disease(dis_id);
 	if (person->is_infected(disease->get_id())==false) {
 	  // Make person become immune to symptoms
-	  person->become_immune_to_symptoms(disease);
+	  if(Random::draw_random() <  vaccine->get_disease_specific_efficacy(dis_id)) {
+	    person->become_immune_to_symptoms(disease);
+	  }else{
+	    person->become_immune_to_symptoms(disease);
+	  }
 	  
 	  effective_symptoms = true;
 	
@@ -202,7 +213,11 @@ void Vaccine_Health::update(int day, double age){
 	Disease* disease = Global::Diseases.get_disease(dis_id);
 	if (person->is_infected(disease->get_id())==false) {
 	  // Make person become immune to symptoms
-	  person->become_immune_to_hospitalization(disease);
+	  if(Random::draw_random() <  vaccine->get_disease_specific_efficacy(dis_id)) {
+	    person->become_immune_to_hospitalization(disease);
+	  }else{
+	    person->become_immune_to_hospitalization(disease);
+	  }
 	
 	  effective_hospitalization = true;
 	
