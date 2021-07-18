@@ -22,7 +22,9 @@ using namespace std;
 
 #include "Vaccine.h"
 #include "Vaccine_Dose.h"
-
+#include "Global.h"
+#include "Disease.h"
+#include "Disease_List.h"
 Vaccine::Vaccine(string _name, int _id, int _disease, 
                  int _total_avail, int _additional_per_day, 
                  int _start_day, int num_strains, int *_strains){
@@ -39,6 +41,7 @@ Vaccine::Vaccine(string _name, int _id, int _disease,
   total_avail = _total_avail;
   number_delivered = 0;
   number_effective = 0;
+  disease_specific_efficacy_modifier.clear();
 }
 
 Vaccine::~Vaccine(){ 
@@ -62,6 +65,12 @@ void Vaccine::print() const {
   for(unsigned int i=0;i<doses.size();i++){
     cout <<"Dose #"<<i+1 << "\n";
     doses[i]->print();
+  }
+  if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+    cout << "Differential efficacy information for " << this->disease_specific_efficacy_modifier.size() <<" diseases\n";
+    for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
+      cout << "Disease " << dis_id << "Eff. modifier: " << disease_specific_efficacy_modifier[dis_id] << "\n";
+    }
   }
 }
 

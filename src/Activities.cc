@@ -262,6 +262,16 @@ void Activities::setup(Person* self, Place* house, Place* school, Place* work) {
       self->get_demographics()->cancel_conception(self);
     }
   }
+  // Artificially increase the number of places visited by RETIREES
+  if(Global::Enable_Retiree_Random_Place == true){
+    if(this->profile == RETIRED_PROFILE){
+      //assign ad_hoc_place to the retiree's schedule
+      if(Random::draw_random() < Global::Retiree_Random_Place_Prob){
+	set_ad_hoc(Global::Places.get_random_workplace());
+      }
+    }
+  }
+  
   FRED_VERBOSE(1,"Activity::setup finished for person %d\n", self->get_id());
 
 }

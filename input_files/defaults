@@ -976,7 +976,10 @@ shelter_in_place_relax_post_peak_period = 14
 shelter_in_place_relax_post_peak_threshold = 0.05
 shelter_in_place_neighborhood = 0
 shelter_in_place_neighborhood_prop = 0.0
-    
+
+enable_retiree_random_place = 0
+retiree_random_place_prob = 0.0
+
 ##########################################################
 #
 # POPULATION DYNAMICS (OPTIONAL)

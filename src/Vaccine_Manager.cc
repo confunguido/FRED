@@ -52,7 +52,7 @@ Vaccine_Manager::Vaccine_Manager() {
   this->vaccine_next_dose_event_queue = new Events();
   this->vaccine_immunity_start_event_queue = new Events();
   this->vaccine_immunity_end_event_queue = new Events();
-  printf("Finished createing vaccine manager ()\n");
+  printf("Finished creating vaccine manager ()\n");
 }
 
 Vaccine_Manager::Vaccine_Manager(Population *_pop) :
