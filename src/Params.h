@@ -16,7 +16,7 @@
 #ifndef _FRED_PARAMS_H
 #define _FRED_PARAMS_H
 
-#define MAX_PARAMS 2000
+#define MAX_PARAMS 5000
 #define MAX_PARAM_SIZE 1024
 
 #include <stdlib.h>
