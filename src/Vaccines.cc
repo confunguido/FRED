@@ -77,6 +77,26 @@ void Vaccines::setup(void) {
 	printf("Setting differential efficacy for vaccine %d dis %d eff %.2f\n", iv, dis_i, vax_modifier_per_disease[dis_i]);
 	vaccines[iv]->set_disease_specific_efficacy(dis_i,vax_modifier_per_disease[dis_i]);
       }
+
+      Params::get_indexed_param("vaccine_disease_efficacy_symptoms_modifier",iv,
+				&max_num_vax_modifier);
+      double* vax_modifier_per_disease_symp = new double[max_num_vax_modifier];
+      Params::get_indexed_param_vector("vaccine_disease_efficacy_symptoms_modifier",iv,
+				       vax_modifier_per_disease_symp);
+      for(int dis_i = 0; dis_i < max_num_vax_modifier; dis_i++){
+	printf("Setting differential efficacy symp. for vaccine %d dis %d eff %.2f\n", iv, dis_i, vax_modifier_per_disease_symp[dis_i]);
+	vaccines[iv]->set_disease_specific_efficacy_symp(dis_i,vax_modifier_per_disease_symp[dis_i]);
+      }
+
+      Params::get_indexed_param("vaccine_disease_efficacy_hospitalization_modifier",iv,
+				&max_num_vax_modifier);
+      double* vax_modifier_per_disease_hosp = new double[max_num_vax_modifier];
+      Params::get_indexed_param_vector("vaccine_disease_efficacy_hospitalization_modifier",iv,
+				       vax_modifier_per_disease_hosp);
+      for(int dis_i = 0; dis_i < max_num_vax_modifier; dis_i++){
+	printf("Setting differential efficacy hosp. for vaccine %d dis %d eff %.2f\n", iv, dis_i, vax_modifier_per_disease_hosp[dis_i]);
+	vaccines[iv]->set_disease_specific_efficacy_hosp(dis_i,vax_modifier_per_disease_hosp[dis_i]);
+      }
     }
     
     for(int id=0;id<num_doses;id++) {

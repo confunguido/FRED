@@ -156,7 +156,7 @@ void Vaccine_Health::update(int day, double age){
 	Disease* disease = Global::Diseases.get_disease(dis_id);
 	if (person->is_infected(disease->get_id())==false) {
 	  // Make person become immune to symptoms
-	  if(Random::draw_random() <  vaccine->get_disease_specific_efficacy(dis_id)) {
+	  if(Random::draw_random() <  vaccine->get_disease_specific_efficacy_symp(dis_id)) {
 	    person->become_immune_to_symptoms(disease);
 	  }else{
 	    person->become_immune_to_symptoms(disease);
@@ -213,7 +213,7 @@ void Vaccine_Health::update(int day, double age){
 	Disease* disease = Global::Diseases.get_disease(dis_id);
 	if (person->is_infected(disease->get_id())==false) {
 	  // Make person become immune to symptoms
-	  if(Random::draw_random() <  vaccine->get_disease_specific_efficacy(dis_id)) {
+	  if(Random::draw_random() <  vaccine->get_disease_specific_efficacy_hosp(dis_id)) {
 	    person->become_immune_to_hospitalization(disease);
 	  }else{
 	    person->become_immune_to_hospitalization(disease);

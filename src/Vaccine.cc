@@ -42,6 +42,8 @@ Vaccine::Vaccine(string _name, int _id, int _disease,
   number_delivered = 0;
   number_effective = 0;
   disease_specific_efficacy_modifier.clear();
+  disease_specific_efficacy_symp_modifier.clear();
+  disease_specific_efficacy_hosp_modifier.clear();
 }
 
 Vaccine::~Vaccine(){ 
@@ -70,6 +72,8 @@ void Vaccine::print() const {
     cout << "Differential efficacy information for " << this->disease_specific_efficacy_modifier.size() <<" diseases\n";
     for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
       cout << "Disease " << dis_id << "Eff. modifier: " << disease_specific_efficacy_modifier[dis_id] << "\n";
+      cout << "Disease " << dis_id << "Eff. Symp. modifier: " << disease_specific_efficacy_symp_modifier[dis_id] << "\n";
+      cout << "Disease " << dis_id << "Eff. Hosp. modifier: " << disease_specific_efficacy_hosp_modifier[dis_id] << "\n";
     }
   }
 }

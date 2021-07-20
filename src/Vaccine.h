@@ -85,10 +85,42 @@ public:
       return -1;
     }
   }
+
+  void set_disease_specific_efficacy_symp(int i, double eff_){
+    if(i < disease_specific_efficacy_symp_modifier.size() && eff_ >= 0){
+      this->disease_specific_efficacy_symp_modifier[i] = eff_;
+    }
+  }
+
+  double get_disease_specific_efficacy_symp(int i){
+    if(i < disease_specific_efficacy_symp_modifier.size()){
+       return disease_specific_efficacy_symp_modifier[i];
+    }else{
+      return -1;
+    }
+  }
+
+  void set_disease_specific_efficacy_hosp(int i, double eff_){
+    if(i < disease_specific_efficacy_hosp_modifier.size() && eff_ >= 0){
+      this->disease_specific_efficacy_hosp_modifier[i] = eff_;
+    }
+  }
+
+  double get_disease_specific_efficacy_hosp(int i){
+    if(i < disease_specific_efficacy_hosp_modifier.size()){
+       return disease_specific_efficacy_hosp_modifier[i];
+    }else{
+      return -1;
+    }
+  }
+  
+  
   void set_disease_specific_efficacy(){
     //this->disease_specific_efficacy_modifier.clear();
     for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
       this->disease_specific_efficacy_modifier.push_back(1.0);
+      this->disease_specific_efficacy_symp_modifier.push_back(1.0);
+      this->disease_specific_efficacy_hosp_modifier.push_back(1.0);
     }
   }
   
@@ -105,6 +137,8 @@ private:
   int number_doses;                    // How many doses does the vaccine need.  
   vector < Vaccine_Dose* > doses;       // Data structure to hold the efficacy of each dose.
   vector < double > disease_specific_efficacy_modifier;
+  vector < double > disease_specific_efficacy_symp_modifier;
+  vector < double > disease_specific_efficacy_hosp_modifier;
   
   
   int initial_stock;                   // How much available at the beginning
