@@ -2365,6 +2365,23 @@ void Epidemic::process_infectious_end_events(int day) {
   this->infectious_end_event_queue->clear_events(day);
 }
 
+void Epidemic::compute_testing_proportion(int day){
+  this->susceptible_want_test_today = static_cast<int>( this->prob_susceptible_want_test * static_cast<double>(this->N - this->infectious_people - this->total_case_fatality_count ));
+  this->people_want_test_today = (this->susceptible_want_test_today) + (this->symptomatic_want_test_today) + (this->asymptomatic_want_test_today);
+
+  if(this->people_want_test_today > (this->available_tests_day[day])){
+      this->proportion_want_to_get_test_today = static_cast<double>(this->available_tests_day[day]) / static_cast<double>(this->people_want_test_today);
+  } else {
+    this->proportion_want_to_get_test_today = 1.0;
+  }
+}
+
+void Epidemic::test_susceptible_day(int day) { //Defines how many pcr tests will be used on asympts and healthy
+  this->susceptible_tested_today = static_cast<int>( static_cast<double>(this->susceptible_want_test_today) * this->proportion_want_to_get_test_today );
+  this->true_negative_today = static_cast<int>( static_cast<double>(this->susceptible_tested_today) * this->test_specificity );
+  this->false_positive_today = this->susceptible_tested_today - this->true_negative_today;
+}
+
 void Epidemic::process_test_infected_events(int day){//process_test_infected_events
   double r; //Random probability
   int result_date;
@@ -2382,7 +2399,11 @@ void Epidemic::process_test_infected_events(int day){//process_test_infected_eve
     }
     FYShuffle<int>(shuffle_index);
 
-    infected_get_tested = static_cast<int>(this->proportion_want_to_get_test_today * static_cast<double>(size));
+    infected_get_tested = this->available_tests_day[day] - this->susceptible_tested_today;
+
+    if(infected_get_tested > size){
+      infected_get_tested = size;
+    }
 
     for(int i = 0; i < infected_get_tested; ++i) {//Loop over randomly picked people
       Person* person = this->infected_want_test_event_queue->get_event(day, shuffle_index[i]);
@@ -2503,23 +2524,6 @@ void Epidemic::report_track_testing_events(int day, Person* person){
           << "\n";
   fprintf(Global::Testingfp, "%s", infStrS.str().c_str());
 
-}
-
-void Epidemic::compute_testing_proportion(int day){
-  this->susceptible_want_test_today = static_cast<int>( this->prob_susceptible_want_test * static_cast<double>(this->N - this->infectious_people - this->total_case_fatality_count ));
-  this->people_want_test_today = (this->susceptible_want_test_today) + (this->symptomatic_want_test_today) + (this->asymptomatic_want_test_today);
-
-  if(this->people_want_test_today > (this->available_tests_day[day])){
-      this->proportion_want_to_get_test_today = static_cast<double>(this->available_tests_day[day]) / static_cast<double>(this->people_want_test_today);
-  } else {
-    this->proportion_want_to_get_test_today = 1.0;
-  }
-}
-
-void Epidemic::test_susceptible_day(int day) { //Defines how many pcr tests will be used on asympts and healthy
-  this->susceptible_tested_today = static_cast<int>( static_cast<double>(this->susceptible_want_test_today) * this->proportion_want_to_get_test_today );
-  this->true_negative_today = static_cast<int>( static_cast<double>(this->susceptible_tested_today) * this->test_specificity );
-  this->false_positive_today = this->susceptible_tested_today - this->true_negative_today;
 }
 
 
