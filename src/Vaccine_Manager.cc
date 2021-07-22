@@ -232,7 +232,9 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
 	    this->vaccine_priority_phases_age_high.push_back((int)vaccine_priority_phases_age_high_un[i]);
 	    this->vaccine_priority_phases_ID.push_back((int) vaccine_priority_phases_ID_un[i]);
 	    this->vaccine_priority_phases_pop_prob.push_back(vaccine_priority_phases_pop_prob_un[i]);
-	    this->vaccine_priority_timing_vector.push_back(vaccine_priority_phases_timing_un[i]);
+	    if(this->enable_vaccine_priority_discrete_refill == true){
+	      this->vaccine_priority_timing_vector.push_back(vaccine_priority_phases_timing_un[i]);
+	    }
 	    vaccination_phase_names.push_back(vaccination_phase_names_un[i]);
 	  }
 	}
