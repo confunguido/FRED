@@ -37,12 +37,16 @@ Vaccine_Manager::Vaccine_Manager() {
   this->vaccine_package = NULL;
   this->vaccine_priority_age_low = -1;
   this->vaccine_priority_age_high = -1;
+  this->vaccine_priority_timing_vector.clear();
   this->vaccine_priority_phases_age_low.clear();
   this->vaccine_priority_phases_age_high.clear();
   this->vaccine_priority_phases_ID.clear();
   this->vaccine_priority_phases_pop_prob.clear();
+  this->priority_queue_vector.clear();
   this->current_vaccine_capacity = -1;
+  this->current_priority_included = -1;
   this->vaccine_priority_only = false;
+  this->enable_vaccine_priority_discrete_refill = false;
   this->vaccination_capacity_map = NULL;
   this->vaccine_acceptance_prob = 1.0;
   this->do_vacc = false;
@@ -58,6 +62,7 @@ Vaccine_Manager::Vaccine_Manager() {
 Vaccine_Manager::Vaccine_Manager(Population *_pop) :
   Manager(_pop) {
   printf("Vaccine manager entered\n");
+  this->priority_queue_vector.clear();
   this->pop = _pop;
 
   this->vaccine_next_dose_event_queue = new Events();
@@ -80,7 +85,10 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
     this->current_vaccine_capacity = -1;
     this->vaccine_dose_priority = -1;
     this->vaccine_priority_only = false;
+    this->enable_vaccine_priority_discrete_refill = false;
+    this->current_priority_included = -1;
     this->do_vacc = false;
+    this->priority_queue_vector.clear();
     return;
   }
 
@@ -152,7 +160,13 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
 
   if(Global::Enable_Vaccination_Phases == true){
     // Fill the vaccine manager policies based on the number of phases and each phase identifier
-    int number_of_phases, N_phases_age_low, N_phases_age_high, N_phases_id,N_phases_pop_prob;    Params::get_param_from_string("vaccination_phases_names", &(number_of_phases));
+    int number_of_phases, N_phases_age_low, N_phases_age_high, N_phases_id,N_phases_pop_prob,N_phase_timing,tmp_int;
+    Params::get_param_from_string("vaccination_phases_enable_discrete_timing", &(tmp_int));
+    this->enable_vaccine_priority_discrete_refill = (tmp_int == 1 ? true : false);
+    if(this->enable_vaccine_priority_discrete_refill == true){
+      Params::get_param_from_string("vaccination_phases_discrete_timing", &(N_phase_timing));
+    }
+    Params::get_param_from_string("vaccination_phases_names", &(number_of_phases));
     Params::get_param_from_string("vaccination_phases_age_low", &(N_phases_age_low));
     Params::get_param_from_string("vaccination_phases_age_high", &(N_phases_age_high));
     Params::get_param_from_string("vaccination_phases_id", &(N_phases_id));
@@ -160,6 +174,11 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
     printf("Vaccination phases enabled:: N_names:%d, N_age_low: %d, N_age_high: %d, N_phases_id %d, N_pop_prob %d\n", number_of_phases,N_phases_age_low, N_phases_age_high, N_phases_id, N_phases_pop_prob);
     if(!(number_of_phases == N_phases_age_low && number_of_phases == N_phases_age_high && number_of_phases == N_phases_id && number_of_phases == N_phases_pop_prob)){
       Utils::fred_abort("Number of phases should be the same as the ages low and high for vaccination phases, and their IDs, as well as their pop_prob even if pop_prob is 0");
+    }
+    if(this->enable_vaccine_priority_discrete_refill == true){
+      if(N_phase_timing != number_of_phases){
+	this->enable_vaccine_priority_discrete_refill = false;
+      }
     }
     // If phases not specified, create a non-priority one
     if(number_of_phases <= 0){
@@ -173,11 +192,12 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
       std::vector<string> vaccination_phase_names_un;
       std::vector<string> vaccination_phase_names;
       std::vector<double>vaccine_priority_phases_age_low_un;
+      std::vector<double>vaccine_priority_phases_timing_un;
       std::vector<double>vaccine_priority_phases_age_high_un;
       std::vector<double>vaccine_priority_phases_ID_un;
       std::vector<double>vaccine_priority_phases_pop_prob_un;
       Params::get_param_vector_from_string((char*)"vaccination_phases_names", vaccination_phase_names_un);
-      char age_low_str[MAX_PARAM_SIZE], age_high_str[MAX_PARAM_SIZE], phase_id_str[MAX_PARAM_SIZE], phase_pop_str[MAX_PARAM_SIZE];
+      char age_low_str[MAX_PARAM_SIZE], age_high_str[MAX_PARAM_SIZE], phase_id_str[MAX_PARAM_SIZE], phase_pop_str[MAX_PARAM_SIZE], phase_time_str[MAX_PARAM_SIZE];
       Params::get_param((char*)"vaccination_phases_age_low", age_low_str);
       Params::get_param((char*)"vaccination_phases_age_high",age_high_str);
       Params::get_param((char*)"vaccination_phases_id",phase_id_str);
@@ -186,6 +206,10 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
       Params::get_param_vector_from_string(age_high_str, vaccine_priority_phases_age_high_un);
       Params::get_param_vector_from_string(phase_id_str, vaccine_priority_phases_ID_un);
       Params::get_param_vector_from_string(phase_pop_str, vaccine_priority_phases_pop_prob_un);
+      if(this->enable_vaccine_priority_discrete_refill == true){
+	Params::get_param((char*)"vaccination_phases_discrete_timing",phase_time_str);
+	Params::get_param_vector_from_string(phase_time_str, vaccine_priority_phases_timing_un);
+      }
 
       std::vector<int>sorted_phase_id;
       std::vector<int>sorted_phase_indices;
@@ -208,6 +232,7 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
 	    this->vaccine_priority_phases_age_high.push_back((int)vaccine_priority_phases_age_high_un[i]);
 	    this->vaccine_priority_phases_ID.push_back((int) vaccine_priority_phases_ID_un[i]);
 	    this->vaccine_priority_phases_pop_prob.push_back(vaccine_priority_phases_pop_prob_un[i]);
+	    this->vaccine_priority_timing_vector.push_back(vaccine_priority_phases_timing_un[i]);
 	    vaccination_phase_names.push_back(vaccination_phase_names_un[i]);
 	  }
 	}
@@ -249,7 +274,8 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
   if(Global::Enable_Vaccination_Phases == true && this->vaccine_priority_phases_ID.size() > 0){
     for(int i = 0; i < this->policies.size(); i++){
       this->policies[i]->print();
-      printf("POLICY %d ID %d---------\nAge min: %d, Age max: %d, Prop. Pop: %.3f\n", i, this->vaccine_priority_phases_ID[i], this->vaccine_priority_phases_age_low[i], this->vaccine_priority_phases_age_high[i], this->vaccine_priority_phases_pop_prob[i]);
+      printf("POLICY %d ID %d---------\nAge min: %d, Age max: %d, Prop. Pop: %.3f Timing %d\n", i, this->vaccine_priority_phases_ID[i], this->vaccine_priority_phases_age_low[i], this->vaccine_priority_phases_age_high[i],
+	     this->vaccine_priority_phases_pop_prob[i],this->vaccine_priority_timing_vector[i]);
     }
   }
 };
@@ -264,6 +290,55 @@ Vaccine_Manager::~Vaccine_Manager() {
   }
 }
 
+void Vaccine_Manager::add_next_priority_to_queues(){
+  if(!this->do_vacc || this->enable_vaccine_priority_discrete_refill == false || Global::Enable_Vaccination_Phases == false || this->vaccine_priority_phases_ID.size() == 0) {
+    return;
+  }
+  
+  if(this->current_priority_included >= (this->policies.size() - 1) || this->current_priority_included == -1){
+    return;
+  }
+
+  // Load the first queue with policy 0
+  printf("Re-Filling up vaccination priority queues\n");    
+  printf("Priority queue has %lu size, regular queue %lu size\n", this->priority_queue.size(), this->queue.size());
+  
+  int ii = this->current_priority_included + 1;
+  printf("Priority queue for phase %d - %d has size: %lu, regular queue has size %lu\n", (int)this->vaccine_priority_phases_ID[ii], ii, this->priority_queue_vector[ii].size(), this->queue.size());
+  
+  vector<Person *> rand_priority_queue(this->priority_queue_vector[ii].size());
+  copy(this->priority_queue_vector[ii].begin(), this->priority_queue_vector[ii].end(), rand_priority_queue.begin());
+  FYShuffle<Person *>(rand_priority_queue);
+  copy(rand_priority_queue.begin(), rand_priority_queue.end(),
+       this->priority_queue_vector[ii].begin());
+      
+  while(!this->priority_queue_vector[ii].empty()){
+    this->priority_queue.push_back(this->priority_queue_vector[ii].front());
+    this->priority_queue_vector[ii].pop_front();
+  }
+
+  printf("Priority queue has %lu size, regular queue %lu size\n", this->priority_queue.size(), this->queue.size());    
+
+  vector<Person *> random_queue(this->queue.size());
+  copy(this->queue.begin(), this->queue.end(), random_queue.begin());
+  FYShuffle<Person *>(random_queue);
+  copy(random_queue.begin(), random_queue.end(), this->queue.begin());
+
+
+  vector<Person *> random_priority_queue(this->priority_queue.size());
+  copy(this->priority_queue.begin(), this->priority_queue.end(), random_priority_queue.begin());
+  FYShuffle<Person *>(random_priority_queue);
+  copy(random_priority_queue.begin(), random_priority_queue.end(),
+       this->priority_queue.begin());
+  this->current_priority_included++;
+  if(Global::Verbose > 0) {
+    cout << "After refilling!! Vaccine Queue Stats \n";
+    cout << "   Number in Priority Queue      = " << this->priority_queue.size() << "\n";
+    cout << "   Number in Regular Queue       = " << this->queue.size() << "\n";
+    cout << "   Total Agents in Vaccine Queue = "
+         << this->priority_queue.size() + this->queue.size() << "\n";
+  }
+}
 void Vaccine_Manager::fill_queues() {
 
   if(!this->do_vacc) {
@@ -275,15 +350,16 @@ void Vaccine_Manager::fill_queues() {
     Maybe check if policies are overlapping, in that case, only enroll in one queue
    */
   if(Global::Enable_Vaccination_Phases == true && this->vaccine_priority_phases_ID.size() > 0){
-    // Load the first queue with policy 0
+    // Load the first queue with policy 0 <---- MOVE THIS TO INITIALIZATION
     printf("Filling up vaccination priority queues\n");
-    std::vector<std::list<Person*>>priority_queue_vector;
+    //std::vector<std::list<Person*>>priority_queue_vector;
+    
     for(int ii = 0; ii < this->vaccine_priority_phases_ID.size(); ii++){
       std::list<Person*> tmp_list;
       tmp_list.clear();
-      priority_queue_vector.push_back(tmp_list);
+      this->priority_queue_vector.push_back(tmp_list);
     }
-    printf("Priority queue vector has %d elements, and policies %d\n", priority_queue_vector.size(), this->policies.size());
+    printf("Priority queue vector has %d elements, and policies %d\n", this->priority_queue_vector.size(), this->policies.size());
       
     priority_queue.clear();
     for(int ip = 0; ip < pop->get_index_size(); ip++) {
@@ -293,7 +369,7 @@ void Vaccine_Manager::fill_queues() {
 	for(int cc = 0; cc < this->policies.size();cc++){
 	  this->current_policy = cc;
 	  if(this->policies[current_policy]->choose_first_positive(current_person, 0, 0) == true) {
-	    priority_queue_vector[current_policy].push_back(current_person);
+	    this->priority_queue_vector[current_policy].push_back(current_person);
 	    current_person_priority = true;
 	    break;
 	  }
@@ -304,18 +380,23 @@ void Vaccine_Manager::fill_queues() {
       }
     }
     printf("Priority queue has %lu size, regular queue %lu size\n", this->priority_queue.size(), this->queue.size());
-    for(int ii = 0; ii < priority_queue_vector.size(); ii++){
-      printf("Priority queue for phase %d - %d has size: %lu, regular queue has size %lu\n", (int)this->vaccine_priority_phases_ID[ii], ii, priority_queue_vector[ii].size(), this->queue.size());
+    int max_phases = this->priority_queue_vector.size();
+    if(this->enable_vaccine_priority_discrete_refill == true){
+      max_phases = 1;
+      this->current_priority_included = 0;
+    }
+    for(int ii = 0; ii < max_phases; ii++){
+      printf("Priority queue for phase %d - %d has size: %lu, regular queue has size %lu\n", (int)this->vaccine_priority_phases_ID[ii], ii, this->priority_queue_vector[ii].size(), this->queue.size());
 
-      vector<Person *> rand_priority_queue(priority_queue_vector[ii].size());
-      copy(priority_queue_vector[ii].begin(), priority_queue_vector[ii].end(), rand_priority_queue.begin());
+      vector<Person *> rand_priority_queue(this->priority_queue_vector[ii].size());
+      copy(this->priority_queue_vector[ii].begin(), this->priority_queue_vector[ii].end(), rand_priority_queue.begin());
       FYShuffle<Person *>(rand_priority_queue);
       copy(rand_priority_queue.begin(), rand_priority_queue.end(),
-	   priority_queue_vector[ii].begin());
+	   this->priority_queue_vector[ii].begin());
       
-      while(!priority_queue_vector[ii].empty()){
-	this->priority_queue.push_back(priority_queue_vector[ii].front());
-	priority_queue_vector[ii].pop_front();
+      while(!this->priority_queue_vector[ii].empty()){
+	this->priority_queue.push_back(this->priority_queue_vector[ii].front());
+	this->priority_queue_vector[ii].pop_front();
       }
     }    
     printf("Priority queue has %lu size, regular queue %lu size\n", this->priority_queue.size(), this->queue.size());    
@@ -355,6 +436,7 @@ void Vaccine_Manager::fill_queues() {
          << this->priority_queue.size() + this->queue.size() << "\n";
   }
   next_dose_queue.clear();
+  printf("Size of policies %lu size of phases id %lu\n", this->policies.size(), this->priority_queue_vector.size());
 }
 
 void Vaccine_Manager::add_to_queue(Person* person) {
@@ -451,6 +533,14 @@ void Vaccine_Manager::update(int day) {
       this->priority_queue.clear();
       this->queue.clear();
       fill_queues();
+    }
+
+    if(this->enable_vaccine_priority_discrete_refill == true){
+      if(this->current_priority_included >= (this->policies.size() - 1)){
+	if(this->vaccine_priority_timing_vector[this->current_priority_included + 1] == day || this->priority_queue.size() == 0){
+	  add_next_priority_to_queues();
+	}
+      }
     }
 
     // vaccinate people in the queues:

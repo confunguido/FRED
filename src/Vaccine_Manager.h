@@ -87,6 +87,7 @@ public:
   void add_to_priority_queue_begin(Person * person);  //Adds person to the beginning of the priority queue
   void add_to_priority_queue_end(Person * person);    //Adds person to the end of the priority queue
   void add_to_next_dose_queue_end(Person * person); // Adds person to a different priority queue for doses
+  void add_next_priority_to_queues();
   
   //Paramters Access Members
   int get_vaccine_priority_age_low() const {
@@ -153,14 +154,18 @@ private:
   bool vaccine_priority_only;             //True - Vaccinate only the priority
   bool vaccinate_symptomatics;            //True - Include people that have had symptoms in the vaccination
   bool refresh_vaccine_queues_daily;      //True - people queue up in random order each day
+  bool enable_vaccine_priority_discrete_refill;
   
   int vaccine_priority_age_low;           //Age specific priority
   int vaccine_priority_age_high;
   vector<int>vaccine_priority_phases_age_low;
   vector<int>vaccine_priority_phases_age_high;
   vector<int>vaccine_priority_phases_ID;
+  vector<int>vaccine_priority_timing_vector;
   vector<double>vaccine_priority_phases_pop_prob;
-  
+  std::vector<std::list<Person*>>priority_queue_vector;
+
+  int current_priority_included;
   int vaccine_dose_priority;              //Defines where people getting multiple doses fit in the queue
                                           // See defines above for values
   
