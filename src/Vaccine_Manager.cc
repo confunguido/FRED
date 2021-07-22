@@ -274,8 +274,13 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
   if(Global::Enable_Vaccination_Phases == true && this->vaccine_priority_phases_ID.size() > 0){
     for(int i = 0; i < this->policies.size(); i++){
       this->policies[i]->print();
-      printf("POLICY %d ID %d---------\nAge min: %d, Age max: %d, Prop. Pop: %.3f Timing %d\n", i, this->vaccine_priority_phases_ID[i], this->vaccine_priority_phases_age_low[i], this->vaccine_priority_phases_age_high[i],
-	     this->vaccine_priority_phases_pop_prob[i],this->vaccine_priority_timing_vector[i]);
+      if(this->enable_vaccine_priority_discrete_refill == true){
+	printf("POLICY %d ID %d---------\nAge min: %d, Age max: %d, Prop. Pop: %.3f Timing %d\n", i, this->vaccine_priority_phases_ID[i], this->vaccine_priority_phases_age_low[i], this->vaccine_priority_phases_age_high[i],
+	       this->vaccine_priority_phases_pop_prob[i],this->vaccine_priority_timing_vector[i]);
+      }else{
+		printf("POLICY %d ID %d---------\nAge min: %d, Age max: %d, Prop. Pop: %.3f\n", i, this->vaccine_priority_phases_ID[i], this->vaccine_priority_phases_age_low[i], this->vaccine_priority_phases_age_high[i],
+	       this->vaccine_priority_phases_pop_prob[i]);
+      }
     }
   }
 };
