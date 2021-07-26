@@ -780,7 +780,7 @@ void Epidemic::become_exposed(Person* person, int day) {
   }
 
   this->daily_infections_list.push_back(person);
-}
+}//become_exposed
 
 
 void Epidemic::print_stats(int day) {
