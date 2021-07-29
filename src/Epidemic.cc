@@ -2206,7 +2206,7 @@ void Epidemic::process_immunity_end_events(int day) {
     
     // update epidemic counters
     this->removed_people++;
-    
+
     // update person's health chart
     if(person->is_alive()){
       person->become_susceptible_by_natural_waning(this->id);

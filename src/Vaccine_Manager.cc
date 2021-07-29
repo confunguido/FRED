@@ -630,6 +630,7 @@ void Vaccine_Manager::vaccinate(int day) {
     return;
   }
 
+  int number_one_dose = 0;
   int number_vaccinated = 0;
   int number_total_doses = 0;
   int n_p_vaccinated = 0;
@@ -637,7 +638,10 @@ void Vaccine_Manager::vaccinate(int day) {
   int accept_count = 0;
   int reject_count = 0;
   int reject_state_count = 0;
-
+  int vax_age_count[10];
+  for(int i = 0; i < 10; ++i) {
+    vax_age_count[i] = 0;
+  }
   // Figure out the total number of vaccines we can hand out today
   int total_vaccines_avail = this->vaccine_package->get_total_vaccines_avail_today();
   printf("Day %d Vaccine Capacity %d Total Vaccines Available %d\n", day, current_vaccine_capacity, total_vaccines_avail);
@@ -653,10 +657,21 @@ void Vaccine_Manager::vaccinate(int day) {
       cout << "No Vaccine Available on Day " << day << "\n";
     }
     Global::Daily_Tracker->set_index_key_pair(day,"V", number_vaccinated);
+    Global::Daily_Tracker->set_index_key_pair(day,"Vod", number_one_dose);
     Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
     Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
     Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
     Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
+    for(int c = 0; c < 10; c++){
+      int min_age_ = c * 10;
+      int max_age_ = 10 * (c+1) - 1;
+      if(c == 9){
+	max_age_ = 120;
+      }
+      char var_str[50];
+      sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
+      Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
+    }
     return;
   }
 
@@ -679,6 +694,7 @@ void Vaccine_Manager::vaccinate(int day) {
       ip = this->next_dose_queue.erase(ip);
       continue;
     }
+    
     // Pick from vaccines of the first dose, not other vaccine!!!
     //printf("person = %d age = %.1f vacc_app = %d\n", current_person->get_id(), current_person->get_real_age(), vacc_app);
     int vacc_app = current_person->get_health()->get_vaccinated_id();
@@ -767,10 +783,21 @@ void Vaccine_Manager::vaccinate(int day) {
 	     << reject_count << "\n";
       }
       Global::Daily_Tracker->set_index_key_pair(day,"V", number_vaccinated);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vod", number_one_dose);      
       Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
-      Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);      
       Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
+      for(int c = 0; c < 10; c++){
+	int min_age_ = c * 10;
+	int max_age_ = 10 * (c+1) - 1;
+	if(c == 9){
+	  max_age_ = 120;
+	}
+	char var_str[50];
+	sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
+	Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
+      }
       return;
     }
     if(current_vaccine_capacity == 0) {
@@ -783,10 +810,21 @@ void Vaccine_Manager::vaccinate(int day) {
 	     << reject_count << "\n";
       }
       Global::Daily_Tracker->set_index_key_pair(day,"V", number_vaccinated);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vod", number_one_dose); 
       Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
+      for(int c = 0; c < 10; c++){
+	int min_age_ = c * 10;
+	int max_age_ = 10 * (c+1) - 1;
+	if(c == 9){
+	  max_age_ = 120;
+	}
+	char var_str[50];
+	sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
+	Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
+      }
       return;
     }
   }
@@ -805,6 +843,10 @@ void Vaccine_Manager::vaccinate(int day) {
     if(current_person->is_alive() == false){
       ip = this->priority_queue.erase(ip);
       continue;
+    }
+    int age_n = (int) current_person->get_age() / 10;
+    if(age_n > 9){
+      age_n = 9;
     }
     // If the person is in the queue, why do we need to check for age?
     int vacc_app = this->vaccine_package->pick_from_applicable_vaccines((double)(current_person->get_age()));
@@ -839,6 +881,8 @@ void Vaccine_Manager::vaccinate(int day) {
       if(accept_vaccine == true) {
         accept_count++;
         number_vaccinated++;
+	number_one_dose++;
+	vax_age_count[age_n]++;
 	//printf("PERSON accepting vaccine, accept count %d, number vaccinated %d\n", accept_count, number_vaccinated);
         this->current_vaccine_capacity--;
         n_p_vaccinated++;
@@ -900,10 +944,21 @@ void Vaccine_Manager::vaccinate(int day) {
 	     << reject_count << "\n";
       }
       Global::Daily_Tracker->set_index_key_pair(day,"V", number_vaccinated);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vod", number_one_dose);      
       Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
+      for(int c = 0; c < 10; c++){
+	int min_age_ = c * 10;
+	int max_age_ = 10 * (c+1) - 1;
+	if(c == 9){
+	  max_age_ = 120;
+	}
+	char var_str[50];
+	sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
+	Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
+      }
       return;
     }
     if(current_vaccine_capacity == 0) {
@@ -916,10 +971,21 @@ void Vaccine_Manager::vaccinate(int day) {
 	     << reject_count << "\n";
       }
       Global::Daily_Tracker->set_index_key_pair(day,"V", number_vaccinated);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vod", number_one_dose);      
       Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
+      for(int c = 0; c < 10; c++){
+	int min_age_ = c * 10;
+	int max_age_ = 10 * (c+1) - 1;
+	if(c == 9){
+	  max_age_ = 120;
+	}
+	char var_str[50];
+	sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
+	Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
+      }
       return;
     }
   }
@@ -940,6 +1006,10 @@ void Vaccine_Manager::vaccinate(int day) {
     if(current_person->is_alive() == false){
       ip = this->priority_queue.erase(ip);
       continue;
+    }
+    int age_n = (int) current_person->get_age() / 10;
+    if(age_n > 9){
+      age_n = 9;
     }
     int vacc_app = this->vaccine_package->pick_from_applicable_vaccines(current_person->get_real_age());
     if(vacc_app > -1) {
@@ -972,6 +1042,8 @@ void Vaccine_Manager::vaccinate(int day) {
         // printf("vaccine accepted by person %d age %0.1f\n", current_person->get_id(), current_person->get_real_age());
         accept_count++;
         number_vaccinated++;
+	number_one_dose++;
+	vax_age_count[age_n]++;
         this->current_vaccine_capacity--;
         n_r_vaccinated++;	
         Vaccine* vacc = this->vaccine_package->get_vaccine(vacc_app);
@@ -1027,10 +1099,21 @@ void Vaccine_Manager::vaccinate(int day) {
 	     << reject_count << "\n";
       }
       Global::Daily_Tracker->set_index_key_pair(day,"V", number_vaccinated);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vod", number_one_dose);      
       Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
+      for(int c = 0; c < 10; c++){
+	int min_age_ = c * 10;
+	int max_age_ = 10 * (c+1) - 1;
+	if(c == 9){
+	  max_age_ = 120;
+	}
+	char var_str[50];
+	sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
+	Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
+      }
       return;
     }
     if(this->current_vaccine_capacity == 0) {
@@ -1043,10 +1126,21 @@ void Vaccine_Manager::vaccinate(int day) {
 	     << reject_count << "\n";
       }
       Global::Daily_Tracker->set_index_key_pair(day,"V", number_vaccinated);
+      Global::Daily_Tracker->set_index_key_pair(day,"Vod", number_one_dose);      
       Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
       Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
+      for(int c = 0; c < 10; c++){
+	int min_age_ = c * 10;
+	int max_age_ = 10 * (c+1) - 1;
+	if(c == 9){
+	  max_age_ = 120;
+	}
+	char var_str[50];
+	sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
+	Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
+      }
       return;
     }
   }
@@ -1060,9 +1154,20 @@ void Vaccine_Manager::vaccinate(int day) {
 	 << "\n";
   }
   Global::Daily_Tracker->set_index_key_pair(day,"V", number_vaccinated);
+  Global::Daily_Tracker->set_index_key_pair(day,"Vod", number_one_dose);      
   Global::Daily_Tracker->set_index_key_pair(day,"Va", accept_count);
   Global::Daily_Tracker->set_index_key_pair(day,"Vr", reject_count);
   Global::Daily_Tracker->set_index_key_pair(day,"Vs", reject_state_count);
   Global::Daily_Tracker->set_index_key_pair(day,"Vtd", number_total_doses);
+  for(int c = 0; c < 10; c++){
+    int min_age_ = c * 10;
+    int max_age_ = 10 * (c+1) - 1;
+    if(c == 9){
+      max_age_ = 120;
+    }
+    char var_str[50];
+    sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
+    Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
+  }
   return;
 }
