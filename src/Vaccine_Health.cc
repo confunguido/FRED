@@ -124,22 +124,30 @@ void Vaccine_Health::update(int day, double age){
 	}
       }
     }
-    if (day == vaccination_immunity_loss_day) {
+    if (day == vaccination_immunity_loss_day) {      
       if(Global::Verbose > 0) {
 	cout << "Agent " << person->get_id() 
 	     << " became immune on day "<< vaccination_effective_day
-	     << " and lost immunity on day " << day << "\n";
+	     << " and lost immunity on day " << day << " duration " <<  "\n";
       }
       /*
-	This looks weird considering there are more than one disease_id
-      */
-      if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
-	for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
-	  person->become_susceptible_by_vaccine_waning(dis_id);
+	If a person is currently infected, don't clear vaccine immunity, natural imunity would take care of it. 
+       */
+      bool current_infected = false;
+      for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
+	if(person->is_infected(dis_id) == true){
+	  current_infected = true;
 	}
-      }else{
-	int disease_id = 0;
-	person->become_susceptible_by_vaccine_waning(disease_id);
+      }      
+      if(current_infected == false){
+	if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+	  for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
+	    person->become_susceptible_by_vaccine_waning(dis_id);
+	  }
+	}else{
+	  int disease_id = 0;
+	  person->become_susceptible_by_vaccine_waning(disease_id);
+	}
       }
       effective = false;
     }

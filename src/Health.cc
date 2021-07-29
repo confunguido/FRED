@@ -447,6 +447,7 @@ void Health::become_susceptible(int disease_id) {
   assert(this->infection[disease_id] == NULL);
   this->susceptibility_multp[disease_id] = 1.0;
   this->susceptible.set(disease_id);
+
   assert(is_susceptible(disease_id));
   this->recovered.reset(disease_id);
   FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
@@ -463,6 +464,7 @@ void Health::become_susceptible_by_natural_waning(int disease_id) {
   if(this->infection[disease_id] == NULL) {
     // not already infected
     this->susceptibility_multp[disease_id] = 1.0;
+
     this->susceptible.set(disease_id);
     this->immunity.reset(disease_id);
     FRED_CONDITIONAL_VERBOSE(0, Global::Enable_Health_Charts,
