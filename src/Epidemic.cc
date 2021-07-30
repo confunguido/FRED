@@ -2207,8 +2207,14 @@ void Epidemic::process_immunity_end_events(int day) {
     // update epidemic counters
     this->removed_people++;
 
+    bool current_infected = false;
+    for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
+      if(person->is_infected(dis_id) == true){
+	current_infected = true;
+      }
+    }
     // update person's health chart
-    if(person->is_alive()){
+    if(person->is_alive() && current_infected == false){
       person->become_susceptible_by_natural_waning(this->id);
       if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
 	for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
