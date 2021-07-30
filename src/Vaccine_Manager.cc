@@ -639,9 +639,13 @@ void Vaccine_Manager::vaccinate(int day) {
   int reject_count = 0;
   int reject_state_count = 0;
   int vax_age_count[10];
-  for(int i = 0; i < 10; ++i) {
+  for(int i = 0; i < 10; i++) {
     vax_age_count[i] = 0;
   }
+  for( int c = 0; c < 10; c++){
+    printf("VACCINE_MANAGER: AGE GROUP %d = %d\n", c, vax_age_count[c]);
+  }
+
   // Figure out the total number of vaccines we can hand out today
   int total_vaccines_avail = this->vaccine_package->get_total_vaccines_avail_today();
   printf("Day %d Vaccine Capacity %d Total Vaccines Available %d\n", day, current_vaccine_capacity, total_vaccines_avail);
@@ -883,7 +887,7 @@ void Vaccine_Manager::vaccinate(int day) {
         number_vaccinated++;
 	number_one_dose++;
 	vax_age_count[age_n]++;
-	//printf("PERSON accepting vaccine, accept count %d, number vaccinated %d\n", accept_count, number_vaccinated);
+	//printf("PERSON accepting vaccine, accept count %d, number vaccinated %d age %d total vax by age group[%d] %d\n", accept_count, number_vaccinated, current_person->get_age(), age_n, vax_age_count[age_n]);
         this->current_vaccine_capacity--;
         n_p_vaccinated++;
         Vaccine* vacc = this->vaccine_package->get_vaccine(vacc_app);
