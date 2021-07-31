@@ -543,8 +543,11 @@ void Vaccine_Manager::update(int day) {
     }
 
     if(this->enable_vaccine_priority_discrete_refill == true){
-      if(this->current_priority_included >= (this->policies.size() - 1)){
+      printf("Day %d: Discrete priority timing enabled. Current priority is: %d and total policies %d\n", day, this->current_priority_included, this->policies.size());
+      if(this->current_priority_included < (this->policies.size() - 1)){
+	printf("Current priority is not the last priority. Timing for next priority [%d] = %d\n", this->current_priority_included + 1, this->vaccine_priority_timing_vector[this->current_priority_included + 1]);
 	if(this->vaccine_priority_timing_vector[this->current_priority_included + 1] == day || this->priority_queue.size() == 0){
+	  printf("Going to refill priority queues based on priority timing\n");
 	  add_next_priority_to_queues();
 	}
       }
