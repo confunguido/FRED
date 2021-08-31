@@ -2272,26 +2272,28 @@ void Epidemic::update(int day) {
 
   //Update sheltering houses
   //TODO: Should the following line be inthe place_list class?
-  if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
-    // Only update for the first disease, todo: fix peak_day and all of that
-    if(this->id == 0){
-      Global::Places.update_shelter_households(day, this->peak_day,
-					       1.0*this->symptomatic_incidence/this->peak_incidence,
-					       this->days_of_decline);
+  if(day >= Global::Epidemic_offset){
+    if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
+      // Only update for the first disease, todo: fix peak_day and all of that
+      if(this->id == 0){
+	Global::Places.update_shelter_households(day, this->peak_day,
+						 1.0*this->symptomatic_incidence/this->peak_incidence,
+						 this->days_of_decline);
+      }
     }
-  }
   
-  if(Global::Enable_School_Reduced_Capacity == true && Global::School_reduced_capacity_day <= day){
-    printf("School capacity reduced enabled to %.2f day %d\n",Global::School_reduced_capacity, day);
-  }
-  /*
-    UPDATE FACEMASK WEARING
-   */
+    if(Global::Enable_School_Reduced_Capacity == true && Global::School_reduced_capacity_day <= day){
+      printf("School capacity reduced enabled to %.2f day %d\n",Global::School_reduced_capacity, day);
+    }
+    /*
+      UPDATE FACEMASK WEARING
+    */
   
-  if(Global::Enable_Face_Mask_Usage && Global::Enable_Face_Mask_Timeseries_File){
-    // Only update on disease = 0, otherwise it will update too many times
-    if(this->id == 0){
-      Global::Places.update_face_mask_compliance(day);
+    if(Global::Enable_Face_Mask_Usage && Global::Enable_Face_Mask_Timeseries_File){
+      // Only update on disease = 0, otherwise it will update too many times
+      if(this->id == 0){
+	Global::Places.update_face_mask_compliance(day);
+      }
     }
   }
   
@@ -2333,60 +2335,65 @@ void Epidemic::update(int day) {
     }
   }
 
-  // get list of actually infectious people
+  // get list of actually infectious people  
   this->actually_infectious_people.clear();
-  for(std::set<Person*>::iterator it = this->potentially_infectious_people.begin(); it != this->potentially_infectious_people.end(); ++it) {
-    Person* person = (*it);
-    if(person->is_infectious(this->id)) {
-      this->actually_infectious_people.push_back(person);
-      FRED_VERBOSE(1, "ACTUALLY INF person %d\n", person->get_id());
+  if(day >= Global::Epidemic_offset){
+    for(std::set<Person*>::iterator it = this->potentially_infectious_people.begin(); it != this->potentially_infectious_people.end(); ++it) {
+      Person* person = (*it);
+      if(person->is_infectious(this->id)) {
+	this->actually_infectious_people.push_back(person);
+	FRED_VERBOSE(1, "ACTUALLY INF person %d\n", person->get_id());
+      }
     }
-  }
-  this->infectious_people = this->actually_infectious_people.size();
-  // Utils::fred_print_epidemic_timer("identifying actually infections people");
+    this->infectious_people = this->actually_infectious_people.size();
+    // Utils::fred_print_epidemic_timer("identifying actually infections people");
 
-  // update the daily activities of infectious people
-  for(int i = 0; i < this->infectious_people; ++i) {
-    Person* person = this->actually_infectious_people[i];
+    // update the daily activities of infectious people
+    for(int i = 0; i < this->infectious_people; ++i) {
+      Person* person = this->actually_infectious_people[i];
+
+      if(strcmp("sexual", this->disease->get_transmission_mode()) == 0) {
+	FRED_VERBOSE(1, "ADDING_ACTUALLY INF person %d\n", person->get_id());
+	// this will insert the infectious person onto the infectious list in sexual partner network
+	Sexual_Transmission_Network* st_network = Global::Sexual_Partner_Network;
+	st_network->add_infectious_person(this->id, person);
+      } else {
+	FRED_VERBOSE(1, "updating activities of infectious person %d -- %d out of %d\n", person->get_id(), i, this->infectious_people);
+	person->update_activities_of_infectious_person(day);
+	// note: infectious person will be added to the daily places in find_active_places_of_type()
+      }
+    }
+    Utils::fred_print_epidemic_timer("scheduled updated");
 
     if(strcmp("sexual", this->disease->get_transmission_mode()) == 0) {
-      FRED_VERBOSE(1, "ADDING_ACTUALLY INF person %d\n", person->get_id());
-      // this will insert the infectious person onto the infectious list in sexual partner network
       Sexual_Transmission_Network* st_network = Global::Sexual_Partner_Network;
-      st_network->add_infectious_person(this->id, person);
+      this->disease->get_transmission()->spread_infection(day, this->id, st_network);
+      st_network->clear_infectious_people(this->id);
     } else {
-      FRED_VERBOSE(1, "updating activities of infectious person %d -- %d out of %d\n", person->get_id(), i, this->infectious_people);
-      person->update_activities_of_infectious_person(day);
-      // note: infectious person will be added to the daily places in find_active_places_of_type()
-    }
-  }
-  Utils::fred_print_epidemic_timer("scheduled updated");
-
-  if(strcmp("sexual", this->disease->get_transmission_mode()) == 0) {
-    Sexual_Transmission_Network* st_network = Global::Sexual_Partner_Network;
-    this->disease->get_transmission()->spread_infection(day, this->id, st_network);
-    st_network->clear_infectious_people(this->id);
-  } else {
-    // spread infection in places attended by actually infectious people
-    // HERE!!! Don't spread the infection if epidemic_offset > day
-    if(day >= Global::Epidemic_offset){
-      for(int type = 0; type < 7; ++type) {
-	find_active_places_of_type(day, type);
-	spread_infection_in_active_places(day);
+      // spread infection in places attended by actually infectious people
+      // HERE!!! Don't spread the infection if epidemic_offset > day
+      if(day >= Global::Epidemic_offset){
+	for(int type = 0; type < 7; ++type) {
+	  find_active_places_of_type(day, type);
+	  spread_infection_in_active_places(day);
+	  char msg[80];
+	  sprintf(msg, "spread_infection for type %d", type);
+	  Utils::fred_print_epidemic_timer(msg);
+	}
+      }else{
 	char msg[80];
-	sprintf(msg, "spread_infection for type %d", type);
+	sprintf(msg,"Not spreading: day[%d] is < offset [%d]", day, Global::Epidemic_offset);
 	Utils::fred_print_epidemic_timer(msg);
       }
-    }else{
-      char msg[80];
-      sprintf(msg,"Not spreading: day[%d] is < offset [%d]", day, Global::Epidemic_offset);
-      Utils::fred_print_epidemic_timer(msg);
     }
-  }
   
-  //After updating infectious people, seed infections
-  seed_nursing_home_infections(day);
-  
+    //After updating infectious people, seed infections
+    seed_nursing_home_infections(day);
+  }else{
+	char msg[80];
+	sprintf(msg,"Not spreading or updating places: day[%d] is < offset [%d]", day, Global::Epidemic_offset);
+	Utils::fred_print_epidemic_timer(msg);
+      }
   FRED_VERBOSE(0, "epidemic update finished for disease %d day %d\n", id, day);
   return;
 }
