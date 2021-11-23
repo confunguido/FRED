@@ -166,6 +166,9 @@ Epidemic::Epidemic(Disease* dis) {
 
   this->daily_symptomatic_list.reserve(Global::Pop.get_pop_size());
   this->daily_symptomatic_list.clear();
+    
+  this->daily_hospitalization_list.reserve(Global::Pop.get_pop_size());
+  this->daily_hospitalization_list.clear();
 
   this->case_fatality_incidence = 0;
   this->counties = 0;
@@ -777,13 +780,25 @@ void Epidemic::report_age_of_infection(int day) {
   int adults_Cs = 0;
   int elderly_Cs = 0;
   int age_count_Cs[Demographics::MAX_AGE + 1];				// age group counts
+
+  int infants_Chosp = 0;
+  int toddlers_Chosp = 0;
+  int pre_school_Chosp = 0;
+  int elementary_Chosp = 0;
+  int high_school_Chosp = 0;
+  int young_adults_Chosp = 0;
+  int adults_Chosp = 0;
+  int elderly_Chosp = 0;
+  int age_count_Chosp[Demographics::MAX_AGE + 1];				// age group counts
   
   double mean_age = 0.0;
   int count_infections = 0;
   int count_symptomatics = 0;
+  int count_Chosp = 0;
   for(int i = 0; i <= Demographics::MAX_AGE; ++i) {
     age_count[i] = 0;
     age_count_Cs[i] = 0;
+    age_count_Chosp[i] = 0;
   }
   // Add symptomatics to this list
   
@@ -927,6 +942,77 @@ void Epidemic::report_age_of_infection(int day) {
       }
     }
   }
+
+printf("Epidemic.cc::report_age_of_infection -> There are %d symptomatics, %lu\n", this->people_becoming_hospitalized_today, this->daily_hospitalization_list.size());
+for(int i = 0; i < this->people_becoming_hospitalized_today; ++i) {    
+    Person* infectee = this->daily_hospitalization_list[i];
+    
+    int age = infectee->get_age();
+    count_Chosp++;
+    
+    int age_group = age / 5;
+    if(age_group > 20) {
+      age_group = 20;
+    }
+    if(Global::Report_Age_Of_Infection > 3) {
+      age_group = age;
+      if(age_group > Demographics::MAX_AGE) {
+        age_group = Demographics::MAX_AGE;
+      }
+    }
+
+    age_count_Chosp[age_group]++;
+    double real_age = infectee->get_real_age();
+    if(Global::Report_Age_Of_Infection == 1) {
+      if(real_age < 0.5) {
+        infants_Chosp++;
+      } else if(real_age < 2.0) {
+        toddlers_Chosp++;
+      } else if(real_age < 6.0) {
+        pre_school_Chosp++;
+      } else if(real_age < 12.0) {
+        elementary_Chosp++;
+      } else if(real_age < 18.0) {
+        high_school_Chosp++;
+      } else if(real_age < 21.0) {
+        young_adults_Chosp++;
+      } else if(real_age < 65.0) {
+        adults_Chosp++;
+      } else if(65 <= real_age) {
+        elderly_Chosp++;
+      }
+    } else if (Global::Report_Age_Of_Infection == 2) {
+      if(real_age < 19.0/12.0) {
+        infants_Chosp++;
+      } else if(real_age < 3.0) {
+        toddlers_Chosp++;
+      } else if(real_age < 5.0) {
+        pre_school_Chosp++;
+      } else if(real_age < 12.0) {
+        elementary_Chosp++;
+      } else if(real_age < 18.0) {
+        high_school_Chosp++;
+      } else if(real_age < 21.0) {
+        young_adults_Chosp++;
+      } else if(real_age < 65.0) {
+        adults_Chosp++;
+      } else if(65 <= real_age) {
+        elderly_Chosp++;
+      }
+    } else if(Global::Report_Age_Of_Infection == 3) {
+      if(real_age < 5.0) {
+        pre_school_Chosp++;
+      } else if(real_age < 18.0) {
+        high_school_Chosp++;
+      } else if(real_age < 50.0) {
+        young_adults_Chosp++;
+      } else if(real_age < 65.0) {
+        adults_Chosp++;
+      } else if(65 <= real_age) {
+        elderly_Chosp++;
+      }
+    }
+  }
   
   if(count_infections > 0) {
     mean_age /= count_infections;
@@ -959,6 +1045,16 @@ void Epidemic::report_age_of_infection(int day) {
     track_value(day, (char*)"Young_adults_Cs", young_adults_Cs);
     track_value(day, (char*)"Adults_Cs", adults_Cs);
     track_value(day, (char*)"Elderly_Cs", elderly_Cs);
+
+    track_value(day, (char*)"Infants_Chosp", infants_Chosp);
+    track_value(day, (char*)"Toddlers_Chosp", toddlers_Chosp);
+    track_value(day, (char*)"Preschool_Chosp", pre_school_Chosp);
+    track_value(day, (char*)"Students_Chosp", elementary_Chosp+high_school_Chosp);
+    track_value(day, (char*)"Elementary_Chosp", elementary_Chosp);
+    track_value(day, (char*)"Highschool_Chosp", high_school_Chosp);
+    track_value(day, (char*)"Young_adults_Chosp", young_adults_Chosp);
+    track_value(day, (char*)"Adults_Chosp", adults_Chosp);
+    track_value(day, (char*)"Elderly_Chosp", elderly_Chosp);
     break;
   case 2:
     track_value(day, (char*)"Infants", infants);
@@ -978,6 +1074,15 @@ void Epidemic::report_age_of_infection(int day) {
     track_value(day, (char*)"Young_adults_Cs", young_adults_Cs);
     track_value(day, (char*)"Adults_Cs", adults_Cs);
     track_value(day, (char*)"Elderly_Cs", elderly_Cs);
+
+    track_value(day, (char*)"Infants_Chosp", infants_Chosp);
+    track_value(day, (char*)"Toddlers_Chosp", toddlers_Chosp);
+    track_value(day, (char*)"Pre-k_Chosp", pre_school_Chosp);
+    track_value(day, (char*)"Elementary_Chosp", elementary_Chosp);
+    track_value(day, (char*)"Highschool_Chosp", high_school_Chosp);
+    track_value(day, (char*)"Young_adults_Chosp", young_adults_Chosp);
+    track_value(day, (char*)"Adults_Chosp", adults_Chosp);
+    track_value(day, (char*)"Elderly_Chosp", elderly_Chosp);
     break;
   case 3:
     track_value(day, (char*)"0_4", pre_school);
@@ -991,6 +1096,12 @@ void Epidemic::report_age_of_infection(int day) {
     track_value(day, (char*)"18_49_Cs", young_adults_Cs);
     track_value(day, (char*)"50_64_Cs", adults_Cs);
     track_value(day, (char*)"65_up_Cs", elderly_Cs);
+
+    track_value(day, (char*)"0_4_Chosp", pre_school_Chosp);
+    track_value(day, (char*)"5_17_Chosp", high_school_Chosp);
+    track_value(day, (char*)"18_49_Chosp", young_adults_Chosp);
+    track_value(day, (char*)"50_64_Chosp", adults_Chosp);
+    track_value(day, (char*)"65_up_Chosp", elderly_Chosp);
     break;
   case 4:
     for(int i = 0; i <= Demographics::MAX_AGE; ++i) {
@@ -999,6 +1110,8 @@ void Epidemic::report_age_of_infection(int day) {
       track_value(day, temp_str, age_count[i]);
       sprintf(temp_str, "ACs%d", i);
       track_value(day, temp_str, age_count_Cs[i]);
+      sprintf(temp_str, "Chosp%d", i);
+      track_value(day, temp_str, age_count_Chosp[i]);
       sprintf(temp_str, "Age%d", i);
       track_value(day, temp_str,
 		  Global::Popsize_by_age[i] ?
@@ -2272,28 +2385,26 @@ void Epidemic::update(int day) {
 
   //Update sheltering houses
   //TODO: Should the following line be inthe place_list class?
-  if(day >= Global::Epidemic_offset){
-    if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
-      // Only update for the first disease, todo: fix peak_day and all of that
-      if(this->id == 0){
-	Global::Places.update_shelter_households(day, this->peak_day,
-						 1.0*this->symptomatic_incidence/this->peak_incidence,
-						 this->days_of_decline);
-      }
+  if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
+    // Only update for the first disease, todo: fix peak_day and all of that
+    if(this->id == 0){
+      Global::Places.update_shelter_households(day, this->peak_day,
+					       1.0*this->symptomatic_incidence/this->peak_incidence,
+					       this->days_of_decline);
     }
+  }
   
-    if(Global::Enable_School_Reduced_Capacity == true && Global::School_reduced_capacity_day <= day){
-      printf("School capacity reduced enabled to %.2f day %d\n",Global::School_reduced_capacity, day);
-    }
-    /*
-      UPDATE FACEMASK WEARING
-    */
+  if(Global::Enable_School_Reduced_Capacity == true && Global::School_reduced_capacity_day <= day){
+    printf("School capacity reduced enabled to %.2f day %d\n",Global::School_reduced_capacity, day);
+  }
+  /*
+    UPDATE FACEMASK WEARING
+   */
   
-    if(Global::Enable_Face_Mask_Usage && Global::Enable_Face_Mask_Timeseries_File){
-      // Only update on disease = 0, otherwise it will update too many times
-      if(this->id == 0){
-	Global::Places.update_face_mask_compliance(day);
-      }
+  if(Global::Enable_Face_Mask_Usage && Global::Enable_Face_Mask_Timeseries_File){
+    // Only update on disease = 0, otherwise it will update too many times
+    if(this->id == 0){
+      Global::Places.update_face_mask_compliance(day);
     }
   }
   
@@ -2335,65 +2446,60 @@ void Epidemic::update(int day) {
     }
   }
 
-  // get list of actually infectious people  
+  // get list of actually infectious people
   this->actually_infectious_people.clear();
-  if(day >= Global::Epidemic_offset){
-    for(std::set<Person*>::iterator it = this->potentially_infectious_people.begin(); it != this->potentially_infectious_people.end(); ++it) {
-      Person* person = (*it);
-      if(person->is_infectious(this->id)) {
-	this->actually_infectious_people.push_back(person);
-	FRED_VERBOSE(1, "ACTUALLY INF person %d\n", person->get_id());
-      }
+  for(std::set<Person*>::iterator it = this->potentially_infectious_people.begin(); it != this->potentially_infectious_people.end(); ++it) {
+    Person* person = (*it);
+    if(person->is_infectious(this->id)) {
+      this->actually_infectious_people.push_back(person);
+      FRED_VERBOSE(1, "ACTUALLY INF person %d\n", person->get_id());
     }
-    this->infectious_people = this->actually_infectious_people.size();
-    // Utils::fred_print_epidemic_timer("identifying actually infections people");
+  }
+  this->infectious_people = this->actually_infectious_people.size();
+  // Utils::fred_print_epidemic_timer("identifying actually infections people");
 
-    // update the daily activities of infectious people
-    for(int i = 0; i < this->infectious_people; ++i) {
-      Person* person = this->actually_infectious_people[i];
-
-      if(strcmp("sexual", this->disease->get_transmission_mode()) == 0) {
-	FRED_VERBOSE(1, "ADDING_ACTUALLY INF person %d\n", person->get_id());
-	// this will insert the infectious person onto the infectious list in sexual partner network
-	Sexual_Transmission_Network* st_network = Global::Sexual_Partner_Network;
-	st_network->add_infectious_person(this->id, person);
-      } else {
-	FRED_VERBOSE(1, "updating activities of infectious person %d -- %d out of %d\n", person->get_id(), i, this->infectious_people);
-	person->update_activities_of_infectious_person(day);
-	// note: infectious person will be added to the daily places in find_active_places_of_type()
-      }
-    }
-    Utils::fred_print_epidemic_timer("scheduled updated");
+  // update the daily activities of infectious people
+  for(int i = 0; i < this->infectious_people; ++i) {
+    Person* person = this->actually_infectious_people[i];
 
     if(strcmp("sexual", this->disease->get_transmission_mode()) == 0) {
+      FRED_VERBOSE(1, "ADDING_ACTUALLY INF person %d\n", person->get_id());
+      // this will insert the infectious person onto the infectious list in sexual partner network
       Sexual_Transmission_Network* st_network = Global::Sexual_Partner_Network;
-      this->disease->get_transmission()->spread_infection(day, this->id, st_network);
-      st_network->clear_infectious_people(this->id);
+      st_network->add_infectious_person(this->id, person);
     } else {
-      // spread infection in places attended by actually infectious people
-      // HERE!!! Don't spread the infection if epidemic_offset > day
-      if(day >= Global::Epidemic_offset){
-	for(int type = 0; type < 7; ++type) {
-	  find_active_places_of_type(day, type);
-	  spread_infection_in_active_places(day);
-	  char msg[80];
-	  sprintf(msg, "spread_infection for type %d", type);
-	  Utils::fred_print_epidemic_timer(msg);
-	}
-      }else{
-	char msg[80];
-	sprintf(msg,"Not spreading: day[%d] is < offset [%d]", day, Global::Epidemic_offset);
-	Utils::fred_print_epidemic_timer(msg);
-      }
+      FRED_VERBOSE(1, "updating activities of infectious person %d -- %d out of %d\n", person->get_id(), i, this->infectious_people);
+      person->update_activities_of_infectious_person(day);
+      // note: infectious person will be added to the daily places in find_active_places_of_type()
     }
-  
-    //After updating infectious people, seed infections
-    seed_nursing_home_infections(day);
-  }else{
+  }
+  Utils::fred_print_epidemic_timer("scheduled updated");
+
+  if(strcmp("sexual", this->disease->get_transmission_mode()) == 0) {
+    Sexual_Transmission_Network* st_network = Global::Sexual_Partner_Network;
+    this->disease->get_transmission()->spread_infection(day, this->id, st_network);
+    st_network->clear_infectious_people(this->id);
+  } else {
+    // spread infection in places attended by actually infectious people
+    // HERE!!! Don't spread the infection if epidemic_offset > day
+    if(day >= Global::Epidemic_offset){
+      for(int type = 0; type < 7; ++type) {
+	find_active_places_of_type(day, type);
+	spread_infection_in_active_places(day);
 	char msg[80];
-	sprintf(msg,"Not spreading or updating places: day[%d] is < offset [%d]", day, Global::Epidemic_offset);
+	sprintf(msg, "spread_infection for type %d", type);
 	Utils::fred_print_epidemic_timer(msg);
       }
+    }else{
+      char msg[80];
+      sprintf(msg,"Not spreading: day[%d] is < offset [%d]", day, Global::Epidemic_offset);
+      Utils::fred_print_epidemic_timer(msg);
+    }
+  }
+  
+  //After updating infectious people, seed infections
+  seed_nursing_home_infections(day);
+  
   FRED_VERBOSE(0, "epidemic update finished for disease %d day %d\n", id, day);
   return;
 }
@@ -2529,4 +2635,3 @@ void Epidemic::cancel_immunity_start(int day, Person* person) {
 void Epidemic::cancel_immunity_end(int day, Person* person) {
   this->immunity_end_event_queue->delete_event(day, person);
 }
-
