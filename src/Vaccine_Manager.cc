@@ -91,7 +91,7 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
     this->priority_queue_vector.clear();
     return;
   }
-
+  
   if(Global::Enable_Vaccination_Phases == false){
     // ACIP Priority takes precidence
     int do_acip_priority;

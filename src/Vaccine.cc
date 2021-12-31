@@ -30,7 +30,7 @@ Vaccine::Vaccine(string _name, int _id, int _disease,
                  int _start_day, int num_strains, int *_strains){
   name =               _name;
   id =                 _id;
-  disease =             _disease;
+  disease =            _disease;
   additional_per_day = _additional_per_day;
   start_day =          _start_day;
   strains =            _strains;
@@ -47,7 +47,12 @@ Vaccine::Vaccine(string _name, int _id, int _disease,
 }
 
 Vaccine::~Vaccine(){ 
-  for(unsigned int i = 0; i < doses.size(); i++) delete doses[i];
+  for(unsigned int i = 0; i < doses.size(); i++){
+    delete doses[i];
+  }
+  for(unsigned int i = 0; i < boosters.size(); i++){
+    delete boosters[i];
+  }
   delete strains;
 }
 
@@ -55,8 +60,12 @@ void Vaccine::add_dose(Vaccine_Dose* _vaccine_dose) {
   doses.push_back(_vaccine_dose);
 }
 
+void Vaccine::add_booster(Vaccine_Dose* _vaccine_dose) {
+  boosters.push_back(_vaccine_dose);
+}
+
 void Vaccine::print() const {
-  cout << "Name = \t\t\t\t" <<name << "\n";
+  cout << "Name = \t\t\t\t" << name << "\n";
   cout << "Applied to disease = \t\t" << disease << "\n";
   cout << "Initial Stock = \t\t" << initial_stock << "\n";
   cout << "Total Available = \t\t"<< total_avail << "\n";
@@ -64,10 +73,18 @@ void Vaccine::print() const {
   cout << "Additional Stock per day =\t" << additional_per_day << "\n";
   cout << "Starting on day = \t\t" << start_day << "\n";
   cout << "Dose Information\n";
+  
   for(unsigned int i=0;i<doses.size();i++){
-    cout <<"Dose #"<<i+1 << "\n";
+    cout << "Dose #" << i+1 << "\n";
     doses[i]->print();
   }
+  
+  cout << "Boosters Information\n";
+  for(unsigned int i=0; i<boosters.size(); i++){
+    cout << "Boosters #" << i+1 << "\n";
+    boosters[i]->print();
+  }
+  
   if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
     cout << "Differential efficacy information for " << this->disease_specific_efficacy_modifier.size() <<" diseases\n";
     for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){

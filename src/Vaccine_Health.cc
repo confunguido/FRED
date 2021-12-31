@@ -33,19 +33,43 @@ Vaccine_Health::Vaccine_Health(int _vaccination_day, Vaccine* _vaccine, double _
   vaccine = _vaccine;
   vaccination_day = _vaccination_day;
   person = _person;
+  
   double efficacy = vaccine->get_dose(0)->get_efficacy(_age);
   double efficacy_symp = vaccine->get_dose(0)->get_efficacy_symp(_age);
   double efficacy_hosp = vaccine->get_dose(0)->get_efficacy_hosp(_age);  
   double efficacy_delay = vaccine->get_dose(0)->get_efficacy_delay(_age);
   double efficacy_duration = vaccine->get_dose(0)->get_duration_of_immunity(_age);
+
+  /*
+    Boosters 
+   */
+  double efficacy_bst = vaccine->get_efficacy_bst(_age);
+  double efficacy_bst_symp = vaccine->get_efficacy_bst_symp(_age);
+  double efficacy_bst_hosp = vaccine->get_efficacy_bst_hosp(_age);  
+  double efficacy_bst_delay = vaccine->get_efficacy_bst_delay(_age);
+  double efficacy_bst_duration = vaccine->get_dose(0)->get_duration_of_immunity(_age);
+  
+  // vaccine_booster_day[%1$d] = %7$d;  
+  // vaccine_booster_efficacy_age_groups[%1$d] = 1 100;
+  // vaccine_booster_efficacy_values[%1$d] = 1 %8$.4f;
+  
+  // vaccine_booster_efficacy_symptoms_age_groups[%1$d] = 1 100;
+  // vaccine_booster_efficacy_symptoms_values[%1$d] = 1 %9$.4f;
+  
+  // vaccine_booster_efficacy_hospitalization_age_groups[%1$d] = 1 100;  
+  // vaccine_booster_efficacy_hospitalization_values[%1$d] = 1 %10$.4f;
+  
   vaccine_manager = _vaccine_manager;
   vaccination_immunity_loss_day = -1;
   vaccination_effective_day = -1;
   vaccination_effective_symp_day = -1;
   vaccination_effective_hosp_day = -1;
+
+  
   effective = false;
   effective_symptoms = false;
   effective_hospitalization = false;
+
   // decide on efficacy
   if(Random::draw_random() < efficacy) {
     vaccination_effective_day = vaccination_day + efficacy_delay;

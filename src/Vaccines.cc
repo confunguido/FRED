@@ -48,9 +48,10 @@ void Vaccines::setup(void) {
     Params::get_indexed_param("vaccine_total_avail",iv,&ta);
     Params::get_indexed_param("vaccine_additional_per_day",iv,&apd);
     Params::get_indexed_param("vaccine_starting_day",iv,&std);
+    
     Age_Map* efficacy_duration_map = new Age_Map("Vaccine Efficacy Duration");
     efficacy_duration_map->read_from_input("vaccine_efficacy_duration",iv);
-
+    
     int nstrains;
     Params::get_indexed_param((char *)"vaccine_strains", iv, &nstrains);
     int *strains = new int[nstrains];
@@ -111,6 +112,19 @@ void Vaccines::setup(void) {
       efficacy_delay_map->read_from_input("vaccine_dose_efficacy_delay",iv,id);
       vaccines[iv]->add_dose(new Vaccine_Dose(efficacy_map,efficacy_symp_map,efficacy_hosp_map,efficacy_delay_map,efficacy_duration_map,tbd));
     }
+    // If boosters are enabled, then
+    for(int id=0;id<num_boosters;id++){
+      Age_Map* efficacy_map = new Age_Map("Booster Efficacy");
+      Age_Map* efficacy_symp_map = new Age_Map("Booster Efficacy Symptoms");
+      Age_Map* efficacy_hosp_map = new Age_Map("Booster Efficacy Hospitalization");      
+      Age_Map* efficacy_delay_map = new Age_Map("Booster Efficacy Delay");
+      Params::get_double_indexed_param("vaccine_next_booster_day",iv,id,&tbd);
+      efficacy_map->read_from_input("vaccine_booster_efficacy",iv,id);
+      efficacy_symp_map->read_from_input("vaccine_booster_efficacy_symptoms",iv,id);
+      efficacy_hosp_map->read_from_input("vaccine_booster_efficacy_hospitalization",iv,id);
+      efficacy_delay_map->read_from_input("vaccine_booster_efficacy_delay",iv,id);
+      vaccines[iv]->add_booster(new Vaccine_Dose(efficacy_map,efficacy_symp_map,efficacy_hosp_map,efficacy_delay_map,efficacy_duration_map,tbd));
+    }    
   }
   
   if(Global::Enable_Vaccine_Stock_Timeseries_File == true) {
