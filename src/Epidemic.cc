@@ -766,6 +766,8 @@ void Epidemic::report_age_of_infection(int day) {
   int young_adults = 0;
   int adults = 0;
   int elderly = 0;
+  int young12 = 0;
+  int older12 = 0;
   int age_count[Demographics::MAX_AGE + 1];				// age group counts
   
   int infants_Cs = 0;
@@ -776,6 +778,8 @@ void Epidemic::report_age_of_infection(int day) {
   int young_adults_Cs = 0;
   int adults_Cs = 0;
   int elderly_Cs = 0;
+  int young12_Cs = 0;
+  int older12_Cs = 0;
   int age_count_Cs[Demographics::MAX_AGE + 1];				// age group counts
   
   double mean_age = 0.0;
@@ -854,6 +858,12 @@ void Epidemic::report_age_of_infection(int day) {
       } else if(65 <= real_age) {
         elderly++;
       }
+    }else if(Global::Report_Age_Of_Infection == 5) {
+      if(real_age < 12) {
+        young12++;
+      } else if(65 <= real_age) {
+        older12++;
+      }
     }
   }
   
@@ -925,11 +935,21 @@ void Epidemic::report_age_of_infection(int day) {
       } else if(65 <= real_age) {
         elderly_Cs++;
       }
+    }else if(Global::Report_Age_Of_Infection == 5) {
+      if(real_age < 12) {
+        young12_Cs++;
+      } else if(65 <= real_age) {
+        older12_Cs++;
+      }
     }
   }
   
   if(count_infections > 0) {
     mean_age /= count_infections;
+  }
+
+  if(this->disease->get_natural_history()->is_case_fatality_enabled()) {
+    // Also count fatalities by age
   }
   //Write to log file
   Utils::fred_log("\nday %d INF_AGE: ", day);
@@ -1008,6 +1028,13 @@ void Epidemic::report_age_of_infection(int day) {
 		  Global::Popsize_by_age[i] ?
 		  Global::Popsize_by_age[i] : 0.0);
     }
+    break;
+  case 5:
+    track_value(day, (char*)"Young12", young12);
+    track_value(day, (char*)"Older12", older12);
+    
+    track_value(day, (char*)"Young12_Cs", young12_Cs);
+    track_value(day, (char*)"Older12_Cs", older12_Cs);
     break;
   default:
     if(Global::Age_Of_Infection_Log_Level >= Global::LOG_LEVEL_LOW) {
@@ -2272,16 +2299,16 @@ void Epidemic::update(int day) {
 
   //Update sheltering houses
   //TODO: Should the following line be inthe place_list class?
-  if(day >= Global::Epidemic_offset){
-    if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
-      // Only update for the first disease, todo: fix peak_day and all of that
-      if(this->id == 0){
-	Global::Places.update_shelter_households(day, this->peak_day,
-						 1.0*this->symptomatic_incidence/this->peak_incidence,
-						 this->days_of_decline);
-      }
-    }
   
+  if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
+    // Only update for the first disease, todo: fix peak_day and all of that
+    if(this->id == 0){
+      Global::Places.update_shelter_households(day, this->peak_day,
+					       1.0*this->symptomatic_incidence/this->peak_incidence,
+					       this->days_of_decline);
+    }
+  }
+  if(day >= Global::Epidemic_offset){
     if(Global::Enable_School_Reduced_Capacity == true && Global::School_reduced_capacity_day <= day){
       printf("School capacity reduced enabled to %.2f day %d\n",Global::School_reduced_capacity, day);
     }

@@ -79,7 +79,7 @@ public:
   
   // Vaccination Specific Procedures
   void fill_queues();
-  void vaccinate(int day);
+  int vaccinate(int day);
   void add_to_queue(Person * person);                 //Adds person to queue based on current policies
   void remove_from_queue(Person * person);            //Remove person from the vaccine queue
   void add_to_priority_queue_random(Person * person); //Adds person to the priority queue in a random spot
@@ -155,6 +155,8 @@ private:
   bool vaccinate_symptomatics;            //True - Include people that have had symptoms in the vaccination
   bool refresh_vaccine_queues_daily;      //True - people queue up in random order each day
   bool enable_vaccine_priority_discrete_refill;
+  bool enable_onday_vaccine_priority_discrete;
+  bool use_vaccine_acceptance_array;
   
   int vaccine_priority_age_low;           //Age specific priority
   int vaccine_priority_age_high;
@@ -164,7 +166,7 @@ private:
   vector<int>vaccine_priority_timing_vector;
   vector<double>vaccine_priority_phases_pop_prob;
   std::vector<std::list<Person*>>priority_queue_vector;
-
+  vector<double>vaccine_acceptance_prob_array;
   int current_priority_included;
   int vaccine_dose_priority;              //Defines where people getting multiple doses fit in the queue
                                           // See defines above for values

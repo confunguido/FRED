@@ -47,8 +47,11 @@ Vaccine_Manager::Vaccine_Manager() {
   this->current_priority_included = -1;
   this->vaccine_priority_only = false;
   this->enable_vaccine_priority_discrete_refill = false;
+  this->enable_onday_vaccine_priority_discrete = false;
   this->vaccination_capacity_map = NULL;
   this->vaccine_acceptance_prob = 1.0;
+  this->vaccine_acceptance_prob_array.clear();
+  this->use_vaccine_acceptance_array = false;
   this->do_vacc = false;
   this->vaccine_dose_priority = -1;
   this->refresh_vaccine_queues_daily = false;
@@ -86,6 +89,7 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
     this->vaccine_dose_priority = -1;
     this->vaccine_priority_only = false;
     this->enable_vaccine_priority_discrete_refill = false;
+    this->enable_onday_vaccine_priority_discrete = false;
     this->current_priority_included = -1;
     this->do_vacc = false;
     this->priority_queue_vector.clear();
@@ -157,14 +161,19 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
   int refresh;
   Params::get_param_from_string("refresh_vaccine_queues_daily", &refresh);
   this->refresh_vaccine_queues_daily = (refresh > 0);
-
+  int tmp_flag;
+  Params::get_param_from_string("vaccination_enable_vaccine_acceptance_array", &(tmp_flag));
+  this->use_vaccine_acceptance_array = (tmp_flag == 1 ? true : false);
+  
   if(Global::Enable_Vaccination_Phases == true){
     // Fill the vaccine manager policies based on the number of phases and each phase identifier
     int number_of_phases, N_phases_age_low, N_phases_age_high, N_phases_id,N_phases_pop_prob,N_phase_timing,tmp_int;
     Params::get_param_from_string("vaccination_phases_enable_discrete_timing", &(tmp_int));
     this->enable_vaccine_priority_discrete_refill = (tmp_int == 1 ? true : false);
     if(this->enable_vaccine_priority_discrete_refill == true){
-      Params::get_param_from_string("vaccination_phases_discrete_timing", &(N_phase_timing));
+      Params::get_param_from_string("vaccination_phases_discrete_timing", &(N_phase_timing));      
+      Params::get_param_from_string("vaccination_phases_discrete_forceday", &(tmp_int));
+      this->enable_onday_vaccine_priority_discrete = (tmp_int == 1 ? true : false);
     }
     Params::get_param_from_string("vaccination_phases_names", &(number_of_phases));
     Params::get_param_from_string("vaccination_phases_age_low", &(N_phases_age_low));
@@ -178,6 +187,14 @@ Vaccine_Manager::Vaccine_Manager(Population *_pop) :
     if(this->enable_vaccine_priority_discrete_refill == true){
       if(N_phase_timing != number_of_phases){
 	this->enable_vaccine_priority_discrete_refill = false;
+      }
+    }
+    if(this->use_vaccine_acceptance_array = true){
+      char vax_prob_str[MAX_PARAM_SIZE];
+      Params::get_param((char*)"vaccination_acceptance_array", vax_prob_str);
+      Params::get_param_vector_from_string(vax_prob_str, vaccine_acceptance_prob_array);
+      for(int nn = 0; nn< this->vaccine_acceptance_prob_array.size(); ++nn){
+	printf("Position: %d, acceptance probability: %.2f\n", nn, this->vaccine_acceptance_prob_array[nn]);
       }
     }
     // If phases not specified, create a non-priority one
@@ -546,7 +563,8 @@ void Vaccine_Manager::update(int day) {
       printf("Day %d: Discrete priority timing enabled. Current priority is: %d and total policies %d\n", day, this->current_priority_included, this->policies.size());
       if(this->current_priority_included < (this->policies.size() - 1)){
 	printf("Current priority is not the last priority. Timing for next priority [%d] = %d\n", this->current_priority_included + 1, this->vaccine_priority_timing_vector[this->current_priority_included + 1]);
-	if(this->vaccine_priority_timing_vector[this->current_priority_included + 1] == day || this->priority_queue.size() == 0){
+	//if(this->vaccine_priority_timing_vector[this->current_priority_included + 1] == day || (this->priority_queue.size() == 0 && this->enable_onday_vaccine_priority_discrete == false)){
+	if(this->vaccine_priority_timing_vector[this->current_priority_included + 1] == day || (this->priority_queue.size() == 0)){
 	  printf("Going to refill priority queues based on priority timing\n");
 	  add_next_priority_to_queues();
 	}
@@ -554,9 +572,9 @@ void Vaccine_Manager::update(int day) {
     }
 
     // vaccinate people in the queues:
-    vaccinate(day);
+    int total_vax = vaccinate(day);
 
-    printf("After vaccinating, process immunity events\n");
+    printf("After vaccinating %d people, process immunity events\n", total_vax);
     //Update events for: gaining immunity and loss of imminuty
     this->process_vaccine_next_dose_events(day);
     this->process_vaccine_immunity_start_events(day);
@@ -625,12 +643,12 @@ void Vaccine_Manager::process_vaccine_immunity_end_events(int day){
   this->vaccine_immunity_end_event_queue->clear_events(day);
 }
 
-void Vaccine_Manager::vaccinate(int day) {
+int Vaccine_Manager::vaccinate(int day) {
   if(this->do_vacc) {
     cout << "Vaccinating!\n";
   } else {
     cout << "Not vaccinating!\n";
-    return;
+    return(0);
   }
 
   int number_one_dose = 0;
@@ -679,7 +697,7 @@ void Vaccine_Manager::vaccinate(int day) {
       sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
       Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
     }
-    return;
+    return(number_vaccinated);
   }
 
   
@@ -701,9 +719,20 @@ void Vaccine_Manager::vaccinate(int day) {
       ip = this->next_dose_queue.erase(ip);
       continue;
     }
+
+    double accept_next_dose = 1.0;
+    if(this->use_vaccine_acceptance_array == true){
+      // Determine the current dose
+      int n_dose = current_person->get_current_vaccine_dose(0);
+      // Determine probability of acceptance of second dose
+      if(n_dose >= this->vaccine_acceptance_prob_array.size()){
+	n_dose = this->vaccine_acceptance_prob_array.size() - 1;
+      }
+      accept_next_dose = this->vaccine_acceptance_prob_array[n_dose];
+      // Pick from vaccines of the first dose, not other vaccine!!!
+      //printf("WARNING. person = %d age = %.1f dose %d prob_acceptance %.2f\n", current_person->get_id(), current_person->get_real_age(), n_dose, accept_next_dose);
+    }
     
-    // Pick from vaccines of the first dose, not other vaccine!!!
-    //printf("person = %d age = %.1f vacc_app = %d\n", current_person->get_id(), current_person->get_real_age(), vacc_app);
     int vacc_app = current_person->get_health()->get_vaccinated_id();
     if(vacc_app > -1){
       if(this->vaccine_package->get_vaccine(vacc_app)->get_current_stock() <= 0){
@@ -722,13 +751,18 @@ void Vaccine_Manager::vaccinate(int day) {
 	if(Global::Enable_Behaviors == true){
 	  accept_vaccine = current_person->acceptance_of_another_vaccine_dose();	    
 	}else{
-	  accept_vaccine = true; // Assuming second doses are always accepted in this way
-	  // printf("SECOND DOSE ACCEPTED: person = %d age = %.1f vacc_app = %d\n", current_person->get_id(), current_person->get_real_age(), vacc_app);
+	  if(this->use_vaccine_acceptance_array == false){
+	    accept_vaccine = true; // Assuming second doses are always accepted in this way
+	  }else{
+	    double r = Random::draw_random();
+	    accept_vaccine = (r < accept_next_dose);
+	  }
 	}
       }
       if(accept_vaccine == true) {
         accept_count++;
         number_vaccinated++;
+	//printf("SECOND DOSE ACCEPTED: person = %d age = %.1f vacc_app = %d\n", current_person->get_id(), current_person->get_real_age(), vacc_app);
 	//printf("PERSON accepting vaccine, accept count %d, number vaccinated %d\n", accept_count, number_vaccinated);
         this->current_vaccine_capacity--;
         n_p_vaccinated++;
@@ -805,7 +839,7 @@ void Vaccine_Manager::vaccinate(int day) {
 	sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
 	Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
       }
-      return;
+      return(number_vaccinated);
     }
     if(current_vaccine_capacity == 0) {
       if(Global::Verbose > 0) {
@@ -832,7 +866,7 @@ void Vaccine_Manager::vaccinate(int day) {
 	sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
 	Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
       }
-      return;
+      return(number_vaccinated);
     }
   }
 
@@ -966,7 +1000,7 @@ void Vaccine_Manager::vaccinate(int day) {
 	sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
 	Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
       }
-      return;
+      return(number_vaccinated);
     }
     if(current_vaccine_capacity == 0) {
       if(Global::Verbose > 0) {
@@ -993,7 +1027,7 @@ void Vaccine_Manager::vaccinate(int day) {
 	sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
 	Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
       }
-      return;
+      return(number_vaccinated);
     }
   }
 
@@ -1121,7 +1155,7 @@ void Vaccine_Manager::vaccinate(int day) {
 	sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
 	Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
       }
-      return;
+      return(number_vaccinated);
     }
     if(this->current_vaccine_capacity == 0) {
       if(Global::Verbose > 0) {
@@ -1148,7 +1182,7 @@ void Vaccine_Manager::vaccinate(int day) {
 	sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
 	Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
       }
-      return;
+      return(number_vaccinated);
     }
   }
 
@@ -1176,5 +1210,5 @@ void Vaccine_Manager::vaccinate(int day) {
     sprintf(var_str, "VA_%d_%d", min_age_, max_age_);
     Global::Daily_Tracker->set_index_key_pair(day,var_str, vax_age_count[c]);      
   }
-  return;
+  return(number_vaccinated);
 }

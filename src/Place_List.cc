@@ -3132,6 +3132,17 @@ void Place_List::update_shelter_households(int day, int peak_day_, double propor
     NOTE: Update to shelter by workplace type from NAICS code
   */
 
+  if(day < Global::Epidemic_offset){
+    Global::Daily_Tracker->set_index_key_pair(day, "H_sheltering", sheltering_households);
+    Global::Daily_Tracker->set_index_key_pair(day, "N_sheltering", sheltering_pop);
+    Global::Daily_Tracker->set_index_key_pair(day, "C_sheltering", sheltering_new_infections);
+    Global::Daily_Tracker->set_index_key_pair(day, "AR_sheltering", sheltering_ar);
+    Global::Daily_Tracker->set_index_key_pair(day, "N_noniso", non_sheltering_pop);
+    Global::Daily_Tracker->set_index_key_pair(day, "C_noniso", non_sheltering_new_infections);
+    Global::Daily_Tracker->set_index_key_pair(day, "AR_noniso", non_sheltering_ar);
+    return;
+  }
+  
   if (!this->Shelter_relaxed) {
     for(int i = 0; i < this->shelter_households_timestep.size(); ++i) {
       Time_Step_Map_Shelter* tmap = this->shelter_households_timestep[i];
