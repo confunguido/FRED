@@ -38,14 +38,14 @@ public:
   ~Vaccine();
   
   void add_dose(Vaccine_Dose* dose);
-  void add_booster(Vaccine_Dose* dose);
+  //void add_booster(Vaccine_Dose* dose);
   
   int get_disease()                 const { return disease; }
   int get_ID()                     const { return id; }
   int get_number_doses()           const { return doses.size(); }
   Vaccine_Dose* get_dose(int i)    const { return doses[i]; }
-  int get_number_boosters()           const { return boosters.size(); }
-  Vaccine_Dose* get_booster(int i)    const { return boosters[i]; }
+  //int get_number_boosters()           const { return boosters.size(); }
+  //Vaccine_Dose* get_booster(int i)    const { return boosters[i]; }
   
   // Logistics Functions
   int get_initial_stock()          const { return initial_stock; }
@@ -139,8 +139,8 @@ private:
   int disease;                          // Which Disease is this vaccine for
   int number_doses;                    // How many doses does the vaccine need.  
   vector < Vaccine_Dose* > doses;       // Data structure to hold the efficacy of each dose.
-  int number_boosters;                    // How many boosters does the vaccine need.  
-  vector < Vaccine_Dose* > boosters;       // Data structure to hold the efficacy of each booster.
+  //int number_boosters;                    // How many boosters does the vaccine need.  
+  //vector < Vaccine_Dose* > boosters;       // Data structure to hold the efficacy of each booster.
   vector < double > disease_specific_efficacy_modifier;
   vector < double > disease_specific_efficacy_symp_modifier;
   vector < double > disease_specific_efficacy_hosp_modifier;

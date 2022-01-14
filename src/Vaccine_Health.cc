@@ -42,13 +42,11 @@ Vaccine_Health::Vaccine_Health(int _vaccination_day, Vaccine* _vaccine, double _
 
   /*
     Boosters 
-   */
-  double efficacy_bst = vaccine->get_efficacy_bst(_age);
   double efficacy_bst_symp = vaccine->get_efficacy_bst_symp(_age);
   double efficacy_bst_hosp = vaccine->get_efficacy_bst_hosp(_age);  
   double efficacy_bst_delay = vaccine->get_efficacy_bst_delay(_age);
   double efficacy_bst_duration = vaccine->get_dose(0)->get_duration_of_immunity(_age);
-  
+  */
   // vaccine_booster_day[%1$d] = %7$d;  
   // vaccine_booster_efficacy_age_groups[%1$d] = 1 100;
   // vaccine_booster_efficacy_values[%1$d] = 1 %8$.4f;
@@ -91,11 +89,13 @@ Vaccine_Health::Vaccine_Health(int _vaccination_day, Vaccine* _vaccine, double _
   
   current_dose = 0;
   days_to_next_dose = -1;
+  next_dose_mix_match = -1;
   if(Global::Debug > 1) {
     cout << "Agent: " << person->get_id() << " took dose " << current_dose << " on day "<< vaccination_day << "\n";
   }
   if(vaccine->get_number_doses() > 1){
     days_to_next_dose = vaccination_day + vaccine->get_dose(0)->get_days_between_doses();
+    next_dose_mix_match = vaccine->get_dose(0)->get_next_dose_mix_match();
   }
   /*
   printf("Vaccine: %d Efficacy %.2f -> %d, Efficacy Symptoms %.2f -> %d, Efficacy Hosp %.2f -> %d\n",
@@ -301,6 +301,7 @@ void Vaccine_Health::update(int day, double age){
     if(day >= days_to_next_dose){
       current_dose++;
       days_to_next_dose = day + vaccine->get_dose(current_dose)->get_days_between_doses();
+      next_dose_mix_match =  vaccine->get_dose(current_dose)->get_next_dose_mix_match();
       int vaccine_dose_priority = vaccine_manager->get_vaccine_dose_priority();
       if(Global::Debug < 1){
 	cout << "Agent " << person->get_id()

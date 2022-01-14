@@ -46,6 +46,7 @@ Vaccine_Manager::Vaccine_Manager() {
   this->current_vaccine_capacity = -1;
   this->current_priority_included = -1;
   this->vaccine_priority_only = false;
+  this->enable_vaccine_mix_and_match = false;
   this->enable_vaccine_priority_discrete_refill = false;
   this->enable_onday_vaccine_priority_discrete = false;
   this->vaccination_capacity_map = NULL;
@@ -734,11 +735,33 @@ int Vaccine_Manager::vaccinate(int day) {
     }
     
     int vacc_app = current_person->get_health()->get_vaccinated_id();
+    // Would the person accept another vaccine?
+    int mix_app = -1;
+    // Determine next dose for each vaccine here. 
     if(vacc_app > -1){
       if(this->vaccine_package->get_vaccine(vacc_app)->get_current_stock() <= 0){
-	vacc_app = -1;
+	int curr_dose = current_person->get_current_vaccine_dose(0);
+	//printf("NOT VACCINES FOR PERSON vaccinated with vaccine %d and on dose %d ESTIMATING MIX MATCH\n",vacc_app, curr_dose);
+	if(current_person->get_next_dose_mix_match(0) == 1){	  
+	  for(unsigned int i_v = 0; i_v < this->vaccine_package->get_number_of_vaccine_types(); i_v++){
+	    if(this->vaccine_package->get_vaccine(i_v)->get_current_stock() > 0){
+	      vacc_app = current_person->get_health()->get_vaccinated_id();
+	      mix_app = i_v;
+	      break;
+	    }
+	  }
+	  printf("PERSON vaccinated with vaccine %d and on dose %d allows mix and match for next dose %d\n",vacc_app, curr_dose, mix_app);
+	  if(mix_app == -1){
+	    vacc_app = -1;
+	  }
+	}else{
+	  vacc_app = -1;
+	}
       }
     }
+    /*if(vacc_app < 0){
+      printf("NOT VACCINES FOR PERSON vaccinated with vaccine %d  mix_match %d\n",vacc_app, mix_app);
+      }*/
     if(vacc_app > -1) {
       bool accept_vaccine = false;
       // STB need to refactor to work with multiple diseases
@@ -767,7 +790,12 @@ int Vaccine_Manager::vaccinate(int day) {
         this->current_vaccine_capacity--;
         n_p_vaccinated++;
         Vaccine* vacc = this->vaccine_package->get_vaccine(vacc_app);
-        vacc->remove_stock(1);
+	if(mix_app > -1){
+	  Vaccine* mix_vacc = this->vaccine_package->get_vaccine(mix_app);
+	  mix_vacc->remove_stock(1);
+	}else{
+	  vacc->remove_stock(1);
+	}
         total_vaccines_avail--;
         current_person->take_vaccine(vacc, day, this);
 	int curr_dose = current_person->get_current_vaccine_dose(0);

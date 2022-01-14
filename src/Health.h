@@ -363,6 +363,7 @@ public:
 
   int get_current_vaccine_dose(int i);
   int get_days_to_next_dose(int i);
+  int get_next_dose_mix_match(int i);
   
   // MODIFIERS
 

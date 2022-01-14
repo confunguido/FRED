@@ -1283,6 +1283,15 @@ int Health::get_days_to_next_dose(int i){
     return -1;
   }
 }
+
+int Health::get_next_dose_mix_match(int i){
+   if(this->vaccine_health) {
+    return (*this->vaccine_health)[i]->get_next_dose_mix_match();
+  } else {
+    return -1;
+  }
+}
+
 //Medication operators
 void Health::take_vaccine(Vaccine* vaccine, int day, Vaccine_Manager* vm) {
   // Compliance will be somewhere else

@@ -25,7 +25,7 @@ class Vaccine_Dose {
   // for a vaccine.  A vaccine may have as many doses as it needs.
 public:
   // Creation Operators
-  Vaccine_Dose(Age_Map* _efficacy, Age_Map* _efficacy_symp, Age_Map* _efficacy_hosp, Age_Map* _efficacy_delay, Age_Map* _efficacy_duration, int _days_between_doses);
+  Vaccine_Dose(Age_Map* _efficacy, Age_Map* _efficacy_symp, Age_Map* _efficacy_hosp, Age_Map* _efficacy_delay, Age_Map* _efficacy_duration, int _days_between_doses, int _mix_match);
   ~Vaccine_Dose();
   
   //Parameter Access
@@ -40,14 +40,15 @@ public:
   double  get_efficacy_delay(double real_age)   const { return efficacy_delay->find_value(real_age); }
   double  get_duration_of_immunity(double real_age);
   int     get_days_between_doses()  const { return days_between_doses; }
-  
+  int     get_next_dose_mix_match() const { return mix_and_match_next_dose; }
   bool    is_within_age(double real_age) const;
-  
+
   //Utility Functions... no need for update or reset.
   void print() const;
   
 private:
   int days_between_doses;       // Number of days until the next dose is administered
+  int mix_and_match_next_dose;
   Age_Map* efficacy;            // Age specific efficacy of vaccine, does the dose provide immunity
   Age_Map* efficacy_symp;            // Age specific efficacy of vaccine against symptoms, does the dose provide immunity
   Age_Map* efficacy_hosp;            // Age specific efficacy of vaccine against symptoms, does the dose provide immunity

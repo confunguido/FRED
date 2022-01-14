@@ -106,12 +106,21 @@ void Vaccines::setup(void) {
       Age_Map* efficacy_hosp_map = new Age_Map("Dose Efficacy Hospitalization");      
       Age_Map* efficacy_delay_map = new Age_Map("Dose Efficacy Delay");
       Params::get_double_indexed_param("vaccine_next_dosage_day",iv,id,&tbd);
+      int vax_mix_match = 0;
+      Params::disable_abort_on_failure();
+      int found_p = Params::get_double_indexed_param("vaccine_next_dose_mix_match",iv,id,&vax_mix_match);
+      if(found_p != 1){
+	vax_mix_match = 0;
+      }
+      printf("Parameter vax mix match for vaccine %d[%d] = %d found %d\n", iv, id, vax_mix_match,found_p);
+      Params::set_abort_on_failure();
       efficacy_map->read_from_input("vaccine_dose_efficacy",iv,id);
       efficacy_symp_map->read_from_input("vaccine_dose_efficacy_symptoms",iv,id);
       efficacy_hosp_map->read_from_input("vaccine_dose_efficacy_hospitalization",iv,id);
       efficacy_delay_map->read_from_input("vaccine_dose_efficacy_delay",iv,id);
-      vaccines[iv]->add_dose(new Vaccine_Dose(efficacy_map,efficacy_symp_map,efficacy_hosp_map,efficacy_delay_map,efficacy_duration_map,tbd));
+      vaccines[iv]->add_dose(new Vaccine_Dose(efficacy_map,efficacy_symp_map,efficacy_hosp_map,efficacy_delay_map,efficacy_duration_map,tbd,vax_mix_match));
     }
+    /*
     // If boosters are enabled, then
     for(int id=0;id<num_boosters;id++){
       Age_Map* efficacy_map = new Age_Map("Booster Efficacy");
@@ -125,8 +134,11 @@ void Vaccines::setup(void) {
       efficacy_delay_map->read_from_input("vaccine_booster_efficacy_delay",iv,id);
       vaccines[iv]->add_booster(new Vaccine_Dose(efficacy_map,efficacy_symp_map,efficacy_hosp_map,efficacy_delay_map,efficacy_duration_map,tbd));
     }    
+    */
   }
-  
+
+  printf("Finished reading vaccines and doses\n");
+
   if(Global::Enable_Vaccine_Stock_Timeseries_File == true) {
     char map_file_name[FRED_STRING_SIZE];
     Params::get_param_from_string("vaccine_stock_timeseries_file", map_file_name);

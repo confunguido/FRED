@@ -347,6 +347,10 @@ public:
     return this->health.get_days_to_next_dose(i);
   }
 
+  int get_next_dose_mix_match(int i){
+    return this->health.get_next_dose_mix_match(i);
+  }
+
   /**
    * @return <code>true</code> if this agent is symptomatic, <code>false</code> otherwise
    * @see Health::is_symptomatic()

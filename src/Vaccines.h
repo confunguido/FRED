@@ -56,7 +56,7 @@ public:
   vector <int> which_vaccines_applicable(double real_age) const;
   int pick_from_applicable_vaccines(double real_age) const;
   int get_total_vaccines_avail_today() const;
-  
+  unsigned int get_number_of_vaccine_types() const {return vaccines.size();}
   
   //utility Functions
   void print() const;

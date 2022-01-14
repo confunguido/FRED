@@ -156,6 +156,7 @@ private:
   bool refresh_vaccine_queues_daily;      //True - people queue up in random order each day
   bool enable_vaccine_priority_discrete_refill;
   bool enable_onday_vaccine_priority_discrete;
+  bool enable_vaccine_mix_and_match;
   bool use_vaccine_acceptance_array;
   
   int vaccine_priority_age_low;           //Age specific priority

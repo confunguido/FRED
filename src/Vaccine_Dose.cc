@@ -26,13 +26,15 @@ using namespace std;
 
 Vaccine_Dose::Vaccine_Dose(Age_Map* _efficacy, Age_Map* _efficacy_symp,
 			   Age_Map* _efficacy_hosp, Age_Map* _efficacy_delay,
-			   Age_Map* _efficacy_duration, int _days_between_doses){
+			   Age_Map* _efficacy_duration, int _days_between_doses,
+			   int _mix_match){
   efficacy = _efficacy;
   efficacy_symp = _efficacy_symp;
   efficacy_hosp = _efficacy_hosp;
   efficacy_delay = _efficacy_delay;
   efficacy_duration = _efficacy_duration;
   days_between_doses = _days_between_doses;
+  mix_and_match_next_dose = _mix_match;
 }
 
 Vaccine_Dose::~Vaccine_Dose(){
@@ -44,6 +46,7 @@ Vaccine_Dose::~Vaccine_Dose(){
 
 void Vaccine_Dose::print() const {
   cout << "Time Between Doses:\t " << days_between_doses << "\n";
+  cout << "Mix and match next dose:\t " << mix_and_match_next_dose << "\n";
   efficacy->print();
   efficacy_symp->print();
   efficacy_hosp->print();

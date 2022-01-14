@@ -57,6 +57,7 @@ public:
   Vaccine* get_vaccine()                 const { return vaccine; }
   int get_current_dose()                 const { return current_dose; }
   int get_days_to_next_dose()            const { return days_to_next_dose; }
+  int get_next_dose_mix_match()            const { return next_dose_mix_match; }
   Vaccine_Manager* get_vaccine_manager() const { return vaccine_manager; }
   // Modifiers
   void set_vaccination_day(int day) { 
@@ -85,6 +86,7 @@ private:
   Vaccine* vaccine;                 // Which vaccine did you take
   int current_dose;                 // Current Dose that the agent is on
   int days_to_next_dose;            // How long between doses
+  int next_dose_mix_match;          // Does it accept other vaccines (with same efficacy of primary vax)
   Person * person;                  // The person object this belongs to.
   Vaccine_Manager* vaccine_manager; // Which manager did the vaccine come from?
   bool effective;

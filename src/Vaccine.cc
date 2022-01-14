@@ -50,9 +50,9 @@ Vaccine::~Vaccine(){
   for(unsigned int i = 0; i < doses.size(); i++){
     delete doses[i];
   }
-  for(unsigned int i = 0; i < boosters.size(); i++){
-    delete boosters[i];
-  }
+  // for(unsigned int i = 0; i < boosters.size(); i++){
+  //   delete boosters[i];
+  // }
   delete strains;
 }
 
@@ -60,9 +60,9 @@ void Vaccine::add_dose(Vaccine_Dose* _vaccine_dose) {
   doses.push_back(_vaccine_dose);
 }
 
-void Vaccine::add_booster(Vaccine_Dose* _vaccine_dose) {
-  boosters.push_back(_vaccine_dose);
-}
+// void Vaccine::add_booster(Vaccine_Dose* _vaccine_dose) {
+//   boosters.push_back(_vaccine_dose);
+// }
 
 void Vaccine::print() const {
   cout << "Name = \t\t\t\t" << name << "\n";
@@ -78,13 +78,7 @@ void Vaccine::print() const {
     cout << "Dose #" << i+1 << "\n";
     doses[i]->print();
   }
-  
-  cout << "Boosters Information\n";
-  for(unsigned int i=0; i<boosters.size(); i++){
-    cout << "Boosters #" << i+1 << "\n";
-    boosters[i]->print();
-  }
-  
+    
   if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
     cout << "Differential efficacy information for " << this->disease_specific_efficacy_modifier.size() <<" diseases\n";
     for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
