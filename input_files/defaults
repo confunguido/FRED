@@ -416,6 +416,12 @@ school_closure_cases = -1
 # an alias for school_closure_cases
 Cases = -1
 
+# close schools based on wastewater RNA measurement? (true/false)
+individual_school_closure_by_wastewater = 1
+
+# per capita viral RNA in wastewater threshold for closure
+individual_school_wastewater_threshold = 4210
+
 ##########################################################
 #
 # ANTIVIRALS (OPTIONAL)
@@ -628,8 +634,14 @@ influenza_full_symptoms_end = 1.0
 influenza_full_infectivity_start = 0.0
 influenza_full_infectivity_end = 1.0
 
+#### Shedding distribution parameters
+influenza_shed_shape = 2.05
+influenza_shed_scale = 6.62
+influenza_shed_mag = 4210
+
+
 ######################################################
-#
+#	
 ### DEFAULT PLACE-SPECIFIC CONTACTS FOR RESPIRATORY TRANSMISSION
 #
 # The following contacts are calibrated for Allegheny County for a 33%

@@ -33,6 +33,7 @@ public:
     return low + (int) ((high - low + 1) * random());
   }
   double exponential(double lambda);
+  double gamma(double k, double theta);
   int draw_from_distribution(int n, double *dist);
   double normal(double mu, double sigma);
   double lognormal(double mu, double sigma);
@@ -75,6 +76,9 @@ public:
   double exponential(double lambda) {
     return thread_rng[fred::omp_get_thread_num()].exponential(lambda);
   }
+  double gamma(double k, double theta) {
+    return thread_rng[fred::omp_get_thread_num()].gamma(k, theta);
+  }
   double normal(double mu, double sigma) {
     return thread_rng[fred::omp_get_thread_num()].normal(mu, sigma);
   }
@@ -108,6 +112,9 @@ public:
   }
   static double draw_exponential(double lambda) { 
     return Random_Number_Generator.exponential(lambda);
+  }
+  static double draw_gamma(double k, double theta) { 
+    return Random_Number_Generator.gamma(k,theta);
   }
   static double draw_normal(double mu, double sigma) { 
     return Random_Number_Generator.normal(mu,sigma);

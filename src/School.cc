@@ -39,6 +39,8 @@ double School::individual_school_closure_threshold = 0.0;
 int School::school_closure_cases = -1;
 int School::school_closure_duration = 0;
 int School::school_closure_delay = 0;
+bool School::individual_school_closure_by_wastewater = false;
+double School::individual_school_wastewater_threshold = 0.0;
 int School::school_summer_schedule = 0;
 char School::school_summer_start[8];
 char School::school_summer_end[8];
@@ -169,6 +171,12 @@ void School::get_parameters() {
   Params::get_param_from_string("individual_school_closure_ar_threshold",
 				&School::individual_school_closure_threshold);
   Params::get_param_from_string("school_closure_cases", &School::school_closure_cases);
+  int temp_integer = 0;
+  Params::get_param_from_string("individual_school_closure_by_wastewater",
+				&temp_integer);
+  School::individual_school_closure_by_wastewater = (temp_integer == 0 ? false : true);
+  Params::get_param_from_string("individual_school_wastewater_threshold",
+				&School::individual_school_wastewater_threshold);
 
   // aliases for parameters
   int Weeks;
@@ -332,6 +340,11 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
     close_this_school = (School::individual_school_closure_threshold <= get_symptomatic_attack_rate(disease_id));
   }
 
+  // if individual_school_closure_by_wastewater then close if this threshold is met
+  if(School::individual_school_closure_by_wastewater) {
+    close_this_school = (School::individual_school_wastewater_threshold <= get_wastewater_rna(disease_id,day));
+  }
+
   if(close_this_school) {
     // set close and open dates for this school (only once)
     close(day,day + School::school_closure_delay, School::school_closure_duration);
@@ -339,9 +352,9 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
     // log this school closure decision
     if(Global::Verbose > 0) {
       Disease* disease = Global::Diseases.get_disease(disease_id);
-      printf("LOCAL SCHOOL CLOSURE pop_ar %.3f local_cases = %d / %d (%.3f)\n",
+      printf("LOCAL SCHOOL CLOSURE pop_ar %.3f local_cases = %d / %d (%.3f) WW conc = %d GC/l\n",
 	     disease->get_symptomatic_attack_rate(), get_total_cases(disease_id),
-	     get_size(), get_symptomatic_attack_rate(disease_id));
+	     get_size(), get_symptomatic_attack_rate(disease_id), get_wastewater_rna(disease_id,day));
     }
   }
 }

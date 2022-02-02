@@ -153,6 +153,7 @@ public:
   int get_infectees(int disease_id) const;
   double get_susceptibility(int disease_id) const;
   double get_infectivity(int disease_id, int day) const;
+  double get_shedding(int disease_id, int day) const;
   double get_symptoms(int disease_id, int day) const;
   Infection* get_infection(int disease_id) const {
     return this->infection[disease_id];

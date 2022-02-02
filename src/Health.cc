@@ -929,6 +929,14 @@ double Health::get_infectivity(int disease_id, int day) const {
   }
 }
 
+double Health::get_shedding(int disease_id, int day) const {
+  if(this->infection[disease_id] == NULL) {
+    return 0.0;
+  } else {
+    return this->infection[disease_id]->get_shedding(day);
+  }
+}
+
 double Health::get_symptoms(int disease_id, int day) const {
 
   if(this->infection[disease_id] == NULL) {

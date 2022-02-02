@@ -128,6 +128,8 @@ public:
 
   int get_recovereds(int disease_id);
 
+  double get_wastewater_rna(int disease_id, int day);
+  
   person_vec_t* get_enrollees() {
     return &(this->enrollees);
   }

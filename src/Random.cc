@@ -14,6 +14,7 @@
 // File: Random.cc
 //
 #include "Random.h"
+#include <cmath>
 #include <stdio.h>
 
 Thread_RNG Random::Random_Number_Generator;
@@ -58,6 +59,31 @@ int RNG::draw_from_distribution(int n, double* dist) {
 double RNG::exponential(double lambda) {
   double u = random();
   return (-log(u) / lambda);
+}
+
+double RNG::gamma(double k, double theta) {
+  double d, c, u, x, v;
+  if(k < 1) {
+    d = k + 2/3;
+    c = 1 / std::sqrt(9 * d);
+    do
+      {
+	u = random();
+	x = normal(0.0,1.0);
+	v = std::pow(1 + x * c,3);
+      } while (v < 0 || std::log(u) > x*x*0.5 + d - d*v + d*std::log(v));
+    return (v * d * theta * std::pow(random(),1/k));
+  } else {
+    d = k - 1/3;
+    c = 1 / std::sqrt(9 * d);
+    do
+      {
+	u = random();
+	x = normal(0.0,1.0);
+	v = std::pow(1 + x * c,3);
+      } while (v < 0 || std::log(u) > x*x*0.5 + d - d*v + d*std::log(v));
+    return (v * d * theta);
+  }  
 }
 
 double RNG::normal(double mu, double sigma) {

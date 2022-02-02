@@ -374,6 +374,16 @@ public:
   /**
    * @param disease the disease to check
    * @param day the simulation day
+   * @return the specific Disease's infectivity current shedding level into wastewater for this Person
+   * @see Health::get_shedding(int disease, int day)
+   */
+  double get_shedding(int disease_id, int day) const {
+    return this->health.get_shedding(disease_id, day);
+  }
+  
+  /**
+   * @param disease the disease to check
+   * @param day the simulation day
    * @return the Symptoms for this Person
    * @see Health::get_symptoms(int day)
    */

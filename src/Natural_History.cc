@@ -117,6 +117,9 @@ void Natural_History::setup(Disease * _disease) {
   this->full_symptoms_end = 1;
   this->full_infectivity_start = 0;
   this->full_infectivity_end = 1;
+  this->shedding_shape = 1;
+  this->shedding_scale = 1;
+  this->shedding_magnitude = 1;
   this->enable_case_fatality = 0;
   this->min_symptoms_for_case_fatality = -1;
   this->age_specific_prob_case_fatality = NULL;
@@ -246,6 +249,11 @@ void Natural_History::get_parameters() {
   Params::get_indexed_param(disease_name, "infectivity_threshold", &(this->infectivity_threshold));
   Params::get_indexed_param(disease_name, "symptomaticity_threshold", &(this->symptomaticity_threshold));
 
+  // get wastewater shedding parameters
+  Params::get_indexed_param(disease_name, "shedding_shape", &(this->shedding_shape));
+  Params::get_indexed_param(disease_name, "shedding_scale", &(this->shedding_scale));
+  Params::get_indexed_param(disease_name, "shedding_magnitude", &(this->shedding_magnitude));
+  
   // age specific probablility of symptoms
   this->age_specific_prob_symptoms = new Age_Map("Symptoms");
   sprintf(paramstr, "%s_prob_symptoms", disease_name);

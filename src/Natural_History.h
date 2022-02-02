@@ -185,6 +185,18 @@ public:
     return this->full_infectivity_end;
   }
 
+  double get_shedding_shape() {
+    return this->shedding_shape;
+  }
+
+  double get_shedding_scale() {
+    return this->shedding_scale;
+  }
+
+  double get_shedding_magnitude() {
+    return this->shedding_magnitude;
+  }
+ 
 
 protected:
   Disease* disease;
@@ -243,6 +255,11 @@ protected:
   double full_symptoms_end;
   double full_infectivity_start;
   double full_infectivity_end;
+
+  // wastewater shedding parameters
+  double shedding_shape;
+  double shedding_scale;
+  double shedding_magnitude;
   
   // case fatality parameters
   int enable_case_fatality;

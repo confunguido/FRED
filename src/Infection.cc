@@ -11,7 +11,7 @@
 
 // File Infection.cc
 
-
+#include <cmath>
 #include "Disease.h"
 #include "Global.h"
 #include "HIV_Infection.h"
@@ -435,6 +435,26 @@ double Infection::get_infectivity(int day) {
   if(this->will_develop_symptoms == false) {
     result *= this->disease->get_natural_history()->get_asymptomatic_infectivity();
   }
+  return result;
+}
+
+double Infection::get_shedding(int day) {
+  if(day < this->exposure_date) {
+    FRED_VERBOSE(0, "SHEDDING: day %d OUT OF BOUNDS id %d exposure_date %d\n",
+		 day, this->host->get_id(), this->exposure_date);
+    return 0.0;
+  }
+
+  // day is following exposure SHOULD WE CUT THIS OFF BY A CERTAIN DAY?
+  int days_shedding = day - this->exposure_date;
+  double shed_shape = this->disease->get_natural_history()->get_shedding_shape(); 
+  double shed_scale = this->disease->get_natural_history()->get_shedding_scale(); 
+  double shed_mag = this->disease->get_natural_history()->get_shedding_magnitude(); 
+  double result = shed_mag * std::pow(days_shedding,shed_shape-1) * std::exp(-days_shedding/shed_scale) * std::pow(shed_scale,-shed_shape) / std::tgamma(shed_shape);
+
+  FRED_VERBOSE(1,"SHEDDING: day %d result %f\n", 
+	       day, result);
+  
   return result;
 }
 

@@ -181,6 +181,8 @@ private:
   static int school_closure_cases;
   static int school_closure_duration;
   static int school_closure_delay;
+  static bool individual_school_closure_by_wastewater;
+  static double individual_school_wastewater_threshold;
   static int school_summer_schedule;
   static char school_summer_start[];
   static char school_summer_end[];

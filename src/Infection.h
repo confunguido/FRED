@@ -58,6 +58,8 @@ public:
 
   virtual double get_infectivity(int day);
 
+  virtual double get_shedding(int day);
+
   virtual double get_symptoms(int day);
 
   virtual void print();

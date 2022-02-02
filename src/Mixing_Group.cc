@@ -161,6 +161,17 @@ int Mixing_Group::get_recovereds(int disease_id) {
   return count;
 }
 
+double Mixing_Group::get_wastewater_rna(int disease_id, int day) {
+  double total_rna = 0.0;
+  vector<Person*>::iterator it;
+  for(it = this->enrollees.begin(); it != this->enrollees.end(); ++it) {
+    if((*it)->is_infected(disease_id)) {
+      total_rna += (*it)->get_shedding(disease_id, day);
+    }
+  }
+  return total_rna; 
+}
+
 void Mixing_Group::add_infectious_person(int disease_id, Person* person) {
   FRED_VERBOSE(1, "ADD_INF: person %d mix_group %s\n", person->get_id(), this->label);
   this->infectious_people[disease_id].push_back(person);
