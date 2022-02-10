@@ -250,9 +250,9 @@ void Natural_History::get_parameters() {
   Params::get_indexed_param(disease_name, "symptomaticity_threshold", &(this->symptomaticity_threshold));
 
   // get wastewater shedding parameters
-  Params::get_indexed_param(disease_name, "shedding_shape", &(this->shedding_shape));
-  Params::get_indexed_param(disease_name, "shedding_scale", &(this->shedding_scale));
-  Params::get_indexed_param(disease_name, "shedding_magnitude", &(this->shedding_magnitude));
+  Params::get_indexed_param(disease_name, "shed_shape", &(this->shedding_shape));
+  Params::get_indexed_param(disease_name, "shed_scale", &(this->shedding_scale));
+  Params::get_indexed_param(disease_name, "shed_mag", &(this->shedding_magnitude));
   
   // age specific probablility of symptoms
   this->age_specific_prob_symptoms = new Age_Map("Symptoms");

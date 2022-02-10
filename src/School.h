@@ -181,8 +181,11 @@ private:
   static int school_closure_cases;
   static int school_closure_duration;
   static int school_closure_delay;
+  static bool individual_school_closure_by_cases;
   static bool individual_school_closure_by_wastewater;
-  static double individual_school_wastewater_threshold;
+  static bool school_include_rna_measurement_variability;
+  static int individual_school_wastewater_threshold;
+  static double school_wastewater_measurement_negbin_size;
   static int school_summer_schedule;
   static char school_summer_start[];
   static char school_summer_end[];
@@ -209,6 +212,7 @@ private:
   int max_grade;
   int county_index;
   int income_quartile;
+  int wastewater_rna;
 };
 
 #endif // _FRED_SCHOOL_H

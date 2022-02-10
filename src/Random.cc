@@ -83,7 +83,32 @@ double RNG::gamma(double k, double theta) {
 	v = std::pow(1 + x * c,3);
       } while (v < 0 || std::log(u) > x*x*0.5 + d - d*v + d*std::log(v));
     return (v * d * theta);
-  }  
+  }
+}
+
+int RNG::poisson(double lambda) {
+  const int STEP = 500; // This parameter prevents underflow
+  double p = 1, lambdaLeft = lambda;
+  int k = 0;
+  do
+    {
+      k += 1;
+      p *= random();
+      while (p < 1 && lambdaLeft > 0) {
+	if (lambdaLeft > STEP) {
+	  p *= std::exp(STEP);
+	  lambdaLeft -= STEP;
+	} else {
+	  p *= std::exp(lambdaLeft);
+	  lambdaLeft = 0;
+	}
+      }
+    } while (p > 1);
+  return k-1;
+}
+
+int RNG::negative_binomial(double mu, double r) {
+  return (mu==0) ? 0 : poisson(gamma(r,mu/r));
 }
 
 double RNG::normal(double mu, double sigma) {

@@ -19,6 +19,7 @@
 
 #include "Global.h"
 #include "Person.h"
+#include "Random.h"
 
 class Person;
 
@@ -128,7 +129,8 @@ public:
 
   int get_recovereds(int disease_id);
 
-  double get_wastewater_rna(int disease_id, int day);
+  int get_wastewater_rna(int disease_id, int day);
+  int get_wastewater_rna(int disease_id, int day, double negbin_size); // accounting for variability
   
   person_vec_t* get_enrollees() {
     return &(this->enrollees);
