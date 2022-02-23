@@ -71,12 +71,13 @@ sub extract_from_outfile {
     my $col = 0;
     my @a = split " ", $line;
     $fields = scalar @a / 2;
+    ##print "$rows - fields: $fields\n";
     for (my $col = 0; $col < $fields; $col++) {
       my $var = $a[2*$col];
       my $val = $a[2*$col+1];
       if ($rows == 0) {
 	push @varname, $var;
-      }
+      }      
       $value[$rows][$col] = $val;;
     }
     $rows++;
@@ -90,7 +91,7 @@ sub extract_from_outfile {
     my $var = $varname[$col];
     print TABLE "$var\n";
     for (my $row = 0; $row < $rows; $row++) {
-      print TABLE "$value[$row][$col]\n";
+	print TABLE "$value[$row][$col]\n";
     }
     close TABLE;
   }

@@ -102,7 +102,7 @@ public:
   // MAX_NUM_DISEASES sets the size of stl::bitsets and static arrays used throughout FRED
   // to store disease-specific flags and pointers; set to the visualizationest possible value 
   // for optimal performance and memory usage
-  static const int MAX_NUM_DISEASES = 4;
+  static const int MAX_NUM_DISEASES = 6;
   // Change this constant and recompile to allow more threads.  For efficiency should be
   // equal to OMP_NUM_THREADS value that will be used.  If OMP_NUM_THREADS greater than
   // MAX_NUM_THREADS is used, FRED will abort the run.
@@ -270,10 +270,18 @@ public:
   static bool Assign_Teachers;
   static bool Enable_Household_Shelter;
   static bool Enable_Household_Shelter_File;
+  static bool Enable_Hospitalization_Multiplier_File;
   static bool Enable_Household_Shelter_By_Age;
   static bool Enable_Face_Mask_Timeseries_File;
+  static bool Enable_Vaccine_Stock_Timeseries_File;
+  static bool Enable_Vaccination_Phases;
   static bool Enable_Face_Mask_Usage;
+  static bool Enable_Community_Contact_Timeseries;
+  static bool Enable_Disease_Cross_Protection;
   static bool Enable_School_Reduced_Capacity;
+  static bool Enable_School_Classroom_Size_Array;
+  static bool Enable_Retiree_Random_Place;
+  static double Retiree_Random_Place_Prob;
   static double School_reduced_capacity;
   static int School_reduced_capacity_day;
   static bool Enable_Nursing_Homes_Importations;
@@ -281,6 +289,11 @@ public:
   static bool Enable_Household_Shelter_Relax_Post_Peak_Period;
   static bool Enable_Household_Shelter_Relax_Post_Peak_Threshold;
   static bool Enable_Isolation;
+  static bool Enable_Holiday_Contacts;
+  static int holiday_start_month;
+  static int holiday_start_day;
+  static int holiday_end_month;
+  static int holiday_end_day;
   static int Isolation_Delay;
   static double Isolation_Rate;
   static char PSA_Method[];

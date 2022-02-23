@@ -47,3 +47,52 @@ Vaccine_Priority_Policy_ACIP::Vaccine_Priority_Policy_ACIP(Vaccine_Manager *vcm)
   decision_list.push_back(new Vaccine_Priority_Decision_Pregnant(this));
   decision_list.push_back(new Vaccine_Priority_Decision_At_Risk(this));
 }
+
+Vaccine_Priority_Policy_Phase_Age::Vaccine_Priority_Policy_Phase_Age(Vaccine_Manager *vcm):
+  Policy(dynamic_cast <Manager *> (vcm)){
+  Name = "Vaccine Priority Policy - Age specific phased priority";
+  
+  decision_list.push_back(new Vaccine_Priority_Decision_Phase_Age(this));
+  
+}
+  
+Vaccine_Priority_Policy_Phase_Essential_Workers::Vaccine_Priority_Policy_Phase_Essential_Workers(Vaccine_Manager *vcm):
+  Policy(dynamic_cast <Manager *> (vcm)){
+  Name = "Vaccine Priority Policy - Essential workers phased priority";
+  
+  decision_list.push_back(new Vaccine_Priority_Decision_Phase_Essential_Workers(this));
+  
+}
+
+Vaccine_Priority_Policy_Phase_Teachers::Vaccine_Priority_Policy_Phase_Teachers(Vaccine_Manager *vcm):
+  Policy(dynamic_cast <Manager *> (vcm)){
+  Name = "Vaccine Priority Policy - Teachers phased priority";
+  
+  decision_list.push_back(new Vaccine_Priority_Decision_Phase_Teachers(this));
+  
+}
+
+Vaccine_Priority_Policy_Phase_Comorbidities::Vaccine_Priority_Policy_Phase_Comorbidities(Vaccine_Manager *vcm):
+  Policy(dynamic_cast <Manager *> (vcm)){
+  Name = "Vaccine Priority Policy - Comorbidities phased priority";
+  
+  decision_list.push_back(new Vaccine_Priority_Decision_Phase_Comorbidities(this));
+  
+}
+
+Vaccine_Priority_Policy_Phase_LTC::Vaccine_Priority_Policy_Phase_LTC(Vaccine_Manager *vcm):
+  Policy(dynamic_cast <Manager *> (vcm)){
+  Name = "Vaccine Priority Policy - Long term care facilities phased priority";
+  
+  decision_list.push_back(new Vaccine_Priority_Decision_Phase_LTC(this));
+  
+}
+
+Vaccine_Priority_Policy_Phase_No_Priority::Vaccine_Priority_Policy_Phase_No_Priority(Vaccine_Manager *vcm):
+  Policy(dynamic_cast <Manager *> (vcm)){
+  Name = "Vaccine Priority Policy - No priority in phased priority";
+  
+  decision_list.push_back(new Vaccine_Priority_Decision_Phase_No_Priority(this));
+  
+}
+

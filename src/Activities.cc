@@ -262,6 +262,16 @@ void Activities::setup(Person* self, Place* house, Place* school, Place* work) {
       self->get_demographics()->cancel_conception(self);
     }
   }
+  // Artificially increase the number of places visited by RETIREES
+  if(Global::Enable_Retiree_Random_Place == true){
+    if(this->profile == RETIRED_PROFILE){
+      //assign ad_hoc_place to the retiree's schedule
+      if(Random::draw_random() < Global::Retiree_Random_Place_Prob){
+	set_ad_hoc(Global::Places.get_random_workplace());
+      }
+    }
+  }
+  
   FRED_VERBOSE(1,"Activity::setup finished for person %d\n", self->get_id());
 
 }
@@ -560,7 +570,7 @@ void Activities::update_schedule(int sim_day) {
     // weekday vs weekend provisional activity
     if(Activities::is_weekday) {
       if(get_school() != NULL) {	
-	this->on_schedule[Activity_index::SCHOOL_ACTIVITY] = true;    
+	this->on_schedule[Activity_index::SCHOOL_ACTIVITY] = true;     
       }
       if(get_classroom() != NULL) {
         this->on_schedule[Activity_index::CLASSROOM_ACTIVITY] = true;
@@ -639,6 +649,18 @@ void Activities::update_schedule(int sim_day) {
         this->on_schedule[Activity_index::CLASSROOM_ACTIVITY] = false;
       }
     }
+
+    // Skip school if grade is not open, only if school schedule enabled
+    if(School::is_global_closure_schedule_enabled()){
+      if(this->on_schedule[Activity_index::SCHOOL_ACTIVITY]){
+	School* psch = static_cast<School*>(get_school());
+	if(psch != NULL && psch->should_be_open_grade(sim_day, this->grade) == false){
+	  this->on_schedule[Activity_index::SCHOOL_ACTIVITY] = false;
+	  this->on_schedule[Activity_index::CLASSROOM_ACTIVITY] = false;
+	}
+      }
+    }
+      
     if(Global::Report_Childhood_Presenteeism) {
       if(this->myself->is_adult() && this->on_schedule[Activity_index::WORKPLACE_ACTIVITY]) {
         Household* my_hh = static_cast<Household*>(this->myself->get_household());

@@ -94,6 +94,8 @@ std::vector<int> Place_List::Shelter_stepwise_duration;
 std::vector<Time_Step_Map_Shelter*> Place_List::shelter_households_timestep;
 std::vector<Time_Step_Map_Face_Mask*> Place_List::face_mask_timestep;
 std::unordered_map<string,double> Place_List::Face_mask_compliance;
+std::vector<Time_Step_Map_Community_Contact*> Place_List::community_contact_timestep;
+double Place_List::current_community_contact_rate = 1.0;
 
 int Place_List::Shelter_by_age_duration_mean = 0;
 int Place_List::Shelter_by_age_duration_std = 0;
@@ -158,7 +160,7 @@ void Place_List::init_place_type_name_lookup_map() {
 }
 
 void Place_List::get_parameters() {
-
+  
   // get static parameters for all place subclasses
   Household::get_parameters();
   Neighborhood::get_parameters();
@@ -185,15 +187,17 @@ void Place_List::get_parameters() {
   Params::get_param_from_string("fips", Global::FIPS_code);
   Params::get_param_from_string("msa", Global::MSA_code);
 
+  // Student teacher ratio should not be dependent on group quarters
+  Params::get_param_from_string("school_fixed_staff", &Place_List::School_fixed_staff);
+  Params::get_param_from_string("school_student_teacher_ratio", &Place_List::School_student_teacher_ratio);
+    
   if(Global::Enable_Group_Quarters) {
     // group quarter parameters
     Params::get_param_from_string("college_dorm_mean_size", &Place_List::College_dorm_mean_size);
     Params::get_param_from_string("military_barracks_mean_size", &Place_List::Military_barracks_mean_size);
     Params::get_param_from_string("prison_cell_mean_size", &Place_List::Prison_cell_mean_size);
     Params::get_param_from_string("nursing_home_room_mean_size", &Place_List::Nursing_home_room_mean_size);
-
-    Params::get_param_from_string("school_fixed_staff", &Place_List::School_fixed_staff);
-    Params::get_param_from_string("school_student_teacher_ratio", &Place_List::School_student_teacher_ratio);
+    
     Params::get_param_from_string("college_fixed_staff", &Place_List::College_fixed_staff);
     Params::get_param_from_string("college_resident_to_staff_ratio", &Place_List::College_resident_to_staff_ratio);
     Params::get_param_from_string("prison_fixed_staff", &Place_List::Prison_fixed_staff);
@@ -204,7 +208,44 @@ void Place_List::get_parameters() {
     Params::get_param_from_string("military_fixed_staff", &Place_List::Military_fixed_staff);
     Params::get_param_from_string("military_resident_to_staff_ratio", &Place_List::Military_resident_to_staff_ratio);
   }
+  
+  //Read community_contact_timeseries
+  if(Global::Enable_Community_Contact_Timeseries == true){
+    Place_List::community_contact_timestep.clear();
+    char map_file_name[FRED_STRING_SIZE];
+    Params::get_param_from_string("community_contact_timeseries_file", map_file_name);
+    if(strncmp(map_file_name, "none", 4) != 0){
+      Utils::get_fred_file_name(map_file_name);
+      printf("READING: community contact timeseries file: %s\n",map_file_name);
+      ifstream* ts_input = new ifstream(map_file_name);
+      if(!ts_input->is_open()){
+	Utils::fred_abort("Help! Cannot read %s Timestep Map for community contact increase in time\n", map_file_name);
+	abort();
+      }
+      string line;
+      while(getline(*ts_input, line)){
+	if(line[0] == '\n' || line[0] == '#') { // empty line or comment
+	  continue;
+	}
+	char cstr[FRED_STRING_SIZE];
+	std::strcpy(cstr, line.c_str());
 
+	Time_Step_Map_Community_Contact * tmap = new Time_Step_Map_Community_Contact;
+	int n = sscanf(cstr,
+		       "%d %d %lf",
+		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->contact_rate);
+	if(n < 3){
+	  Utils::fred_abort("Need to specify 1.day start, 2. day end, 3. contact rate. ");
+	}
+	if(tmap->contact_rate < 0.0){
+	  tmap->contact_rate = 0.0;
+	}
+	Place_List::community_contact_timestep.push_back(tmap);
+      }
+      ts_input->close();
+    }    
+  }
+  
   // Facemask wearing parameters
   if(Global::Enable_Face_Mask_Usage == true && Global::Enable_Face_Mask_Timeseries_File == true){
     // Load face mask compliance map
@@ -234,6 +275,8 @@ void Place_List::get_parameters() {
     }
 
   }
+
+  
   
   // household shelter parameters
   if(Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File == false) {
@@ -300,7 +343,7 @@ void Place_List::get_parameters() {
 	int n = sscanf(cstr,
 		       "%d %d %lf %s",
 		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->compliance, &lstr);
-	printf("LINES: %d\n",n);
+	//printf("LINES: %d\n",n);
 	if(n < 4) {
 	  Utils::fred_abort("Need to specify at least SimulationDayStart, SimulationDayEnd and shelter compliance for Time_Step_Map_Face_Mask of facemask wearing by place.");
 	}
@@ -312,13 +355,14 @@ void Place_List::get_parameters() {
       }
       ts_input->close();
     }
-    
-    for(int i = 0; i < face_mask_timestep.size(); ++i){
-      string ss = this->face_mask_timestep[i]->to_string();
-      printf("%s\n", ss.c_str());
+    if(Global::Verbose > 1){
+      for(int i = 0; i < face_mask_timestep.size(); ++i){
+	string ss = this->face_mask_timestep[i]->to_string();
+	printf("%s\n", ss.c_str());
+      }
     }
     
-    if (Global::Verbose > -1) {
+    if (Global::Verbose > 1) {
       for(int i = 0; i < this->shelter_households_timestep.size(); ++i) {
 	string ss = this->shelter_households_timestep[i]->to_string();
 	printf("%s\n", ss.c_str());
@@ -378,8 +422,7 @@ void Place_List::get_parameters() {
       Utils::fred_abort("Min Age %d cannot be higher than Max Age %d\n", Place_List::Shelter_by_age_min_age, Place_List::Shelter_by_age_max_age);
     }
   }
-
-
+  
   // If reading sheltering compliance from a file
   if(Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File == true) {
     char map_file_name[FRED_STRING_SIZE];
@@ -400,25 +443,46 @@ void Place_List::get_parameters() {
 	}
 	char cstr[FRED_STRING_SIZE];
 	std::strcpy(cstr, line.c_str());
+	long int zstr;
+	
 	Time_Step_Map_Shelter * tmap = new Time_Step_Map_Shelter;
 	int n = sscanf(cstr,
-		       "%d %d %lf %lf %lf %lf",
+		       "%d %d %lf %d %d %ld",
 		       &tmap->sim_day_start, &tmap->sim_day_end, &tmap->shelter_compliance, 
-		       &tmap->lat, &tmap->lon, &tmap->radius);
-	printf("LINES: %d\n",n);
+		       &tmap->min_age, &tmap->max_age, &zstr);
+	//printf("LINES: %d\n",n);
 	if(n < 3) {
 	  Utils::fred_abort("Need to specify at least SimulationDayStart, SimulationDayEnd and shelter compliance for Time_Step_Map of sheltering in place. ");
 	}
+
 	if(n < 6) {
-	  tmap->lat = 0.0;
-	  tmap->lon = 0.0;
-	  tmap->radius = -1;
+	  tmap->census_tract = -1;
+	  if(n < 5){
+	    tmap->min_age = 0;
+	    tmap->max_age = 120;
+	  }
+	}else{
+	  tmap->census_tract = zstr;
+	}
+	if(tmap->shelter_compliance < 0.0){
+	  tmap->shelter_compliance = 0.0;
+	}else if(tmap->shelter_compliance > 1.0){
+	  tmap->shelter_compliance = 1.0;
+	}
+	if(tmap->min_age < 0){
+	  tmap->min_age = 0;
+	}
+	if(tmap->max_age > 120){
+	  tmap->max_age = 120;
+	}
+	if(tmap->min_age > tmap->max_age){
+	  tmap->min_age = tmap->max_age;
 	}
 	this->shelter_households_timestep.push_back(tmap);
       }
       ts_input->close();
     }
-    if (Global::Verbose > -1) {
+    if (Global::Verbose > 0) {
       for(int i = 0; i < this->shelter_households_timestep.size(); ++i) {
 	string ss = this->shelter_households_timestep[i]->to_string();
 	printf("%s\n", ss.c_str());
@@ -426,7 +490,7 @@ void Place_List::get_parameters() {
     }
     this->previous_shelter_compliance = 0.0;
     printf("Finished with reading shelter-in-place file\n");
-  }
+}
 
   
   // household evacuation parameters
@@ -803,7 +867,7 @@ void Place_List::read_all_places(const std::vector<Utils::Tokens> &Demes) {
     FRED_VERBOSE(0, "COUNTIES[%d] = %d\n", i, fips);
   }
   for(int i = 0; i < this->census_tracts.size(); ++i) {
-    FRED_VERBOSE(1, "CENSUS_TRACTS[%d] = %ld\n", i, this->census_tracts[i]);
+    FRED_VERBOSE(0, "CENSUS_TRACTS[%d] = %ld\n", i, this->census_tracts[i]);
   }
   // HOUSEHOLD in-place allocator
   Place::Allocator<Household> household_allocator;
@@ -875,6 +939,8 @@ void Place_List::read_all_places(const std::vector<Utils::Tokens> &Demes) {
     } else if(place_type == Place::TYPE_SCHOOL) {
       place = new (school_allocator.get_free()) School(s, place_subtype, lon, lat);
       (static_cast<School*>(place))->set_county_index((*itr).county);
+      (static_cast<School*>(place))->set_school_income((*itr).income > 0 ? (*itr).income : 0);
+      (static_cast<School*>(place))->set_census_tract_index((*itr).census_tract_index);
     } else if(place_type == Place::TYPE_WORKPLACE) {
       place = new (workplace_allocator.get_free()) Workplace(s, place_subtype, lon, lat);
     } else if(place_type == Place::TYPE_HOSPITAL) {
@@ -1234,7 +1300,10 @@ void Place_List::read_school_file(unsigned char deme_id, char* location_file, In
     latitude = 14,
     longitude = 15,
     source = 16,
-    stco = 17
+    stco = 17,
+    sch_inc = 18,
+    stcotrbg = 19,
+    sch_type = 20
   };
 
   FILE* fp = Utils::fred_open_file(location_file);
@@ -1248,7 +1317,6 @@ void Place_List::read_school_file(unsigned char deme_id, char* location_file, In
     tokens = Utils::split_by_delim(line, ',', tokens, false);
     // skip header line
     if(strcmp(tokens[school_id], "school_id") != 0 && strcmp(tokens[school_id], "sp_id") != 0) {
-
       char place_type = Place::TYPE_SCHOOL;
       char place_subtype = Place::SUBTYPE_NONE;
       char s[80];
@@ -1277,16 +1345,46 @@ void Place_List::read_school_file(unsigned char deme_id, char* location_file, In
           county = -1;
         }
       }
+      string sch_income("0");
+      if(sch_inc < tokens.size()){
+	sch_income = tokens[sch_inc];
+      }
 
+      string school_type_tmp("0");
+      if(sch_type < tokens.size()){
+	school_type_tmp = tokens[sch_type];
+      }
+
+      int tract_index = -1;
+      if(stcotrbg < tokens.size()){
+	char census_tract_str[12];
+	long int census_tract = 0;
+	strncpy(census_tract_str, tokens[stcotrbg], 11);
+	census_tract_str[11] = '\0';
+	sscanf(census_tract_str, "%ld", &census_tract);
+
+	int n_census_tracts = this->census_tracts.size();
+	for(tract_index = 0; tract_index < n_census_tracts; ++tract_index) {
+	  if(this->census_tracts[tract_index] == census_tract) {
+	    break;
+	  }
+	}
+	if(tract_index == n_census_tracts) {
+	  this->census_tracts.push_back(census_tract);
+	}
+	//printf("READING SCHOOL %s - CENSUS TRACT %s (%ld) - INDeX: %d (out of %d)\n", tokens[school_id], census_tract_str, census_tract, tract_index, this->census_tracts.size());
+      }
       sprintf(s, "%c%s", place_type, tokens[school_id]);
-
+      
       SetInsertResultT result = pids.insert(
-          Place_Init_Data(s, place_type, place_subtype, tokens[latitude], tokens[longitude], deme_id, county));
-
+	Place_Init_Data(s, place_type, place_subtype, tokens[latitude], tokens[longitude], deme_id, county, tract_index, sch_income.c_str()));
+      
       if(result.second) {
         ++(this->place_type_counts[place_type]);
-        FRED_VERBOSE(1, "READ_SCHOOL: %s %c %f %f name |%s| county %d\n", s, place_type, result.first->lat,
-            result.first->lon, tokens[name], get_fips_of_county_with_index(county));
+        FRED_VERBOSE(1, "READ_SCHOOL: %s %c %f %f name |%s| county %d income %s\n", s, place_type, result.first->lat,
+		     result.first->lon, tokens[name], get_fips_of_county_with_index(county), sch_income.c_str());
+      }else{
+	printf("SCHOOL %s NOT ADDED to Place_List\n", s);
       }
     }
     tokens.clear();
@@ -1460,7 +1558,19 @@ void Place_List::prepare() {
     }
   }
 
-
+  // Check schools census tracts
+  if(Global::Verbose > 1){
+    for(int p = 0; p < number_of_schools; ++p) {
+      School* school = get_school_ptr(p);
+      int sch_census_tract_index = school->get_census_tract_index();
+      long int sch_census_tract = -1;
+      if(sch_census_tract_index > 0){
+	sch_census_tract = Global::Places.get_census_tract_with_index(sch_census_tract_index);
+      }
+      printf("SCHOOL %s CENSUS TRACT %lu STUDENTS %d\n", school->get_label(), sch_census_tract, school->get_orig_number_of_students());
+    }  
+  }
+  
   if(Global::Verbose > 1) {
     // check the schools by grade lists
     printf("\n");
@@ -1533,6 +1643,10 @@ void Place_List::update(int day) {
     }
   }
 
+  if(Global::Enable_Community_Contact_Timeseries == true){
+    this->update_community_contact_increase(day);
+  }
+  
   if(Global::Enable_HAZEL) {
     int number_places = this->places.size();
     for(int p = 0; p < number_places; ++p) {
@@ -1755,8 +1869,8 @@ void Place_List::setup_group_quarters() {
       int gq_units = house->get_group_quarters_units();
       FRED_VERBOSE(0, "GQ_setup: house %d label %s subtype %c initial size %d units %d\n", p, house->get_label(),
           house->get_subtype(), gq_size, gq_units);
-      //printf("GQ_setup: house %d label %s subtype %c initial size %d units %d\n", p, house->get_label(),
-      //house->get_subtype(), gq_size, gq_units);
+      printf("GQ_setup: house %d label %s subtype %c initial size %d units %d\n", p, house->get_label(),
+      house->get_subtype(), gq_size, gq_units);
       if(house->is_nursing_home()){
 	for(int j = 0; j < gq_size; ++j) {
 	  Person* nursing_person = house->get_enrollee(j);
@@ -1974,14 +2088,19 @@ void Place_List::reassign_workers_to_places_of_type(char place_type, int fixed_s
       int n = place->get_size();
       if(place_type == Place::TYPE_SCHOOL) {
         School* s = static_cast<School*>(place);
-        n = s->get_orig_number_of_students();
+        n = s->get_size();
       }
       FRED_VERBOSE(1, "Size %d\n", n);
       int staff = fixed_staff;
       if(staff_ratio > 0.0) {
         staff += (0.5 + (double)n / staff_ratio);
       }
-
+      /*
+      if(place_type == Place::TYPE_SCHOOL) {
+	printf("REASSIGN_WORKERS_TO_TEACHERS: STAFF: %d, RATIO %.2f N %d\n",staff, staff_ratio,n);
+      }
+      */
+      
       Place* nearby_workplace = regional_patch->get_nearby_workplace(place, staff);
       if(nearby_workplace != NULL) {
         if(place_type == Place::TYPE_SCHOOL) {
@@ -1991,9 +2110,10 @@ void Place_List::reassign_workers_to_places_of_type(char place_type, int fixed_s
           // make all the workers in selected workplace as workers in the target place
           nearby_workplace->reassign_workers(place);
         }
-        return;
+        //return;
       } else {
         FRED_VERBOSE(0, "NO NEARBY_WORKPLACE FOUND for place at lat %f lon %f \n", lat, lon);
+	//printf("NO NEARBY_WORKPLACE FOUND for place at lat %f lon %f \n", lat, lon);
       }
     }
   }
@@ -2005,6 +2125,7 @@ void Place_List::reassign_workers_to_group_quarters(char subtype, int fixed_staf
   for(int p = 0; p < number_places; ++p) {
     Place* place = this->places[p];
     if(place->is_workplace() && place->get_subtype() == subtype) {
+      printf("Place %d entered\n", p);
       fred::geo lat = place->get_latitude();
       fred::geo lon = place->get_longitude();
       double x = Geo::get_x(lon);
@@ -2024,7 +2145,11 @@ void Place_List::reassign_workers_to_group_quarters(char subtype, int fixed_staf
       if(resident_to_staff_ratio > 0.0) {
         staff += 0.5 + (double)place->get_size() / resident_to_staff_ratio;
       }
-
+      
+      if(subtype == Place::SUBTYPE_NURSING_HOME) {
+	printf("REASSIGN_WORKERS_TO_NURSING_HOME_STAFF: STAFF: %d, RATIO %.2f N %d\n",staff, resident_to_staff_ratio,place->get_size());
+      }
+      
       Place* nearby_workplace = regional_patch->get_nearby_workplace(place, staff);
       if(nearby_workplace != NULL) {
         // make all the workers in selected workplace as workers in the target place
@@ -2947,6 +3072,40 @@ void Place_List::update_face_mask_compliance(int day){
   }
 }
 
+void Place_List::count_teachers_and_students(){
+  int num_students = 0;
+  int num_teachers = 0;
+  for(int i = 0; i < get_number_of_schools();++i){
+    Place *place_tmp = this->get_school(i);
+    person_vec_t* school_attendees= place_tmp->get_enrollees();
+    int school_teachers = 0;
+    int school_students = 0;
+    for(int j = 0; j < school_attendees->size(); j++){
+      Person* person_tmp = (*school_attendees)[j];
+      if(person_tmp->is_teacher()){
+	school_teachers++;
+      }else{
+	school_students++;
+      }
+    }
+    num_students += school_students;
+    num_teachers += school_teachers;
+    printf("School %d Teachers %d Students %d\n", i, school_teachers, school_students);    
+  }     
+  printf("PLACE_LIST::COUNT_TEACHERS_AND_STUDENTS Teachers %d Students %d\n", num_teachers, num_students);
+}
+
+void Place_List::update_community_contact_increase(int day){
+  this->current_community_contact_rate = 1.0;
+  for(int i = 0; i < this->community_contact_timestep.size(); ++i){
+    Time_Step_Map_Community_Contact* tmap = this->community_contact_timestep[i];
+    if(tmap->sim_day_start <= day && day <= tmap->sim_day_end){
+      this->current_community_contact_rate = this->community_contact_timestep[i]->contact_rate;
+    }
+  }
+  printf("Day: %d Updating PLACE_LIST community contact: %.2f\n", day, this->current_community_contact_rate);
+}
+
 void Place_List::update_shelter_households(int day, int peak_day_, double proportion_peak_incidence,
 					   int days_of_decline) {    
   int sheltering_households = 0;
@@ -2961,46 +3120,71 @@ void Place_List::update_shelter_households(int day, int peak_day_, double propor
   double sheltering_ar = 0.0;
   double non_sheltering_ar = 0.0;
   double shelter_compliance = 0.0;
-  double shelter_compliance_diff = 0.0;    
+  bool sheltering_today_flag = false;
+  double shelter_compliance_diff = 0.0;
+  std::unordered_map< long int, std::vector< Time_Step_Map_Shelter * > > daily_shelter;
   // Decide if sheltering needs to be updated
   /*
-    Right now shelter is homogeneous across counties or any geographical area
-    This needs to update so that a radius or zipcode can be used
-    Maybe create a map or vector with the necessary updates and then go through households
-    Also, update to shelter by workplace type from NAICS code
+    Each tmap with a day range including today is saved to the daily_shelter vector,
+    each household loops through the vector and decides whether to shelter or not.
+    If zone is not included, shelter_compliance (overall) is saved and is managed with the relaxation protocol.
+
+    NOTE: Update to shelter by workplace type from NAICS code
   */
 
+  if(day < Global::Epidemic_offset){
+    Global::Daily_Tracker->set_index_key_pair(day, "H_sheltering", sheltering_households);
+    Global::Daily_Tracker->set_index_key_pair(day, "N_sheltering", sheltering_pop);
+    Global::Daily_Tracker->set_index_key_pair(day, "C_sheltering", sheltering_new_infections);
+    Global::Daily_Tracker->set_index_key_pair(day, "AR_sheltering", sheltering_ar);
+    Global::Daily_Tracker->set_index_key_pair(day, "N_noniso", non_sheltering_pop);
+    Global::Daily_Tracker->set_index_key_pair(day, "C_noniso", non_sheltering_new_infections);
+    Global::Daily_Tracker->set_index_key_pair(day, "AR_noniso", non_sheltering_ar);
+    return;
+  }
+  
   if (!this->Shelter_relaxed) {
     for(int i = 0; i < this->shelter_households_timestep.size(); ++i) {
       Time_Step_Map_Shelter* tmap = this->shelter_households_timestep[i];
       if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
-	shelter_compliance = tmap->shelter_compliance;
-	if(shelter_compliance < 0.0){
-	  shelter_compliance = 0.0;
-	}else if(shelter_compliance > 1.0){
-	  shelter_compliance = 1.0;
-	}      
-	printf("Updating shelter for line: %s\n",tmap->to_string().c_str()); // tmap->print();
+	daily_shelter[tmap->census_tract].push_back(this->shelter_households_timestep[i]);
+	if(tmap->census_tract == -1){
+	  shelter_compliance = tmap->shelter_compliance;	  
+	}
+	// printf("Updating shelter for line: %s\n",tmap->to_string().c_str()); // tmap->print();
       }
     }
-
+    if(daily_shelter.size() > 0){
+      sheltering_today_flag = true;
+    }
+    
     if(day >= this->Shelter_relax_post_peak_min_peak_day) {
       if(Global::Enable_Household_Shelter_Relax_Post_Peak_Period) {
 	if((day >= peak_day_ + this->Shelter_relax_post_peak_period)
 	   & (days_of_decline >= this->Shelter_relax_post_peak_days_with_decline)){
-	  shelter_compliance = 0.0;
-	  Shelter_relaxed = true;
+	  sheltering_today_flag = false;
+	  this->Shelter_relaxed = true;
 	}
       }
       if(Global::Enable_Household_Shelter_Relax_Post_Peak_Threshold) {
 	if(this->Shelter_relax_post_peak_threshold > proportion_peak_incidence) {
-	  shelter_compliance = 0.0;
-	  Shelter_relaxed = true;
+	  sheltering_today_flag = false;
+	  this->Shelter_relaxed = true;
 	}
       }
     }
-  }  
+  }
+  /*
+  for(auto it = daily_shelter.begin(); it != daily_shelter.end();){
+    for(int i = 0; i < it->second.size();i++){
+      printf("SHELTERING PLACES_LIST: %ld -> %s\n", it->first, it->second[i]->to_string().c_str());
+    }
+    ++it;
+  }
 
+  */
+  
+  /*
   shelter_compliance_diff = shelter_compliance - this->previous_shelter_compliance;
 
   printf("Place_List::update_shelter_households -> day %d compliance: %.2f, previous: %.2f diff: %.2f\n", day, shelter_compliance, this->previous_shelter_compliance, shelter_compliance_diff);
@@ -3019,18 +3203,68 @@ void Place_List::update_shelter_households(int day, int peak_day_, double propor
       }
     }
   }
-      
+  */  
   for(int i = 0; i < num_households; ++i) {
     Household* h = this->get_household_ptr(i);    
     // Draw a random number and decide whether to shelter or not
     // Remove houses alredy sheltered if going down
     // keep houses already shelter if going up
+    h->set_shelter_end_day(day);
+    if(sheltering_today_flag == true){
+      // if All exists, then first check that shelter probability through all the options
+      if(h->is_sheltering_today(day)){
+	h->set_shelter_end_day(day);
+      }
+      if(h->is_sheltering_by_age()){
+	h->set_shelter_by_age(false);
+	h->set_shelter_by_age_end_day(day);
+      }
+      long int ct = this->get_census_tract_with_index(h->get_census_tract_index());
+      if(daily_shelter.find(-1) != daily_shelter.end()){	
+	for(int i = 0; i < daily_shelter.find(-1)->second.size();i++){
+	  double r = Random::draw_random();
+	  double prob_shelter = daily_shelter[-1][i]->shelter_compliance;
+	  if(r < prob_shelter){
+	    if(daily_shelter[-1][i]->min_age == 0 && daily_shelter[-1][i]->max_age == 120){
+	      h->set_shelter(true);
+	      h->set_shelter_start_day(day);
+	      h->set_shelter_end_day(9999999);
+	    }else{
+	      h->set_shelter_by_age(true);
+	      h->set_shelter_by_age_ages(daily_shelter[-1][i]->min_age, daily_shelter[-1][i]->max_age);
+	      h->set_shelter_by_age_start_day(day);
+	      h->set_shelter_by_age_end_day(9999999);
+	    }
+	  }
+	}
+      }
+      if(daily_shelter.find(ct) != daily_shelter.end()){
+	for(int i = 0; i < daily_shelter.find(ct)->second.size();i++){
+	  // if All doesn't exist, then check by census tract
+	  double r = Random::draw_random();
+	  double prob_shelter = daily_shelter[ct][i]->shelter_compliance;
+	  if(r < prob_shelter){
+	    if(daily_shelter[ct][i]->min_age == 0 && daily_shelter[ct][i]->max_age == 120){
+	      h->set_shelter(true);
+	      h->set_shelter_start_day(day);
+	      h->set_shelter_end_day(9999999);
+	    }else{
+	      h->set_shelter_by_age(true);
+	      h->set_shelter_by_age_ages(daily_shelter[ct][i]->min_age, daily_shelter[ct][i]->max_age);
+	      h->set_shelter_by_age_start_day(day);
+	      h->set_shelter_by_age_end_day(9999999);
+	    }
+	  }
+	}
+      }
+    }
+    /*
     if(shelter_compliance_diff != 0.0){  
       if((shelter_compliance_diff < 0.0) && (this->previous_shelter_compliance > 0.0)){
 	if(h->is_sheltering_today(day) == true) {
 	  double r = Random::draw_random();
 	  if(r < (-1 * shelter_compliance_diff)){
-	    h->set_shelter_end_day(day);
+	  h->set_shelter_end_day(day);
 	  }
 	}
       }else{
@@ -3044,6 +3278,7 @@ void Place_List::update_shelter_households(int day, int peak_day_, double propor
 	}
       }      
     }
+    */
     if(h->is_sheltering_today(day)) {
       sheltering_households++;
       sheltering_pop += h->get_size();

@@ -57,6 +57,6 @@ public:
    *
    * @return the evaluation value
    */
-  virtual int evaluate(Person* person, int disease, int current_day) = 0;  
+  virtual int evaluate(Person* person, int disease, int current_day) = 0;
 };
 #endif

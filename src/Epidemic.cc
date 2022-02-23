@@ -89,9 +89,15 @@ Epidemic::Epidemic(Disease* dis) {
 
   this->people_becoming_symptomatic_today = 0;
   this->people_with_current_symptoms = 0;
+
+  this->people_becoming_hospitalized_today = 0;
+  this->people_with_current_hospitalization = 0;
+  
   this->removed_people = 0;
 
   this->immune_people = 0;
+  this->immune_to_symptoms_people = 0;
+  this->immune_to_hospitalization_people = 0;
   this->vaccinated_people = 0;
 
   this->report_generation_time = false;
@@ -146,6 +152,8 @@ Epidemic::Epidemic(Disease* dis) {
   this->prevalence_count = 0;
   this->incidence = 0;
   this->symptomatic_incidence = 0;
+  this->hospitalization_incidence = 0;
+  this->hospitalization_prevalence = 0;
   this->prevalence = 0.0;
   this->RR = 0.0;
 
@@ -168,6 +176,9 @@ Epidemic::Epidemic(Disease* dis) {
   this->fraction_seeds_infectious = 0.0;
 
   this->imported_cases_map.clear();
+  this->hosp_multiplier_map.clear();
+  this->daily_hospitalization_multiplier = 1.0;
+  
   this->import_by_age = false;
   this->import_age_lower_bound = 0;
   this->import_age_upper_bound = Demographics::MAX_AGE;
@@ -177,6 +188,8 @@ Epidemic::Epidemic(Disease* dis) {
   this->infectious_end_event_queue = new Events;
   this->symptoms_start_event_queue = new Events;
   this->symptoms_end_event_queue = new Events;
+  this->hospitalization_start_event_queue = new Events;
+  this->hospitalization_end_event_queue = new Events;
   this->immunity_start_event_queue = new Events;
   this->immunity_end_event_queue = new Events;
 
@@ -234,14 +247,22 @@ void Epidemic::track_value(int day, char* key, string value) {
 }
 
 
-void Epidemic::become_immune(Person* person, bool susceptible, bool infectious, bool symptomatic) {
+void Epidemic::become_immune(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized) {
   if(!susceptible) {
     this->removed_people++;
   }
   if(symptomatic) {
     this->people_with_current_symptoms--;
-  }
+  }  
   this->immune_people++;
+}
+
+void Epidemic::become_immune_to_symptoms(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized) {
+  this->immune_to_symptoms_people++;
+}
+
+void Epidemic::become_immune_to_hospitalization(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized) {
+  this->immune_to_hospitalization_people++;
 }
 
 void Epidemic::terminate_person(Person* person, int day) {
@@ -258,10 +279,25 @@ void Epidemic::terminate_person(Person* person, int day) {
     date = person->get_symptoms_end_date(this->id);
     if(date > day) {
       FRED_VERBOSE(0, "EPIDEMIC CANCEL symptoms_end_date %d %d\n", date, day);
+      this->people_with_current_symptoms--;
       cancel_symptoms_end(date, person);
     }
   }
 
+  date = person->get_hospitalization_start_date(this->id);
+  if(date > day) {
+    FRED_VERBOSE(0, "EPIDEMIC CANCEL hospitalization_start_date %d %d\n", date, day);
+    cancel_hospitalization_start(date, person);
+  }
+  else if (date > -1) {
+    date = person->get_hospitalization_end_date(this->id);
+    if(date > day) {
+      FRED_VERBOSE(0, "EPIDEMIC CANCEL hospitalization_end_date %d %d\n", date, day);
+      this->people_with_current_hospitalization--;
+      cancel_hospitalization_end(date, person);
+    }
+  }
+  
   date = person->get_infectious_start_date(this->id);
   if(date > day) {
     FRED_VERBOSE(0, "EPIDEMIC CANCEL infectious_start_date %d %d\n", date, day);
@@ -331,7 +367,9 @@ void Epidemic::setup() {
       if(n < 4) {
         tmap->disease_id = 0;
       }
-      this->imported_cases_map.push_back(tmap);
+      if(tmap->disease_id == this->id){
+	this->imported_cases_map.push_back(tmap);
+      }
     }
     ts_input->close();
   }
@@ -341,7 +379,51 @@ void Epidemic::setup() {
       printf("%s\n", ss.c_str());
     }
   }
-
+  
+  if(Global::Enable_Hospitalization_Multiplier_File == true){
+    // read time_step_map
+    Params::get_param_from_string("hospitalization_duration_timeseries_file", map_file_name);
+    // If this parameter is "none", then there is no map
+    if(strncmp(map_file_name, "none", 4) != 0){
+      Utils::get_fred_file_name(map_file_name);
+      ifstream* ts_input = new ifstream(map_file_name);
+      if(!ts_input->is_open()) {
+	Utils::fred_abort("Help!  Can't read %s Timestep Map for Hospitalization Multiplier\n", map_file_name);
+	abort();
+      }
+      string line;
+      while(getline(*ts_input,line)){
+	if(line[0] == '\n' || line[0] == '#') { // empty line or comment
+	  continue;
+	}
+	char cstr[FRED_STRING_SIZE];
+	std::strcpy(cstr, line.c_str());
+	Time_Step_Hosp_Map * tmap = new Time_Step_Hosp_Map;
+	int n = sscanf(cstr,
+		       "%d %d %d %lf",
+		       &tmap->sim_day_start, &tmap->sim_day_end,
+		       &tmap->disease_id, &tmap->hosp_multiplier);
+	if(n < 4) {
+	  Utils::fred_abort("Need to specify at least SimulationDayStart, SimulationDayEnd Disease and Hospitalizatoin Multiplier");
+	}
+	if(tmap->disease_id == this->id){
+	  this->hosp_multiplier_map.push_back(tmap);
+	}
+      }
+      ts_input->close();
+    }
+    if (Global::Verbose > 1) {
+      for(int i = 0; i < this->hosp_multiplier_map.size(); ++i) {
+	string ss = this->hosp_multiplier_map[i]->to_string();
+	printf("%s\n", ss.c_str());
+      }
+    }
+    for(int i = 0; i < this->hosp_multiplier_map.size(); ++i) {
+      string ss = this->hosp_multiplier_map[i]->to_string();
+      printf("%s\n", ss.c_str());
+    }
+  }
+  
   Params::get_param_from_string("seed_by_age", &temp);
   this->import_by_age = (temp == 0 ? false : true);
   Params::get_param_from_string("seed_age_lower_bound", &import_age_lower_bound);
@@ -397,7 +479,7 @@ void Epidemic::become_exposed(Person* person, int day) {
       FRED_VERBOSE(0, "TIME WARP day %d inf %d\n", day, infectious_start_date);
       infectious_start_date = day + 1;
     }
-    this->infectious_start_event_queue->add_event(infectious_start_date, person);
+    this->infectious_start_event_queue->add_event(infectious_start_date, person);    
   } else {
     // This disease is not transmissible, therefore, no one ever becomes
     // infectious.  Consequently, spread_infection is never called. So
@@ -415,6 +497,13 @@ void Epidemic::become_exposed(Person* person, int day) {
   }
   this->symptoms_start_event_queue->add_event(symptoms_start_date, person);
 
+  int hospitalization_start_date = person->get_hospitalization_start_date(this->id);
+  if(0 <= hospitalization_start_date && hospitalization_start_date <= day) {
+    FRED_VERBOSE(0, "TIME WARP day %d hosp %d\n", day, hospitalization_start_date);
+    hospitalization_start_date = day + 1;
+  }
+  this->hospitalization_start_event_queue->add_event(hospitalization_start_date, person);
+  
   // update epidemic counters
   this->exposed_people++;
   this->people_becoming_infected_today++;
@@ -499,6 +588,8 @@ void Epidemic::print_stats(int day) {
   // preserve these quantities for use during the next day
   this->incidence = this->people_becoming_infected_today;
   this->symptomatic_incidence = this->people_becoming_symptomatic_today;
+  this->hospitalization_incidence = this->people_becoming_hospitalized_today;
+  this->hospitalization_prevalence = this->people_with_current_hospitalization;
   this->prevalence_count = this->exposed_people + this->infectious_people;
   this->prevalence = static_cast<double>(this->prevalence_count) / static_cast<double>(this->N);
   this->case_fatality_incidence = this->daily_case_fatality_count;
@@ -571,9 +662,13 @@ void Epidemic::print_stats(int day) {
     track_value(day, (char*)"CFR", case_fatality_rate);
   }
   track_value(day, (char*)"M", this->immune_people);
+  track_value(day, (char*)"Ms", this->immune_to_symptoms_people);
+  track_value(day, (char*)"Mh", this->immune_to_hospitalization_people);
   track_value(day, (char*)"P",this->prevalence_count);
   track_value(day, (char*)"C", this->incidence);
   track_value(day, (char*)"Cs", this->symptomatic_incidence);
+  track_value(day, (char*)"Chosp", this->hospitalization_incidence);
+  track_value(day, (char*)"Phosp", this->hospitalization_prevalence);
   track_value(day, (char*)"AR", this->attack_rate);
   track_value(day, (char*)"ARs", this->symptomatic_attack_rate);
   track_value(day, (char*)"RR", this->RR);
@@ -654,10 +749,12 @@ void Epidemic::print_stats(int day) {
   // prepare for next day
   this->people_becoming_infected_today = 0;
   this->people_becoming_symptomatic_today = 0;
+  this->people_becoming_hospitalized_today = 0;
   this->daily_case_fatality_count = 0;
   this->daily_case_fatality_nursing = 0;
   this->daily_infections_list.clear();
   this->daily_symptomatic_list.clear();
+  this->daily_hospitalization_list.clear();
 }
 
 void Epidemic::report_age_of_infection(int day) {
@@ -669,6 +766,8 @@ void Epidemic::report_age_of_infection(int day) {
   int young_adults = 0;
   int adults = 0;
   int elderly = 0;
+  int young12 = 0;
+  int older12 = 0;
   int age_count[Demographics::MAX_AGE + 1];				// age group counts
   
   int infants_Cs = 0;
@@ -679,6 +778,8 @@ void Epidemic::report_age_of_infection(int day) {
   int young_adults_Cs = 0;
   int adults_Cs = 0;
   int elderly_Cs = 0;
+  int young12_Cs = 0;
+  int older12_Cs = 0;
   int age_count_Cs[Demographics::MAX_AGE + 1];				// age group counts
   
   double mean_age = 0.0;
@@ -757,6 +858,12 @@ void Epidemic::report_age_of_infection(int day) {
       } else if(65 <= real_age) {
         elderly++;
       }
+    }else if(Global::Report_Age_Of_Infection == 5) {
+      if(real_age < 12) {
+        young12++;
+      } else if(65 <= real_age) {
+        older12++;
+      }
     }
   }
   
@@ -828,11 +935,21 @@ void Epidemic::report_age_of_infection(int day) {
       } else if(65 <= real_age) {
         elderly_Cs++;
       }
+    }else if(Global::Report_Age_Of_Infection == 5) {
+      if(real_age < 12) {
+        young12_Cs++;
+      } else if(65 <= real_age) {
+        older12_Cs++;
+      }
     }
   }
   
   if(count_infections > 0) {
     mean_age /= count_infections;
+  }
+
+  if(this->disease->get_natural_history()->is_case_fatality_enabled()) {
+    // Also count fatalities by age
   }
   //Write to log file
   Utils::fred_log("\nday %d INF_AGE: ", day);
@@ -911,6 +1028,13 @@ void Epidemic::report_age_of_infection(int day) {
 		  Global::Popsize_by_age[i] ?
 		  Global::Popsize_by_age[i] : 0.0);
     }
+    break;
+  case 5:
+    track_value(day, (char*)"Young12", young12);
+    track_value(day, (char*)"Older12", older12);
+    
+    track_value(day, (char*)"Young12_Cs", young12_Cs);
+    track_value(day, (char*)"Older12_Cs", older12_Cs);
     break;
   default:
     if(Global::Age_Of_Infection_Log_Level >= Global::LOG_LEVEL_LOW) {
@@ -1646,7 +1770,7 @@ void Epidemic::report_census_tract_stratified_results(int day) {
   }
 }
 
-void Epidemic::get_imported_infections(int day) {
+void Epidemic::seed_nursing_home_infections(int day){
   this->N = Global::Pop.get_pop_size();
   if(Global::Enable_Group_Quarters){    
     if(Global::Enable_Nursing_Homes_Importations){
@@ -1662,23 +1786,28 @@ void Epidemic::get_imported_infections(int day) {
       // pick a candidate without replacement
       for(int i = 0; i < nursing_home_importations; i++){	
 	int pos_n = Random::draw_random_int(0,N_nursing_homes-1);
+	int infector_n = Random::draw_random_int(0,this->actually_infectious_people.size()-1);
 	Person* infectee_nh = Global::Places.get_nursing_home_resident_ptr(pos_n);
+	
 	if(infectee_nh->get_health()->is_susceptible(this->id)) {
-	  // infect the candidate
+	  // infect the candidate, choose a random person to be the infector
 	  FRED_VERBOSE(0, "infecting candidate %d id %d\n", i, infectee_nh->get_id());
-	  infectee_nh->become_exposed(this->id, NULL, NULL, day);
-	  FRED_VERBOSE(0, "exposed candidate %d id %d\n", i, infectee_nh->get_id());
-	  if(this->seeding_type != SEED_EXPOSED) {
-	    advance_seed_infection(infectee_nh);
+	  if(infectee_nh->is_alive()){
+	    infectee_nh->become_exposed(this->id, this->actually_infectious_people[infector_n], infectee_nh->get_household(), day);
+	    FRED_VERBOSE(0, "exposed candidate %d id %d\n", i, infectee_nh->get_id());
+	    
+	    become_exposed(infectee_nh, day);
+	    nh_imported_cases++;
 	  }
-	  become_exposed(infectee_nh, day);
-	  nh_imported_cases++;
 	}
       }
       FRED_VERBOSE(0, "NURSING HOME IMPORT SUCCESS: %d imported cases\n", nh_imported_cases);
       printf("NURSING HOME IMPORT SUCCESS: %d imported cases\n", nh_imported_cases);
     }
   }
+}
+
+void Epidemic::get_imported_infections(int day) { 
   for(int i = 0; i < this->imported_cases_map.size(); ++i) {
     Time_Step_Map* tmap = this->imported_cases_map[i];
     if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
@@ -1785,6 +1914,18 @@ void Epidemic::get_imported_infections(int day) {
   }
 }
 
+void Epidemic::get_hospitalization_multiplier_today(int day){ 
+  for(int i = 0; i < this->hosp_multiplier_map.size(); ++i) {
+    Time_Step_Hosp_Map* tmap = this->hosp_multiplier_map[i];
+    if(tmap->sim_day_start <= day && day <= tmap->sim_day_end) {
+      FRED_VERBOSE(0,"HOSP MULT:\n"); // tmap->print();
+      if(tmap->hosp_multiplier > 0){
+	this->daily_hospitalization_multiplier = tmap->hosp_multiplier;
+      }      
+    }
+  }
+}
+
 void Epidemic::advance_seed_infection(Person* person) {
   // if advanced_seeding is infectious or random
   int d = this->disease->get_id();
@@ -1842,8 +1983,10 @@ void Epidemic::process_infectious_end_events(int day) {
     // check to see if person has fully recovered:
     int symptoms_end_date = person->get_symptoms_end_date(this->id);
     if(-1 < symptoms_end_date && symptoms_end_date < day) {
-      recover(person, day);
+	recover(person, day);
     }
+    // Hospitalizations are as long as symptoms, no need to include here
+    
     if(symptoms_end_date == -1){
       recover(person, day);
       this->infected_not_symp_people--;
@@ -1862,6 +2005,36 @@ void Epidemic::recover(Person* person, int day) {
   
   // update person's health chart
   person->recover(day, this->disease);
+
+  // Become immune
+  Disease* disease_tmp = Global::Diseases.get_disease(this->id);
+  person->become_immune(disease_tmp);
+  /* Here, we check the probability of immune scape from disease dis_i
+     If there is a 25% immunity scape, then the cross_protection of dis_i should be 0.75
+  */
+  if(person->is_alive()){
+    if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+      for(int dis_i = 0; dis_i < Global::Diseases.get_number_of_diseases(); ++dis_i){
+	if(dis_i == this->id){
+	  continue;
+	}
+	if(person->is_immune(dis_i) == false){	  
+	  person->become_susceptible(dis_i);
+	}
+	double cross_protection_tmp = Global::Diseases.get_disease(dis_i)->get_natural_history()->get_cross_protection_probability();
+	if(Random::draw_random() < cross_protection_tmp) {
+	  Disease* disease_tmp = Global::Diseases.get_disease(dis_i);
+	  person->become_immune(disease_tmp);
+	}
+      }
+    }
+  }
+  // Lose immunity if necessary
+  int immunity_end_date = person->get_immunity_end_date(this->id);  
+  if(immunity_end_date > -1){
+    this->immunity_end_event_queue->add_event(immunity_end_date, person);
+  }
+
 }
 
 void Epidemic::process_symptoms_start_events(int day) {
@@ -1952,8 +2125,55 @@ void Epidemic::process_symptoms_end_events(int day) {
   this->symptoms_end_event_queue->clear_events(day);
 }
 
+
+void Epidemic::process_hospitalization_start_events(int day) {
+  int size = this->hospitalization_start_event_queue->get_size(day);
+  FRED_VERBOSE(1, "HOSP_START_EVENT_QUEUE day %d size %d\n", day, size);
+  printf("Entered process_hospitalization_start_events, size: %d\n", size);
+  for(int i = 0; i < size; ++i) {
+    Person* person =  this->hospitalization_start_event_queue->get_event(day, i);
+
+    // update next event list
+    int hospitalization_end_date = person->get_hospitalization_end_date(this->id);
+    this->hospitalization_end_event_queue->add_event(hospitalization_end_date, person);
+
+    // update epidemic counters
+    this->people_with_current_hospitalization++;
+    this->people_becoming_hospitalized_today++;    
+        
+    // update person's health chart
+    person->become_hospitalized(this->disease);
+    this->daily_hospitalization_list.push_back(person);
+  }
+  this->hospitalization_start_event_queue->clear_events(day);
+}
+
+void Epidemic::process_hospitalization_end_events(int day) {
+  printf("Entered process_hospitalization_end_events\n");
+  int size = hospitalization_end_event_queue->get_size(day);
+  FRED_VERBOSE(1, "HOSP_END_EVENT_QUEUE day %d size %d\n", day, size);
+
+  for(int i = 0; i < size; ++i) {
+    Person* person = this->hospitalization_end_event_queue->get_event(day, i);
+
+    // update epidemic counters
+    this->people_with_current_hospitalization--;
+
+    // update person's health chart
+    person->resolve_hospitalization(this->disease);
+        
+    // check to see if person has fully recovered:
+    int infectious_end_date = person->get_infectious_end_date(this->id);
+    if (-1 < infectious_end_date && infectious_end_date <= day) {
+      recover(person, day);
+    }
+  }
+  this->hospitalization_end_event_queue->clear_events(day);
+}
+
 void Epidemic::process_immunity_start_events(int day) {
   int size = immunity_start_event_queue->get_size(day);
+  printf("IMMUNITY_START_EVENT_QUEUE day %d size %d\n", day, size);
   FRED_VERBOSE(1, "IMMUNITY_START_EVENT_QUEUE day %d size %d\n", day, size);
 
   for(int i = 0; i < size; ++i) {
@@ -1961,37 +2181,88 @@ void Epidemic::process_immunity_start_events(int day) {
 
     // update epidemic counters
     this->immune_people++;
-
+    
     // update person's health chart
-    // person->become_immune(this->id);
+    Disease* disease_tmp = Global::Diseases.get_disease(this->id);
+    person->become_immune(disease_tmp);
+    /* Here, we check the probability of immune scape from disease dis_i
+       If there is a 25% immunity scape, then the cross_protection of dis_i should be 0.75
+    */
+    if(person->is_alive()){
+      if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+	for(int dis_i = 0; dis_i < Global::Diseases.get_number_of_diseases(); ++dis_i){
+	  if(dis_i == this->id){
+	    continue;
+	  }
+	  if(person->is_immune(dis_i) == false){	  
+	    person->become_susceptible(dis_i);
+	  }
+	  double cross_protection_tmp = Global::Diseases.get_disease(dis_i)->get_natural_history()->get_cross_protection_probability();
+	  if(Random::draw_random() < cross_protection_tmp) {
+	    Disease* disease_tmp = Global::Diseases.get_disease(dis_i);
+	    person->become_immune(disease_tmp);
+	  }
+	}
+      }
+    }
   }
   this->immunity_start_event_queue->clear_events(day);
 }
 
 void Epidemic::process_immunity_end_events(int day) {
   int size = immunity_end_event_queue->get_size(day);
+  printf("IMMUNITY_END_EVENT_QUEUE day %d size %d\n", day, size);
   FRED_VERBOSE(1, "IMMUNITY_END_EVENT_QUEUE day %d size %d\n", day, size);
 
   for(int i = 0; i < size; ++i) {
     Person* person = this->immunity_end_event_queue->get_event(day, i);
-
+    bool currently_infected = false;
+    if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+      for(int dis_i = 0; dis_i < Global::Diseases.get_number_of_diseases(); ++dis_i){
+	if(person->get_health()->get_infection(dis_i) != NULL){
+	  currently_infected = true;
+	}
+      }
+    }
+    if(currently_infected == true){
+      printf("Refusing to end partial immunity to other diseases because person is currently infected\n");
+      continue;
+    }
     // update epidemic counters
     this->immune_people--;
     
     // update epidemic counters
     this->removed_people++;
-    
+
+    bool current_infected = false;
+    for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
+      if(person->is_infected(dis_id) == true){
+	current_infected = true;
+      }
+    }
     // update person's health chart
-    person->become_susceptible(this->id);
+    if(person->is_alive() && current_infected == false){
+      person->become_susceptible_by_natural_waning(this->id);
+      if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
+	for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
+	  if(dis_id != this->id){
+	    person->become_susceptible_by_natural_waning(dis_id);
+	  }
+	}
+      }
+    }
   }
   this->immunity_end_event_queue->clear_events(day);
 }
 
 void Epidemic::update(int day) {
-
+  printf("Entered EPidemic update for day %d\n", day);
   FRED_VERBOSE(0, "epidemic update for disease %d day %d\n", id, day);
   Utils::fred_start_epidemic_timer();
 
+  if(Global::Enable_Hospitalization_Multiplier_File == true){
+    get_hospitalization_multiplier_today(day);
+  }  
   // import infections from unknown sources
   get_imported_infections(day);
   // Utils::fred_print_epidemic_timer("imported infections");
@@ -2008,8 +2279,17 @@ void Epidemic::update(int day) {
   // transition to symptomatic
   process_symptoms_start_events(day);
 
+  printf("Getting ready to process hospitalization_start_events\n");
+  // transition to hospitalization
+  process_hospitalization_start_events(day);
+
+  printf("Getting ready to process symptom end events\n");
   // transition to asymptomatic
   process_symptoms_end_events(day);
+
+  printf("Getting ready to process hospitalization end events\n");
+  // transition to not-hospitalized
+  process_hospitalization_end_events(day);
 
   // transition to immune
   process_immunity_start_events(day);
@@ -2018,20 +2298,30 @@ void Epidemic::update(int day) {
   process_immunity_end_events(day);
 
   //Update sheltering houses
-  if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
-    Global::Places.update_shelter_households(day, this->peak_day,
-					     1.0*this->symptomatic_incidence/this->peak_incidence,
-					     this->days_of_decline);
-  }
-  if(Global::Enable_School_Reduced_Capacity == true && Global::School_reduced_capacity_day <= day){
-    printf("School capacity reduced enabled to %.2f day %d\n",Global::School_reduced_capacity, day);
-  }
-  /*
-    UPDATE FACEMASK WEARING
-   */
+  //TODO: Should the following line be inthe place_list class?
   
-  if(Global::Enable_Face_Mask_Usage && Global::Enable_Face_Mask_Timeseries_File){
-    Global::Places.update_face_mask_compliance(day);
+  if (Global::Enable_Household_Shelter && Global::Enable_Household_Shelter_File) {
+    // Only update for the first disease, todo: fix peak_day and all of that
+    if(this->id == 0){
+      Global::Places.update_shelter_households(day, this->peak_day,
+					       1.0*this->symptomatic_incidence/this->peak_incidence,
+					       this->days_of_decline);
+    }
+  }
+  if(day >= Global::Epidemic_offset){
+    if(Global::Enable_School_Reduced_Capacity == true && Global::School_reduced_capacity_day <= day){
+      printf("School capacity reduced enabled to %.2f day %d\n",Global::School_reduced_capacity, day);
+    }
+    /*
+      UPDATE FACEMASK WEARING
+    */
+  
+    if(Global::Enable_Face_Mask_Usage && Global::Enable_Face_Mask_Timeseries_File){
+      // Only update on disease = 0, otherwise it will update too many times
+      if(this->id == 0){
+	Global::Places.update_face_mask_compliance(day);
+      }
+    }
   }
   
   // Utils::fred_print_epidemic_timer("transition events");
@@ -2072,57 +2362,65 @@ void Epidemic::update(int day) {
     }
   }
 
-  // get list of actually infectious people
+  // get list of actually infectious people  
   this->actually_infectious_people.clear();
-  for(std::set<Person*>::iterator it = this->potentially_infectious_people.begin(); it != this->potentially_infectious_people.end(); ++it) {
-    Person* person = (*it);
-    if(person->is_infectious(this->id)) {
-      this->actually_infectious_people.push_back(person);
-      FRED_VERBOSE(1, "ACTUALLY INF person %d\n", person->get_id());
+  if(day >= Global::Epidemic_offset){
+    for(std::set<Person*>::iterator it = this->potentially_infectious_people.begin(); it != this->potentially_infectious_people.end(); ++it) {
+      Person* person = (*it);
+      if(person->is_infectious(this->id)) {
+	this->actually_infectious_people.push_back(person);
+	FRED_VERBOSE(1, "ACTUALLY INF person %d\n", person->get_id());
+      }
     }
-  }
-  this->infectious_people = this->actually_infectious_people.size();
-  // Utils::fred_print_epidemic_timer("identifying actually infections people");
+    this->infectious_people = this->actually_infectious_people.size();
+    // Utils::fred_print_epidemic_timer("identifying actually infections people");
 
-  // update the daily activities of infectious people
-  for(int i = 0; i < this->infectious_people; ++i) {
-    Person* person = this->actually_infectious_people[i];
+    // update the daily activities of infectious people
+    for(int i = 0; i < this->infectious_people; ++i) {
+      Person* person = this->actually_infectious_people[i];
+
+      if(strcmp("sexual", this->disease->get_transmission_mode()) == 0) {
+	FRED_VERBOSE(1, "ADDING_ACTUALLY INF person %d\n", person->get_id());
+	// this will insert the infectious person onto the infectious list in sexual partner network
+	Sexual_Transmission_Network* st_network = Global::Sexual_Partner_Network;
+	st_network->add_infectious_person(this->id, person);
+      } else {
+	FRED_VERBOSE(1, "updating activities of infectious person %d -- %d out of %d\n", person->get_id(), i, this->infectious_people);
+	person->update_activities_of_infectious_person(day);
+	// note: infectious person will be added to the daily places in find_active_places_of_type()
+      }
+    }
+    Utils::fred_print_epidemic_timer("scheduled updated");
 
     if(strcmp("sexual", this->disease->get_transmission_mode()) == 0) {
-      FRED_VERBOSE(1, "ADDING_ACTUALLY INF person %d\n", person->get_id());
-      // this will insert the infectious person onto the infectious list in sexual partner network
       Sexual_Transmission_Network* st_network = Global::Sexual_Partner_Network;
-      st_network->add_infectious_person(this->id, person);
+      this->disease->get_transmission()->spread_infection(day, this->id, st_network);
+      st_network->clear_infectious_people(this->id);
     } else {
-      FRED_VERBOSE(1, "updating activities of infectious person %d -- %d out of %d\n", person->get_id(), i, this->infectious_people);
-      person->update_activities_of_infectious_person(day);
-      // note: infectious person will be added to the daily places in find_active_places_of_type()
-    }
-  }
-  Utils::fred_print_epidemic_timer("scheduled updated");
-
-  if(strcmp("sexual", this->disease->get_transmission_mode()) == 0) {
-    Sexual_Transmission_Network* st_network = Global::Sexual_Partner_Network;
-    this->disease->get_transmission()->spread_infection(day, this->id, st_network);
-    st_network->clear_infectious_people(this->id);
-  } else {
-    // spread infection in places attended by actually infectious people
-    // HERE!!! Don't spread the infection if epidemic_offset > day
-    if(day >= Global::Epidemic_offset){
-      for(int type = 0; type < 7; ++type) {
-	find_active_places_of_type(day, type);
-	spread_infection_in_active_places(day);
+      // spread infection in places attended by actually infectious people
+      // HERE!!! Don't spread the infection if epidemic_offset > day
+      if(day >= Global::Epidemic_offset){
+	for(int type = 0; type < 7; ++type) {
+	  find_active_places_of_type(day, type);
+	  spread_infection_in_active_places(day);
+	  char msg[80];
+	  sprintf(msg, "spread_infection for type %d", type);
+	  Utils::fred_print_epidemic_timer(msg);
+	}
+      }else{
 	char msg[80];
-	sprintf(msg, "spread_infection for type %d", type);
+	sprintf(msg,"Not spreading: day[%d] is < offset [%d]", day, Global::Epidemic_offset);
 	Utils::fred_print_epidemic_timer(msg);
       }
-    }else{
-      char msg[80];
-      sprintf(msg,"Not spreading: day[%d] is < offset [%d]", day, Global::Epidemic_offset);
-      Utils::fred_print_epidemic_timer(msg);
     }
-  }
-
+  
+    //After updating infectious people, seed infections
+    seed_nursing_home_infections(day);
+  }else{
+	char msg[80];
+	sprintf(msg,"Not spreading or updating places: day[%d] is < offset [%d]", day, Global::Epidemic_offset);
+	Utils::fred_print_epidemic_timer(msg);
+      }
   FRED_VERBOSE(0, "epidemic update finished for disease %d day %d\n", id, day);
   return;
 }
@@ -2233,6 +2531,14 @@ void Epidemic::cancel_symptoms_start(int day, Person* person) {
 
 void Epidemic::cancel_symptoms_end(int day, Person* person) {
   this->symptoms_end_event_queue->delete_event(day, person);
+}
+
+void Epidemic::cancel_hospitalization_start(int day, Person* person) {
+  this->hospitalization_start_event_queue->delete_event(day, person);
+}
+
+void Epidemic::cancel_hospitalization_end(int day, Person* person) {
+  this->hospitalization_end_event_queue->delete_event(day, person);
 }
 
 void Epidemic::cancel_infectious_start(int day, Person* person) {

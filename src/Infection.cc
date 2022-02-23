@@ -59,6 +59,7 @@ Infection::Infection(Disease* _disease, Person* _infector, Person* _host, Mixing
   this->symptoms_end_date = -1;
   this->immunity_end_date = -1;
   this->will_develop_symptoms = false;
+  this->will_be_hospitalized = false;
   this->infection_is_fatal_today = false;
 }
 
@@ -100,9 +101,23 @@ void Infection::setup() {
   
   FRED_VERBOSE(1, "infection::setup entered\n");
 
-  // decide if this host will develop symptoms
-  double prob_symptoms = this->disease->get_natural_history()->get_probability_of_symptoms(this->host->get_age());
-  this->will_develop_symptoms = (Random::draw_random() < prob_symptoms);
+  //Check for vaccine status to reduce the probability of developing symptoms!!
+  if(this->host->is_immune_to_symptoms(this->disease->get_id()) == false){
+    // decide if this host will develop symptoms
+    double prob_symptoms = this->disease->get_natural_history()->get_probability_of_symptoms(this->host->get_age());
+    this->will_develop_symptoms = (Random::draw_random() < prob_symptoms);
+    if(this->will_develop_symptoms == true){
+      if(this->host->is_immune_to_hospitalization(this->disease->get_id()) == false){
+	double prob_hospitalization = this->disease->get_natural_history()->get_probability_of_hospitalization(this->host->get_age());
+	this->will_be_hospitalized = (Random::draw_random() < prob_hospitalization);
+      }else{
+	this->will_be_hospitalized;
+      }
+    }
+  }else{
+    this->will_develop_symptoms = false;
+  }
+
 
   // set transition date for becoming susceptible after this infection
   int my_duration_of_immunity = this->disease->get_natural_history()->get_duration_of_immunity(this->host);
@@ -139,6 +154,41 @@ void Infection::setup() {
     }
   }
 
+  // Determine dates for hospitalizations
+  
+  double hospitalization_delay = 0.0;
+  double hospitalization_duration = 0.0;  
+  int hospitalization_distribution_type = this->disease->get_natural_history()->get_hospitalization_distribution_type();
+  
+  if(hospitalization_distribution_type == Natural_History::LOGNORMAL) {
+    hospitalization_delay = this->disease->get_natural_history()->get_real_hospitalization_delay(this->host);
+    hospitalization_duration = this->disease->get_natural_history()->get_hospitalization_duration(this->host);
+    if(Global::Enable_Hospitalization_Multiplier_File == true){
+      hospitalization_duration *= this->disease->get_epidemic()->get_daily_hospitalization_multiplier();
+    }
+    // find symptoms dates (assuming symptoms will occur)
+    this->hospitalization_start_date = this->symptoms_start_date + round(hospitalization_delay);   
+    this->hospitalization_end_date = this->hospitalization_start_date + round(hospitalization_duration) ;
+  } else {
+    // distribution type == CDF
+    int my_hospitalization_delay = this->disease->get_natural_history()->get_hospitalization_delay(this->host);
+    assert(my_hospitalization_delay > 0); // FRED needs at least one day to become symptomatic
+    this->hospitalization_start_date = this->symptoms_start_date + my_hospitalization_delay;
+      
+    int my_hospitalization_duration = this->disease->get_natural_history()->get_duration_of_hospitalization(this->host);   
+    // duration_of_symptoms <= 0 would mean "symptomatic forever"
+    
+    if(my_hospitalization_duration > 0) {
+      if(Global::Enable_Hospitalization_Multiplier_File == true){
+	my_hospitalization_duration *= this->disease->get_epidemic()->get_daily_hospitalization_multiplier();
+      }
+      this->hospitalization_end_date = this->hospitalization_start_date + my_hospitalization_duration;
+    } else {
+      this->hospitalization_end_date = Natural_History::NEVER;
+    }
+  }
+
+  
   // determine dates for infectiousness
   int infectious_distribution_type = this->disease->get_natural_history()->get_infectious_distribution_type();
   if(infectious_distribution_type == Natural_History::OFFSET_FROM_START_OF_SYMPTOMS ||
@@ -227,6 +277,14 @@ void Infection::setup() {
     this->symptoms_start_date = Natural_History::NEVER;
     this->symptoms_end_date = Natural_History::NEVER;
   }
+  if(this->will_be_hospitalized == false){
+    this->hospitalization_start_date = Natural_History::NEVER;
+    this->hospitalization_end_date = Natural_History::NEVER;
+  }else{
+    if(this->hospitalization_end_date > this->symptoms_end_date){
+      this->symptoms_end_date = this->hospitalization_end_date;
+    }
+  }
   // print();
   return;
 }
@@ -247,6 +305,7 @@ void Infection::report_infection(int day) {
   }
 
   int mixing_group_id = (this->mixing_group == NULL ? -1 : this->mixing_group->get_id());
+  string mixing_group_label = (this->mixing_group == NULL ? "NA" : string(this->mixing_group->get_label()));
   char mixing_group_type = (this->mixing_group == NULL ? 'X' : this->mixing_group->get_type());
   char mixing_group_subtype = 'X';
   if(this->mixing_group != NULL && dynamic_cast<Place*>(this->mixing_group) != NULL) {
@@ -284,26 +343,24 @@ void Infection::report_infection(int day) {
 	          << (this->infector == NULL ? -1 : this->infector->get_real_age()) << " inf_sympt "
 	          << (this->infector == NULL ? -1 : this->infector->is_symptomatic()) << " inf_sick_leave "
 	          << (this->infector == NULL ? -1 : this->infector->is_sick_leave_available())
-	          << " at " << mixing_group_type << " mixing_group " <<  mixing_group_id << " subtype " << mixing_group_subtype;
-    infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher();
-    
-    if(dynamic_cast<Place*>(this->mixing_group) != NULL) {
-      Place* place = dynamic_cast<Place*>(this->mixing_group);
-      if(mixing_group_type != 'X') {
-        fred::geo lat = place->get_latitude();
-        fred::geo lon = place->get_longitude();
-        infStrS << " lat " << lat;
-        infStrS << " lon " << lon;
-      } else {
-        infStrS << " lat " << -999;
-        infStrS << " lon " << -999;
-      }
-      double host_lat = this->host->get_household()->get_latitude();
-      double host_lon = this->host->get_household()->get_longitude();
-      infStrS << " home_lat " << host_lat;
-      infStrS << " home_lon " << host_lon;
-      infStrS << " | ";
+	    << " at " << mixing_group_type << " mixing_group " <<  mixing_group_id << " subtype " << mixing_group_subtype << " mixing_group_lbl " << mixing_group_label;
+    infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher() << " is_student " << (int)this->host->is_student() << " total_infections " << (int)this->host->get_total_number_of_infections();
+    int income_mixing_group = -1;
+    string host_classroom_label =  (this->host->get_classroom() == NULL ? "NA" : Place::get_place_label(this->host->get_classroom()));
+    string host_school_label = (this->host->get_school() == NULL ? "NA" : Place::get_place_label(this->host->get_school()));
+    // if mixing_group is classroom, print out details
+    if(mixing_group_type == 'S' || mixing_group_type == 'C'){
+      School* ss = static_cast<School*>(this->mixing_group);
+      income_mixing_group = ss->get_school_income();
+      int sch_census_tract_index = (ss == NULL ? -1 : ss->get_census_tract_index());
+      long int sch_census_tract = (sch_census_tract_index == -1 ? -1 : Global::Places.get_census_tract_with_index(sch_census_tract_index));
+      infStrS << " sch_census_tract " << sch_census_tract;
+    }else{
+      infStrS << " sch_census_tract -1 ";
     }
+    infStrS << " income " << income_mixing_group;
+    infStrS << " classroom_lbl " << host_classroom_label;
+    infStrS << " school_lbl " << host_school_label;    
   }
 
   if(Global::Track_infection_events > 2) {
@@ -340,9 +397,30 @@ void Infection::report_infection(int day) {
       }
       census_tract_index = (hh == NULL ? -1 : hh->get_census_tract_index());
       census_tract = (census_tract_index == -1 ? -1 : Global::Places.get_census_tract_with_index(census_tract_index));
-      infStrS << " host_census_tract " << census_tract;
+      infStrS << " host_census_tract " << census_tract;      
     }
     infStrS << " | ";
+    if(dynamic_cast<Place*>(this->mixing_group) != NULL) {
+      Place* place = dynamic_cast<Place*>(this->mixing_group);
+      if(mixing_group_type != 'X') {
+        fred::geo lat = place->get_latitude();
+        fred::geo lon = place->get_longitude();
+        infStrS << " lat " << lat;
+        infStrS << " lon " << lon;
+      } else {
+        infStrS << " lat " << -999;
+        infStrS << " lon " << -999;
+      }
+      double host_lat = this->host->get_household()->get_latitude();
+      double host_lon = this->host->get_household()->get_longitude();
+      string home_id(this->host->get_household()->get_label());
+      string inf_home_id(this->infector == NULL ? "H-1" : this->infector->get_household()->get_label());
+      infStrS << " home_lat " << host_lat;
+      infStrS << " home_lon " << host_lon;
+      infStrS << " home_host_id " << home_id;
+      infStrS << " home_inf_id " << inf_home_id;
+      infStrS << " | ";
+    }    
   }
   if(Global::Track_infection_events > 3){
     Neighborhood_Patch* pt = this->host->get_household()->get_patch();
@@ -363,7 +441,7 @@ void Infection::report_infection(int day) {
 void Infection::update(int today) {
   // if host is symptomatic, determine if infection is fatal today.
   // if so, set flag and terminate infection update.
-  if(this->disease->is_case_fatality_enabled() && is_symptomatic(today)) {
+  if(this->disease->is_case_fatality_enabled() && is_symptomatic(today) && this->host->is_immune_to_hospitalization(this->disease->get_id()) == false) {
     int days_symptomatic = today - this->symptoms_start_date;
     if(Global::Enable_Chronic_Condition) {
       if(this->disease->is_fatal(this->host, get_symptoms(today), days_symptomatic)) {	

@@ -82,21 +82,37 @@ void Natural_History::setup(Disease * _disease) {
 
   // set defaults 
   this->probability_of_symptoms = 0;
+  this->probability_of_hospitalization = 0;
+  this->hospitalization_duration_median = 0;
+  this->hospitalization_duration_dispersion = 0;
+  this->hospitalization_duration_upper_bound = 0;
+  this->hospitalization_delay_median = 0;
+  this->hospitalization_delay_dispersion = 0;
+  this->hospitalization_delay_upper_bound = 0;
+  this->hospitalization_threshold = 0;
   this->asymptomatic_infectivity = 0;
   strcpy(symptoms_distributions, "none");
   strcpy(infectious_distributions, "none");
+  strcpy(hospitalization_distributions, "none");
   this->symptoms_distribution_type = 0;
+  this->hospitalization_distribution_type = 0;
   this->infectious_distribution_type = 0;
   this->max_days_incubating = 0;
   this->max_days_symptomatic = 0;
   this->days_incubating = NULL;
   this->days_symptomatic = NULL;
+  this->days_hospitalization = NULL;
+  this->max_days_hospitalization = 0;
   this->max_days_latent = 0;
   this->max_days_infectious = 0;
   this->days_latent = NULL;
   this->days_infectious = NULL;
   this->age_specific_prob_symptoms = NULL;
+  this->age_specific_prob_hospitalization = NULL;
   this->immunity_loss_rate = 0;
+  this->will_lose_immunity = false;
+  this->immunity_proportion_loss = 1.0;
+  this->cross_protection_prob = 0.0;
   this->incubation_period_median = 0;
   this->incubation_period_dispersion = 0;
   this->incubation_period_upper_bound = 0;
@@ -145,7 +161,7 @@ void Natural_History::get_parameters() {
   // get required natural history parameters
 
   Params::get_indexed_param(disease_name,"symptoms_distributions", (this->symptoms_distributions));
-
+  
   if (strcmp(this->symptoms_distributions, "lognormal")==0) {
     Params::get_indexed_param(disease_name, "incubation_period_median", &(this->incubation_period_median));
     Params::get_indexed_param(disease_name, "incubation_period_dispersion", &(this->incubation_period_dispersion));
@@ -177,6 +193,40 @@ void Natural_History::get_parameters() {
     Utils::fred_abort("Natural_History: unrecognized symptoms_distributions type: %s\n", this->symptoms_distributions);
   }
 
+  //HOSPITALIZATION DISTRIBUTIONS
+  Params::get_indexed_param(disease_name,"hospitalization_distributions", (this->hospitalization_distributions));
+  
+  if (strcmp(this->hospitalization_distributions, "lognormal")==0) {
+    Params::get_indexed_param(disease_name, "hospitalization_delay_median", &(this->hospitalization_delay_median));
+    Params::get_indexed_param(disease_name, "hospitalization_delay_dispersion", &(this->hospitalization_delay_dispersion));
+    Params::get_indexed_param(disease_name, "hospitalization_duration_median", &(this->hospitalization_duration_median));
+    Params::get_indexed_param(disease_name, "hospitalization_duration_dispersion", &(this->hospitalization_duration_dispersion));
+
+    // set optional lognormal parameters
+    Params::disable_abort_on_failure();
+
+    Params::get_indexed_param(disease_name, "hospitalization_delay_upper_bound", &(this->hospitalization_delay_upper_bound));
+    Params::get_indexed_param(disease_name, "hospitalization_duration_upper_bound", &(this->hospitalization_duration_upper_bound));
+    
+    // restore requiring parameters
+    Params::set_abort_on_failure();
+
+    this->hospitalization_distribution_type = LOGNORMAL;
+  }
+  else if (strcmp(this->hospitalization_distributions, "cdf")==0) {
+    Params::get_indexed_param(disease_name,"days_hospitalization_delay",&n);
+    this->days_hospitalization_delay = new double [n];
+    this->max_days_hospitalization_delay = Params::get_indexed_param_vector(disease_name, "days_hospitalization_delay", this->days_hospitalization_delay) -1;
+    
+    Params::get_indexed_param(disease_name,"days_hospitalization",&n);
+    this->days_hospitalization = new double [n];
+    this->max_days_hospitalization = Params::get_indexed_param_vector(disease_name, "days_hospitalization", this->days_hospitalization) -1;
+    this->hospitalization_distribution_type = CDF;
+  }
+  else {
+    Utils::fred_abort("Natural_History: unrecognized hospitalization_distributions type: %s\n", this->hospitalization_distributions);
+  }
+  
   if (this->disease->get_transmissibility() > 0.0) {
 
     Params::get_indexed_param(disease_name,"infectious_distributions", (this->infectious_distributions));
@@ -240,12 +290,20 @@ void Natural_History::get_parameters() {
 
   Params::disable_abort_on_failure();
 
+  Params::get_indexed_param(disease_name,"probability_of_hospitalization",&(this->probability_of_hospitalization));
+  
   // get fractions corresponding to full symptoms or infectivity
   Params::get_indexed_param(disease_name, "full_symptoms_start", &(this->full_symptoms_start));
   Params::get_indexed_param(disease_name, "full_symptoms_end", &(this->full_symptoms_end));
   Params::get_indexed_param(disease_name, "full_infectivity_start", &(this->full_infectivity_start));
   Params::get_indexed_param(disease_name, "full_infectivity_end", &(this->full_infectivity_end));
   Params::get_indexed_param(disease_name, "immunity_loss_rate",&(this->immunity_loss_rate));
+  if(this->immunity_loss_rate > 0.0){
+    Params::get_indexed_param(disease_name, "immunity_proportion_loss",&(this->immunity_proportion_loss));
+    if(Random::draw_random() < this->immunity_proportion_loss){
+      this->will_lose_immunity = true;
+    }
+  }
   Params::get_indexed_param(disease_name, "infectivity_threshold", &(this->infectivity_threshold));
   Params::get_indexed_param(disease_name, "symptomaticity_threshold", &(this->symptomaticity_threshold));
 
@@ -259,11 +317,21 @@ void Natural_History::get_parameters() {
   sprintf(paramstr, "%s_prob_symptoms", disease_name);
   this->age_specific_prob_symptoms->read_from_input(paramstr);
 
+  // age specific probablility of hospitalization
+  this->age_specific_prob_hospitalization = new Age_Map("Hospitalization");
+  sprintf(paramstr, "%s_prob_hospitalization", disease_name);
+  this->age_specific_prob_hospitalization->read_from_input(paramstr);
+
   // probability of developing an immune response by past infections
   this->age_specific_prob_infection_immunity = new Age_Map("Infection Immunity");
   sprintf(paramstr, "%s_infection_immunity", disease_name);
   this->age_specific_prob_infection_immunity->read_from_input(paramstr);
 
+  // Read cross-protection values
+  if(Global::Enable_Disease_Cross_Protection == true){
+    Params::get_indexed_param(disease_name, "cross_protection_prob",&(this->cross_protection_prob));    
+  }
+  
   //case fatality parameters
   Params::get_indexed_param(disease_name, "enable_case_fatality",
 			    &(this->enable_case_fatality));
@@ -304,6 +372,15 @@ double Natural_History::get_probability_of_symptoms(int age) {
   }
 }
 
+double Natural_History::get_probability_of_hospitalization(int age) {
+  if (this->age_specific_prob_hospitalization->is_empty()) {
+    return this->probability_of_hospitalization;
+  }
+  else {
+    return this->age_specific_prob_hospitalization->find_value(age);
+  }
+}
+
 int Natural_History::get_latent_period(Person* host) {
   return Random::draw_from_distribution(max_days_latent, days_latent);
 }
@@ -320,9 +397,13 @@ int Natural_History::get_duration_of_symptoms(Person* host) {
   return Random::draw_from_distribution(max_days_symptomatic, days_symptomatic);
 }
 
+int Natural_History::get_duration_of_hospitalization(Person* host) {
+  return Random::draw_from_distribution(max_days_hospitalization, days_hospitalization);
+}
+
 int Natural_History::get_duration_of_immunity(Person* host) {
   int days;
-  if(this->immunity_loss_rate > 0.0) {
+  if(this->immunity_loss_rate > 0.0 && this->will_lose_immunity == true) {
     // draw from exponential distribution
     days = floor(0.5 + Random::draw_exponential(this->immunity_loss_rate));
     // printf("DAYS RECOVERED = %d\n", days);
@@ -418,6 +499,31 @@ double Natural_History::get_real_incubation_period(Person* host) {
     incubation_period = Random::draw_random(0.0,this->incubation_period_upper_bound);
   }
   return incubation_period;
+}
+
+int Natural_History::get_hospitalization_delay(Person* host) {
+  return Random::draw_from_distribution(max_days_hospitalization_delay, days_hospitalization_delay);
+}
+
+
+double Natural_History::get_real_hospitalization_delay(Person* host) {
+  double location = log(this->hospitalization_delay_median);
+  double scale = 0.5*log(this->hospitalization_delay_dispersion);
+  double hosp_delay = Random::draw_lognormal(location, scale);
+  if (this->hospitalization_delay_upper_bound > 0 && hosp_delay > this->hospitalization_delay_upper_bound) {
+    hosp_delay = Random::draw_random(0.0,this->hospitalization_delay_upper_bound);
+  }
+  return hosp_delay;
+}
+
+double Natural_History::get_hospitalization_duration(Person *host){
+  double location = log(this->hospitalization_duration_median);
+  double scale = 0.5*log(this->hospitalization_duration_dispersion);
+  double hospitalization_duration = Random::draw_lognormal(location, scale);
+  if (this->hospitalization_duration_upper_bound > 0 && hospitalization_duration > this->hospitalization_duration_upper_bound) {
+    hospitalization_duration = Random::draw_random(0.0,this->hospitalization_duration_upper_bound);
+  }
+  return hospitalization_duration;
 }
 
 double Natural_History::get_symptoms_duration(Person* host) {

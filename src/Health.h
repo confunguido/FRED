@@ -97,18 +97,26 @@ public:
   void update_infection(int day, int disease_id);
   void update_face_mask_decision(int day, int disease_id);
   void update_interventions(int day);
+  void update_vaccine_interventions(int day);
   void become_exposed(int disease_id, Person* infector, Mixing_Group* mixing_group, int day);
   void become_susceptible(int disease_id);
+  void become_susceptible_by_natural_waning(int disease_id);
   void become_susceptible(Disease* disease);
   void become_susceptible_by_vaccine_waning(int disease_id);
+  void become_susceptible_to_symptoms_by_vaccine_waning(int disease_id);
+  void become_susceptible_to_hospitalization_by_vaccine_waning(int disease_id);
   void become_unsusceptible(Disease* disease);
   void become_unsusceptible(int disease_id);
   void become_infectious(Disease* disease);
   void become_noninfectious(Disease* disease);
   void become_symptomatic(Disease* disease);
+  void become_hospitalized(Disease* disease);
   void resolve_symptoms(Disease* disease);
+  void resolve_hospitalization(Disease* disease);
   void become_case_fatality(int disease_id, int day);
   void become_immune(Disease* disease);
+  void become_immune_to_symptoms(Disease* disease);
+  void become_immune_to_hospitalization(Disease* disease);
   void become_removed(int disease_id, int day);
   void declare_at_risk(Disease* disease);
   void recover(Disease* disease, int day);
@@ -134,7 +142,10 @@ public:
   void terminate(int day);
 
   // ACCESS TO HEALTH CONDITIONS
-
+  int get_total_number_of_infections(){
+    return this->total_number_of_infections;
+  }
+  
   int get_days_symptomatic() { 
     return this->days_symptomatic;
   }
@@ -143,6 +154,8 @@ public:
   int get_infectious_end_date(int disease_id) const;
   int get_symptoms_start_date(int disease_id) const;
   int get_symptoms_end_date(int disease_id) const;
+  int get_hospitalization_start_date(int disease_id) const;
+  int get_hospitalization_end_date(int disease_id) const;
   int get_immunity_end_date(int disease_id) const;
   int get_infector_id(int disease_id) const;
   Person* get_infector(int disease_id) const;
@@ -198,10 +211,26 @@ public:
     return this->symptomatic.test(disease_id);
   }
 
+  bool is_hospitalized() const {
+    return this->hospitalized.any();
+  }
+
+  bool is_hospitalized(int disease_id) {
+    return this->hospitalized.test(disease_id);
+  }
+
   bool is_recovered(int disease_id);
 
   bool is_immune(int disease_id) const {
     return this->immunity.test(disease_id);
+  }
+
+  bool is_immune_to_symptoms(int disease_id) const {
+    return this->immunity_to_symptoms.test(disease_id);
+  }
+
+  bool is_immune_to_hospitalization(int disease_id) const {
+    return this->immunity_to_hospitalization.test(disease_id);
   }
 
   bool is_at_risk(int disease_id) const {
@@ -292,6 +321,12 @@ public:
     }
   }
 
+  int get_vaccinated_id() const;    
+  
+  int is_vaccine_effective_any() const;
+  int get_vaccination_any_effective_day() const;
+
+  int get_vaccination_immunity_loss_day() const;
   /**
    * @return the number of vaccines this agent has taken
    */
@@ -327,6 +362,10 @@ public:
     }
   }
 
+  int get_current_vaccine_dose(int i);
+  int get_days_to_next_dose(int i);
+  int get_next_dose_mix_match(int i);
+  
   // MODIFIERS
 
   /**
@@ -699,12 +738,16 @@ private:
   int* infector_id;
   Mixing_Group** infected_in_mixing_group;
   int days_symptomatic; 			// over all diseases
+  int days_hospitalization;
+  int total_number_of_infections;
 
   // living or not?
   bool alive;
 
   // bitset removes need to check each infection in above array to
   // find out if any are not NULL
+  fred::disease_bitset immunity_to_symptoms;
+  fred::disease_bitset immunity_to_hospitalization;
   fred::disease_bitset immunity;
   fred::disease_bitset at_risk; // Agent is/isn't at risk for severe complications
 
@@ -712,6 +755,7 @@ private:
   fred::disease_bitset susceptible;
   fred::disease_bitset infectious;
   fred::disease_bitset symptomatic;
+  fred::disease_bitset hospitalized;
   fred::disease_bitset recovered_today;
   fred::disease_bitset recovered;
   fred::disease_bitset case_fatality;
@@ -790,6 +834,7 @@ private:
 
   // health protective behavior parameters
   static int Days_to_wear_face_masks;
+  static int Min_age_wear_face_masks;
   static int Day_start_wearing_face_masks;
   static std::unordered_map<string,double> Face_mask_compliance;  
   static double Hand_washing_compliance;

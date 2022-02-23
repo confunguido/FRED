@@ -64,6 +64,8 @@ public:
    * @param disease the disease to reference
    */
   void become_immune(Disease* disease);
+  void become_immune_to_symptoms(Disease* disease);
+  void become_immune_to_hospitalization(Disease* disease);
 
   void print(FILE* fp, int disease_id);
 
@@ -85,6 +87,22 @@ public:
 
   void update_health_interventions(int day) {
     this->health.update_interventions(day);
+  }
+
+  int is_vaccine_effective_any(){
+    return (this->health.is_vaccine_effective_any());
+  }
+
+  int get_vaccination_any_effective_day(){
+    return (this->health.get_vaccination_any_effective_day());
+  }
+
+  int get_vaccination_immunity_loss_day(){
+    return (this->health.get_vaccination_immunity_loss_day());
+  }
+
+  void update_vaccine_interventions(int day) {
+    this->health.update_vaccine_interventions(day);
   }
 
   /**
@@ -129,8 +147,20 @@ public:
     this->health.become_susceptible(disease_id);
   }
 
+  void become_susceptible_by_natural_waning(int disease_id) {
+    this->health.become_susceptible_by_natural_waning(disease_id);
+  }
+
   void become_susceptible_by_vaccine_waning(int disease_id) {
     this->health.become_susceptible_by_vaccine_waning(disease_id);
+  }
+
+  void become_susceptible_to_symptoms_by_vaccine_waning(int disease_id) {
+    this->health.become_susceptible_to_symptoms_by_vaccine_waning(disease_id);
+  }
+
+  void become_susceptible_to_hospitalization_by_vaccine_waning(int disease_id) {
+    this->health.become_susceptible_to_hospitalization_by_vaccine_waning(disease_id);
   }
 
   void update_household_counts(int day, int disease_id);
@@ -158,6 +188,14 @@ public:
 
   void resolve_symptoms(Disease* disease) {
     this->health.resolve_symptoms(disease);
+  }
+
+  void become_hospitalized(Disease* disease) {
+    this->health.become_hospitalized(disease);
+  }
+
+  void resolve_hospitalization(Disease* disease) {
+    this->health.resolve_hospitalization(disease);
   }
 
   /**
@@ -301,6 +339,18 @@ public:
     return &this->health;
   }
 
+  int get_current_vaccine_dose(int i){
+    return this->health.get_current_vaccine_dose(i);
+  }
+
+  int get_days_to_next_dose(int i){
+    return this->health.get_days_to_next_dose(i);
+  }
+
+  int get_next_dose_mix_match(int i){
+    return this->health.get_next_dose_mix_match(i);
+  }
+
   /**
    * @return <code>true</code> if this agent is symptomatic, <code>false</code> otherwise
    * @see Health::is_symptomatic()
@@ -317,8 +367,20 @@ public:
     return this->health.get_days_symptomatic();
   }
 
+  int get_total_number_of_infections() {
+    return this->health.get_total_number_of_infections();
+  }  
+
   bool is_immune(int disease_id) {
     return this->health.is_immune(disease_id);
+  }
+
+  bool is_immune_to_symptoms(int disease_id) {
+    return this->health.is_immune_to_symptoms(disease_id);
+  }
+  
+  bool is_immune_to_hospitalization(int disease_id) {
+    return this->health.is_immune_to_hospitalization(disease_id);
   }
 
   /**
@@ -403,6 +465,7 @@ public:
    * @param disease the disease to check
    * @return the simulation day that this agent became exposed to disease
    */
+  
   int get_exposure_date(int disease) const {
     return this->health.get_exposure_date(disease);
   }
@@ -421,6 +484,14 @@ public:
 
   int get_symptoms_end_date(int disease) const {
     return this->health.get_symptoms_end_date(disease);
+  }
+
+  int get_hospitalization_start_date(int disease) const {
+    return this->health.get_hospitalization_start_date(disease);
+  }
+
+  int get_hospitalization_end_date(int disease) const {
+    return this->health.get_hospitalization_end_date(disease);
   }
 
   int get_immunity_end_date(int disease) const {
@@ -642,7 +713,7 @@ public:
   Past_Infection* get_past_infection(int disease, int i) {
     return this->health.get_past_infection(disease, i);
   }
-
+  
   void clear_past_infections(int disease) {
     this->health.clear_past_infections(disease);
   }

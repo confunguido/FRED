@@ -213,7 +213,9 @@ public:
     return this->transmission;
   }
 
-  void become_immune(Person* person, bool susceptible, bool infectious, bool symptomatic);
+  void become_immune(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized);
+  void become_immune_to_symptoms(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized);
+  void become_immune_to_hospitalization(Person* person, bool susceptible, bool infectious, bool symptomatic, bool hospitalized);
 
   bool assume_susceptible() {
     return this->make_all_susceptible;
@@ -265,6 +267,9 @@ private:
   double susceptibility_by_age_offset;
   double susceptibility_by_age_rate;
   double susceptibility_by_age_cutoff;
+  double susceptibility_by_age_high;
+  double susceptibility_by_age_minvalue;
+  double susceptibility_by_age_minage;
   std::vector<double> age_susceptibility;
   
   int enable_hand_washing;

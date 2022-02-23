@@ -221,6 +221,7 @@ void fred_setup(int argc, char* argv[]) {
     }
   }
 
+  Global::Places.count_teachers_and_students();
   FRED_STATUS(0, "deleting place_label_map\n", "");
   Global::Places.delete_place_label_map();
   FRED_STATUS(0, "prepare places finished\n", "");
@@ -359,7 +360,10 @@ void fred_setup(int argc, char* argv[]) {
   if(Global::Enable_Household_Shelter_By_Age){
     printf("FRED.cc::HOUSEHOLD SHELTER BY AGE ENABLED\n");
   }
-  
+
+  if(Global::Enable_Vaccination){
+    Global::Pop.vacc_manager->reset();
+  }
   Utils::fred_print_wall_time("FRED initialization complete");
 
   Utils::fred_start_timer(&Global::Simulation_start_time);
@@ -404,13 +408,19 @@ void fred_step(int day) {
   }
 
   // update everyone's health intervention status
-  if(Global::Enable_Vaccination || Global::Enable_Antivirals) {
+  if(Global::Enable_Antivirals) {
+    /* This will take a very long time to run, why are we doing this?
+     Very inefficient, it goes through all the population and checks if their immunity is today or if they lose immunity today.
+     At least, we have to reduce this to all the population. Will move this to either vaccine manager or disease update
+    */
     Global::Pop.update_health_interventions(day);
-  }
-
+    Utils::fred_print_lap_time("day %d update health antivirals", day);
+  }  
+  
   // remove dead from population
   Global::Pop.remove_dead_from_population(day);
-
+  Utils::fred_print_lap_time("day %d remove dead people", day);
+  
   // update activity profiles on July 1
   if(Global::Enable_Population_Dynamics && Date::get_month() == 7 && Date::get_day_of_month() == 1) {
   }
@@ -418,21 +428,25 @@ void fred_step(int day) {
   // Update vector dynamics
   if(Global::Enable_Vector_Layer) {
     Global::Vectors->update(day);
+    Utils::fred_print_lap_time("day %d vectors update", day);
   }
-
+  
   // update travel decisions
   Travel::update_travel(day);
+  Utils::fred_print_lap_time("day %d travel update", day);
 
   if(Global::Enable_Behaviors) {
     // update decisions about behaviors
   }
 
   // distribute vaccines
-  Global::Pop.vacc_manager->update(day);
-
+  Utils::fred_print_lap_time("day %d moving to process vaccines", day);
+  Global::Pop.vacc_manager->update(day);  
+  Utils::fred_print_lap_time("day %d update vaccines", day);
   // distribute AVs
   Global::Pop.av_manager->update(day);
 
+  
   // update generic activities (individual activities updated only if
   // needed -- see below)
   Activities::update(day);

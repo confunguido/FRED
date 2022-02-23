@@ -38,7 +38,9 @@ Policy::Policy(Manager* mgr){
 
 bool Policy::choose_first_positive(Person* person, int disease, int current_day){
   for(unsigned int i=0; i < decision_list.size(); i++){    
-    if(decision_list[i]->evaluate(person,disease,current_day) == 1) return true;
+    if(decision_list[i]->evaluate(person,disease,current_day) == 1){
+      return true;
+    }
   }
   return false;
 }   

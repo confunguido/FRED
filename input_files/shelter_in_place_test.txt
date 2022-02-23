@@ -1,16 +1,16 @@
 # line_format
 # Format is:
-# start end shelter_prob [ workplace_type [ zipcode ] ]
+# start end shelter_prob [min_age max_age [ zipcode ]]
 # Only the first three fields are mandatory.  The others are optional, but, if
-# present, must be given in the order above.  If a location is specified, then
-# all three location fields must be present (lat, lon & radius).
-# example below will: make 100 seeding attempts of disease_id 0 on day 0, 
-# each with attempt probabilty of 1, requiring a minimum of 90 successes,
-# all selected randomly from people whose households are within 20km of
-# the specified point.
+# present, must be given in the order above.
+# If min age is specified, then max age needs to be specified
+# Zipcode has 6 characters
+# 0 10 1.0 0 120 208203
 #
-# 0 0 100 0 1 90 40.44181 -80.01278 20
-#
+120 140 0.8 0 120
+120 150 0.4 0 120
+0 20 1.0 0 120 11001006516
+20 40 1.0 0 50 11001006516
 50 59 1.0
 60 69 0.8
 70 79 0.5

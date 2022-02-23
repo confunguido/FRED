@@ -42,22 +42,44 @@ class Office;
 
 typedef std::unordered_map<std::string, int> LabelMapT;
 
+struct Time_Step_Map_Community_Contact {
+  int sim_day_start;
+  int sim_day_end;
+  double contact_rate;
+  /*
+    1. Create a neighborhood static array for different contact rates
+    2. Everyday, update a place_list static variable of current increase for all neighborhood contacts
+    3. Check current contact rate if community_contact_timeseries is enabled
+  */
+  
+  const std::string to_string() const {
+    std::stringstream ss;
+    ss << "Community contact::Time Step Map ";
+    ss << " sim_day_start " << sim_day_start;
+    ss << " sim_day_end " << sim_day_end;
+    ss << " contact rate increase " << contact_rate;
+    ss << std::endl;
+    return ss.str();
+  }
+};
+
+
 struct Time_Step_Map_Shelter {
   int sim_day_start;
   int sim_day_end;
   double shelter_compliance;
-  double lat;
-  double lon;
-  double radius;
+  long int census_tract;
+  int min_age;
+  int max_age;
   const std::string to_string() const {
     std::stringstream ss;
     ss << "Time Step Map ";
     ss << " sim_day_start " << sim_day_start;
     ss << " sim_day_end " << sim_day_end;
     ss << " shelter_compliance " << shelter_compliance;
-    ss << " lat " << lat;
-    ss << " lon " << lon;
-    ss << " radius " << radius;
+    ss << " census_tract " << census_tract;
+    ss << " min age " << min_age;
+    ss << " max age " << max_age;
     ss << std::endl;
     return ss.str();
   }
@@ -79,6 +101,7 @@ struct Time_Step_Map_Face_Mask {
     return ss.str();
   }
 };
+
 
 // Helper class used during read_all_places/read_places; definition
 // after Place_List class
@@ -110,7 +133,8 @@ public:
 
   void read_all_places(const std::vector<Utils::Tokens> & Demes);
   void read_places(const char* pop_dir, const char* pop_id, unsigned char deme_id, InitSetT &pids);
-
+  
+  void count_teachers_and_students();
   void reassign_workers();
   void prepare();
   void print_status_of_schools(int day);
@@ -175,6 +199,8 @@ public:
   int get_shelter_post_peak_period(){
     return this->Shelter_relax_post_peak_period;
   }
+  void update_community_contact_increase(int day);
+  
   void update_face_mask_compliance(int day);
   void end_of_run();
   double get_face_mask_compliance_today(string locstr);
@@ -406,6 +432,10 @@ public:
   // access function for when we need a Hospital pointer
   Hospital* get_hospital_ptr(int i) {
     return static_cast<Hospital*>(get_hospital(i));
+  }  
+
+  static double get_current_community_contact_rate(){
+    return Place_List::current_community_contact_rate;
   }
 
 private:
@@ -418,7 +448,7 @@ private:
   place_vector_t schools_by_grade[GRADES];
   place_vector_t workplaces;
   place_vector_t hospitals;
-
+  
   void read_household_file(unsigned char deme_id, char* location_file, InitSetT &pids);
   void read_workplace_file(unsigned char deme_id, char* location_file, InitSetT &pids);
   void read_hospital_file(unsigned char deme_id, char* location_file, InitSetT &pids);
@@ -491,6 +521,7 @@ private:
   static std::vector<int> Shelter_stepwise_duration;
   static std::vector<Time_Step_Map_Shelter*> shelter_households_timestep;
   static std::vector<Time_Step_Map_Face_Mask*> face_mask_timestep;
+  static std::vector<Time_Step_Map_Community_Contact*> community_contact_timestep;  
   
   static int Shelter_by_age_duration_mean;
   static int Shelter_by_age_duration_std;
@@ -502,6 +533,7 @@ private:
   static int Shelter_by_age_min_age;
   static int Shelter_by_age_max_age;
   static bool Shelter_students;
+  static double current_community_contact_rate;  
   
   static double Shelter_relax_post_peak_threshold;
   static int Shelter_relax_post_peak_min_peak_day;

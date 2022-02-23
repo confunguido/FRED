@@ -254,6 +254,9 @@ report_epidemic_data_by_census_tract = 0
 # SCHOOL SETUP PARAMETERS 
 #
 ##########################################################
+enable_classroom_size_array = 0
+school_classroom_size_array = 20 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40
+
 enable_school_reduced_capacity = 0
 school_reduced_capacity = 1.0
 school_reduced_capacity_day = 100
@@ -387,6 +390,10 @@ trips_per_day_file = $FRED_HOME/input_files/countries/usa/trips_per_day.txt
 school_closure_policy = none
 # school_closure_policy = global
 # school_closure_policy = individual
+# school_closure_policy = global_schedule
+
+# enable school closure based on schedule
+school_global_schedule_file = none
 
 # number of days to keep a school closed
 school_closure_duration = 10
@@ -475,6 +482,24 @@ vaccine_dose_priority = 0
 vaccine_priority_only = 0
 vaccinate_symptomatics = 0
 refresh_vaccine_queues_daily = 0
+vaccine_acceptance_probability = 1.0
+
+enable_vaccine_stock_timeseries = 0
+vaccine_stock_timeseries_file = none
+enable_vaccination_phases = 0
+vaccination_enable_vaccine_acceptance_array = 0
+vaccination_acceptance_array = 1 1.0
+vaccination_phases_enable_discrete_timing = 0
+vaccination_phases_discrete_forceday = 0
+vaccination_phases_names = 0
+vaccination_phases_age_low = 0
+vaccination_phases_age_high = 0
+vaccination_phases_id = 0
+vaccination_phases_pop_prob = 0
+
+## TODO: include this parameter
+vaccine_report_probability_symptomatics = 1.0
+
 
 ## Sample Definition of Vaccine #0
 vaccine_number_of_doses[0] = 1
@@ -488,6 +513,10 @@ vaccine_efficacy_duration_values[0] = 1 99999
 vaccine_next_dosage_day[0][0] = 0
 vaccine_dose_efficacy_age_groups[0][0] = 1 100
 vaccine_dose_efficacy_values[0][0] = 1 0.70
+vaccine_dose_efficacy_symptoms_age_groups[0][0] = 1 100
+vaccine_dose_efficacy_symptoms_values[0][0] = 1 0.0
+vaccine_dose_efficacy_hospitalization_age_groups[0][0] = 1 100
+vaccine_dose_efficacy_hospitalization_values[0][0] = 1 0.0
 vaccine_dose_efficacy_delay_age_groups[0][0] = 1 100
 vaccine_dose_efficacy_delay_values[0][0] = 1 14
 vaccine_strains[0] = 0
@@ -580,6 +609,9 @@ HAZEL_seek_hc_ramp_up_mult = 1.0
 # DISEASE PARAMETERS
 #
 ##########################################################
+## If there's a change in hospitalization duration
+enable_hospitalization_duration_timeseries = 0
+hospitalization_duration_timeseries_file = none
 
 # Number of diseases circulating
 diseases = 1
@@ -594,6 +626,11 @@ influenza_transmission_mode = respiratory
 
 # basic => on-off infectiousness and symptoms
 influenza_natural_history_model = basic
+
+
+# Cross protection across diseases disabled by default
+enable_disease_cross_protection = 0
+influenza_cross_protection_prob = 0.0
 
 ##########################################################
 #
@@ -613,11 +650,24 @@ influenza_probability_of_symptoms = 0.67
 influenza_prob_symptoms_age_groups = 0
 influenza_prob_symptoms_values = 0
 
-### optional susceptibility by aged
+### hospitalization rate:
+influenza_probability_of_hospitalization = 0.0
+
+### optional hospitalization age map
+influenza_prob_hospitalization_age_groups = 0
+influenza_prob_hospitalization_values = 0
+
+### optional susceptibility by age
 enable_age_specific_susceptibility = 0
 influenza_susceptibility_by_age_rate = 0.0
 influenza_susceptibility_by_age_offset = 0.0
 influenza_susceptibility_by_age_cutoff = 0.0
+influenza_susceptibility_by_age_high = 1.0
+
+## Only works if susceptibility by age is enabled
+enable_age_specific_susceptibility_min = 0
+influenza_susceptibility_by_age_minage = 0
+influenza_susceptibility_by_age_minvalue = 1.0
 
 
 ### multiplier for asymptomatic infectivity
@@ -648,6 +698,13 @@ influenza_full_infectivity_end = 1.0
 influenza_shed_shape = 2.05
 influenza_shed_scale = 6.62
 influenza_shed_mag = 4210
+
+#### default: lognormal incubation and symptoms duration
+influenza_hospitalization_distributions = lognormal
+influenza_hospitalization_delay_median = 1.9
+influenza_hospitalization_delay_dispersion = 1.51
+influenza_hospitalization_duration_median = 5.0
+influenza_hospitalization_duration_dispersion = 1.5 
 
 
 ######################################################
@@ -680,10 +737,20 @@ neighborhood_same_age_bias = 0.1
 # community contacts increase on weekends
 weekend_contact_rate = 1.5
 
+# community contacts increase on holidays MM-DD
+enable_holiday_contacts = 0
+holiday_contact_rate = 1.5
+holiday_start = 10-31
+holiday_end = 01-11
+
+enable_community_contact_timeseries = 0
+community_contact_timeseries_file = none
+
 ##################### END default calibration parameters
 
 ### IMMUNITY
 influenza_immunity_loss_rate = 0
+influenza_immunity_proportion_loss = 1
 influenza_residual_immunity_age_groups = 0
 influenza_residual_immunity_values = 0
 influenza_infection_immunity_age_groups = 1 120
@@ -838,7 +905,8 @@ face_mask_locations = 6 household school classroom workplace office other
 face_mask_compliance = 6 0.0 0.5 0.95 0.7 0.7 0.3
 day_start_wearing_face_masks = 0
 days_to_wear_face_masks = 100
-influenza_face_mask_transmission_efficacy = 0.15
+min_age_face_masks = 0
+influenza_face_mask_transmission_efficacy = 0.3
 influenza_face_mask_susceptibility_efficacy = 1
 
 enable_hand_washing = 0
@@ -866,6 +934,10 @@ seasonal_peak_day_of_year = 1
 # Amount of reduction in seasonal transmissibility (default = 0 -> no seasonal change).
 # Note: If set to a value > 1, then transmission will be 0 for part of the year.
 seasonal_reduction = 0
+
+seasonal_increase = 0
+seasonal_start_day = 0
+seasonal_stop_day = 0
 
 #########
 # the following use a climate model to affect seasonality (experimental)
@@ -927,6 +999,11 @@ shelter_in_place_relax_post_peak_moving_average_days = 7
 shelter_in_place_relax_post_peak_days_with_decline = 10
 shelter_in_place_relax_post_peak_period = 14
 shelter_in_place_relax_post_peak_threshold = 0.05
+shelter_in_place_neighborhood = 0
+shelter_in_place_neighborhood_prop = 0.0
+
+enable_retiree_random_place = 0
+retiree_random_place_prob = 0.0
 
 ##########################################################
 #

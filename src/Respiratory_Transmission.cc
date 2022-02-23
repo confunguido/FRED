@@ -94,7 +94,7 @@ void Respiratory_Transmission::spread_infection(int day, int disease_id, Place* 
   // abort if transmissibility == 0 or if place is closed
   Disease* disease = Global::Diseases.get_disease(disease_id);
   double beta = disease->get_transmissibility();
-  if(beta == 0.0 || place->is_open(day) == false || place->should_be_open(day, disease_id) == false) {
+  if(beta == 0.0 || place->should_be_open(day, disease_id) == false || place->is_open(day) == false ) {
     place->reset_place_state(disease_id);
     return;
   }
@@ -317,8 +317,7 @@ void Respiratory_Transmission::default_transmission_model(int day, int disease_i
 }
 
 
-void Respiratory_Transmission::pairwise_transmission_model(int day, int disease_id, Place* place) {
-
+void Respiratory_Transmission::pairwise_transmission_model(int day, int disease_id, Place* place) {  
   person_vec_t* infectious = place->get_infectious_people(disease_id);
   person_vec_t* susceptibles = place->get_enrollees();
 

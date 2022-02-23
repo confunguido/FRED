@@ -70,7 +70,7 @@ void Events::clear_events(int day) {
 
   assert(0 <= day && day < MAX_DAYS);
   this->events[day] = events_t();
-  // printf("clear_events day %d size %d\n", day, get_size(day));
+  //printf("clear_events day %d size %d\n", day, get_size(day));
 }
 
 int Events::get_size(int day) {

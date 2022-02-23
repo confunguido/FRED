@@ -119,6 +119,14 @@ public:
     return this->symptoms_end_date;
   }
 
+  int get_hospitalization_start_date() {
+    return this->hospitalization_start_date;
+  }
+
+  int get_hospitalization_end_date() {
+    return this->hospitalization_end_date;
+  }
+
   int get_immunity_end_date() {
     return this->immunity_end_date;
   }
@@ -177,8 +185,11 @@ protected:
 
   // person is symptomatic starting symptoms_start_date until symptoms_end_date
   bool will_develop_symptoms;
+  bool will_be_hospitalized;
   int symptoms_start_date;		      // -1 if never symptomatic
   int symptoms_end_date;		      // -1 if never symptomatic
+  int hospitalization_start_date;
+  int hospitalization_end_date;
 
   // person is immune from infection starting on exposure_date until immunity_end_date
   int immunity_end_date;	  // -1 if immune forever after recovery

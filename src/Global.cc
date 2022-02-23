@@ -114,9 +114,17 @@ bool Global::Report_County_Demographic_Information = false;
 bool Global::Assign_Teachers = false;
 bool Global::Enable_Household_Shelter = false;
 bool Global::Enable_Household_Shelter_File = false;
+bool Global::Enable_Hospitalization_Multiplier_File = false;
 bool Global::Enable_Face_Mask_Timeseries_File = false;
+bool Global::Enable_Vaccine_Stock_Timeseries_File = false;
+bool Global::Enable_Vaccination_Phases = false;
+bool Global::Enable_Community_Contact_Timeseries = false;
+bool Global::Enable_Disease_Cross_Protection = false;
 bool Global::Enable_Face_Mask_Usage = false;
 bool Global::Enable_School_Reduced_Capacity = false;
+bool Global::Enable_School_Classroom_Size_Array = false;
+bool Global::Enable_Retiree_Random_Place = false;
+double Global::Retiree_Random_Place_Prob = 0.0;
 double Global::School_reduced_capacity = 1.0;
 int Global::School_reduced_capacity_day = 10000;
 bool Global::Enable_Household_Shelter_By_Age = false;
@@ -125,6 +133,11 @@ bool Global::Enable_Age_Specific_Susceptibility = false;
 bool Global::Enable_Household_Shelter_Relax_Post_Peak_Period = false;
 bool Global::Enable_Household_Shelter_Relax_Post_Peak_Threshold = false;
 bool Global::Enable_Isolation = 0;
+bool Global::Enable_Holiday_Contacts = false;
+int Global::holiday_start_month = 0;
+int Global::holiday_start_day = 0;
+int Global::holiday_end_month = 0;
+int Global::holiday_end_day = 0;
 int Global::Isolation_Delay = 1;
 double Global::Isolation_Rate = 0.0;
 char Global::PSA_Method[FRED_STRING_SIZE];
@@ -300,12 +313,24 @@ void Global::get_global_parameters() {
   Global::Enable_Household_Shelter = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_shelter_in_place_timeseries", &temp_int);
   Global::Enable_Household_Shelter_File = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_hospitalization_duration_timeseries", &temp_int);
+  Global::Enable_Hospitalization_Multiplier_File = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_face_mask_timeseries", &temp_int);
   Global::Enable_Face_Mask_Timeseries_File = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_vaccine_stock_timeseries", &temp_int);
+  Global::Enable_Vaccine_Stock_Timeseries_File = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_vaccination_phases", &temp_int);
+  Global::Enable_Vaccination_Phases = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_community_contact_timeseries", &temp_int);
+  Global::Enable_Community_Contact_Timeseries = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_face_mask_usage", &temp_int);
   Global::Enable_Face_Mask_Usage = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_disease_cross_protection", &temp_int);
+  Global::Enable_Disease_Cross_Protection = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_school_reduced_capacity", &temp_int);
   Global::Enable_School_Reduced_Capacity = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_classroom_size_array", &temp_int);
+  Global::Enable_School_Classroom_Size_Array = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_shelter_in_place_by_age", &temp_int);
   Global::Enable_Household_Shelter_By_Age = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_nursing_homes_importations", &temp_int);
@@ -318,8 +343,23 @@ void Global::get_global_parameters() {
   Global::Enable_Household_Shelter_Relax_Post_Peak_Threshold = (temp_int == 0 ? false : true);
   Params::get_param_from_string("enable_isolation", &temp_int);
   Global::Enable_Isolation = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("enable_retiree_random_place", &temp_int);
+  Global::Enable_Retiree_Random_Place = (temp_int == 0 ? false : true);
+  Params::get_param_from_string("retiree_random_place_prob", &Global::Retiree_Random_Place_Prob);
   Params::get_param_from_string("school_reduced_capacity", &Global::School_reduced_capacity);
   Params::get_param_from_string("school_reduced_capacity_day", &Global::School_reduced_capacity_day);
+
+  Params::get_param_from_string("enable_holiday_contacts", &temp_int);
+  Global::Enable_Holiday_Contacts = (temp_int == 0 ? false : true);
+  if(Global::Enable_Holiday_Contacts == true){
+    char holiday_date_start[8];
+    char holiday_date_end[8];
+    Params::get_param_from_string("holiday_start", holiday_date_start);
+    Params::get_param_from_string("holiday_end", holiday_date_end);
+    sscanf(holiday_date_start, "%d-%d", &Global::holiday_start_month, &Global::holiday_start_day);
+    sscanf(holiday_date_end, "%d-%d", &Global::holiday_end_month, &Global::holiday_end_day);
+  }
+  
   Params::get_param_from_string("isolation_delay", &Global::Isolation_Delay);
   Params::get_param_from_string("isolation_rate", &Global::Isolation_Rate);
   // added for residual_immunity_by_FIPS
@@ -328,5 +368,6 @@ void Global::get_global_parameters() {
   if(Global::Residual_Immunity_by_FIPS) {
     Params::get_param_from_string("residual_immunity_by_FIPS_file", Global::Residual_Immunity_File);
   }
+  
 }
 

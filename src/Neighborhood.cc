@@ -27,6 +27,7 @@ double Neighborhood::contacts_per_day = 0.0;
 double Neighborhood::same_age_bias = 0.0;
 double** Neighborhood::prob_transmission_per_contact = NULL;
 double Neighborhood::weekend_contact_rate = 0.0;
+double Neighborhood::holiday_contact_rate = 0.0;
 
 Neighborhood::Neighborhood(const char* lab, char _subtype, fred::geo lon, fred::geo lat) : Place(lab, lon, lat) {
   this->set_type(Place::TYPE_NEIGHBORHOOD);
@@ -48,7 +49,12 @@ void Neighborhood::get_parameters() {
     }
   }
   Params::get_param_from_string("weekend_contact_rate", &Neighborhood::weekend_contact_rate);
+  
+  if(Global::Enable_Holiday_Contacts){
+    Params::get_param_from_string("holiday_contact_rate", &Neighborhood::holiday_contact_rate);
+  }
 
+  
   if(Global::Verbose > 0) {
     printf("\nprob_transmission_per_contact before normalization:\n");
     for(int i  = 0; i < n; ++i)  {

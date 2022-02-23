@@ -40,10 +40,24 @@ public:
   // Access Members
   int get_vaccination_day()              const { return vaccination_day; }
   int get_vaccination_effective_day()    const { return vaccination_effective_day; }
+  int get_vaccination_any_effective_day() const {    
+    if(vaccination_effective_day != -1){
+      return vaccination_effective_day;
+    }
+    if(vaccination_effective_symp_day != -1){
+      return vaccination_effective_symp_day;
+    }
+    return vaccination_effective_hosp_day;
+  }
   int is_effective()                     const { if(vaccination_effective_day != -1) return 1; else return 0;}
+  int is_effective_symptoms()            const { if(vaccination_effective_symp_day != -1) return 1; else return 0;}
+  int is_effective_hospitalization()            const { if(vaccination_effective_hosp_day != -1) return 1; else return 0;}
+  int is_effective_any() const { if( vaccination_effective_day != -1 || vaccination_effective_symp_day != -1 || vaccination_effective_hosp_day != -1) return 1; else return 0;}
+  int get_vaccine_immunity_loss_day() const { return vaccination_immunity_loss_day;}
   Vaccine* get_vaccine()                 const { return vaccine; }
   int get_current_dose()                 const { return current_dose; }
   int get_days_to_next_dose()            const { return days_to_next_dose; }
+  int get_next_dose_mix_match()            const { return next_dose_mix_match; }
   Vaccine_Manager* get_vaccine_manager() const { return vaccine_manager; }
   // Modifiers
   void set_vaccination_day(int day) { 
@@ -66,13 +80,18 @@ public:
 private:
   int vaccination_day;              // On which day did you get the vaccine
   int vaccination_effective_day;    // On which day is the vaccine effective
+  int vaccination_effective_symp_day;    // On which day is the vaccine effective
+  int vaccination_effective_hosp_day;    // On which day is the vaccine effective
   int vaccination_immunity_loss_day;  // On which day does the vaccine lose effectiveness
   Vaccine* vaccine;                 // Which vaccine did you take
   int current_dose;                 // Current Dose that the agent is on
   int days_to_next_dose;            // How long between doses
+  int next_dose_mix_match;          // Does it accept other vaccines (with same efficacy of primary vax)
   Person * person;                  // The person object this belongs to.
   Vaccine_Manager* vaccine_manager; // Which manager did the vaccine come from?
   bool effective;
+  bool effective_symptoms;
+  bool effective_hospitalization;
 };
 
 #endif
