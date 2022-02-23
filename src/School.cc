@@ -354,7 +354,7 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
       close_this_school = (School::individual_school_closure_threshold <= get_symptomatic_attack_rate(disease_id));
     }
   }
-
+  
   // double wastewater_rna;
   // if individual_school_closure_by_wastewater then close if this threshold is met
   if(School::individual_school_closure_by_wastewater) {
@@ -362,7 +362,6 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
 		      get_wastewater_rna(disease_id,day,school_wastewater_measurement_negbin_size) :
 		      get_wastewater_rna(disease_id,day));
     close_this_school = (School::individual_school_wastewater_threshold <= wastewater_rna);
-    if (close_this_school) printf("Wasterwater RNA is %d",wastewater_rna);
   }
 
   if(close_this_school) {

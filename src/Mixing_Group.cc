@@ -169,7 +169,7 @@ int Mixing_Group::get_wastewater_rna(int disease_id, int day) {
       total_rna += (*it)->get_shedding(disease_id, day);
     }
   }
-  return total_rna; 
+  return total_rna;
 }
 
 int Mixing_Group::get_wastewater_rna(int disease_id, int day, double negbin_size) {
@@ -181,7 +181,7 @@ int Mixing_Group::get_wastewater_rna(int disease_id, int day, double negbin_size
     }
   }
   int measured_rna = Random::draw_negative_binomial(total_rna,negbin_size);
-  return measured_rna; 
+  return measured_rna;
 }
 
 void Mixing_Group::add_infectious_person(int disease_id, Person* person) {
