@@ -425,10 +425,10 @@ Cases = -1
 
 # close schools based on local cases (true/false)? (and only if school_closure_policy == individual)
 # uses school_closure_cases if school_closure_cases != -1, else uses individual_school_closure_ar_threshold
-individual_school_closure_by_cases = 1
+individual_school_closure_by_cases = 0
 
 # close schools based on wastewater RNA measurement? (true/false)
-individual_school_closure_by_wastewater = 1
+individual_school_closure_by_wastewater = 0
 
 # include variability in wastewater measurements
 school_include_rna_measurement_variability = 1
