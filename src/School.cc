@@ -457,6 +457,8 @@ bool School::should_be_open(int day, int disease_id) {
   
   // stick to previously made decision to close
   if(this->closure_dates_have_been_set) {
+    printf("SCHOOL %s CHECK closure dates set on day %d\n",
+	   this->get_label(), day);
     return is_open(day);
   }
 
@@ -468,6 +470,8 @@ bool School::should_be_open(int day, int disease_id) {
 
   // individual school closure policy in effect
   if(strcmp(School::school_closure_policy, "individual") == 0) {
+    printf("SCHOOL %s CHECK applying school closure policy on day %d\n",
+	   this->get_label(), day);
     apply_individual_school_closure_policy(day, disease_id);
     return is_open(day);
   }  

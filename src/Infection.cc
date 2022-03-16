@@ -339,10 +339,10 @@ void Infection::report_infection(int day) {
 
   if(Global::Track_infection_events > 1) {
     infStrS << " sick_leave " << this->host->is_sick_leave_available()
-	          << " infector " << (this->infector == NULL ? -1 : this->infector->get_id()) << " inf_age "
-	          << (this->infector == NULL ? -1 : this->infector->get_real_age()) << " inf_sympt "
-	          << (this->infector == NULL ? -1 : this->infector->is_symptomatic()) << " inf_sick_leave "
-	          << (this->infector == NULL ? -1 : this->infector->is_sick_leave_available())
+	    << " infector " << (this->infector == NULL ? -1 : this->infector->get_id()) << " inf_age "
+	    << (this->infector == NULL ? -1 : this->infector->get_real_age()) << " inf_sympt "
+	    << (this->infector == NULL ? -1 : this->infector->is_symptomatic()) << " inf_sick_leave "
+	    << (this->infector == NULL ? -1 : this->infector->is_sick_leave_available())
 	    << " at " << mixing_group_type << " mixing_group " <<  mixing_group_id << " subtype " << mixing_group_subtype << " mixing_group_lbl " << mixing_group_label;
     infStrS << " size " << mixing_group_size << " is_teacher " << (int)this->host->is_teacher() << " is_student " << (int)this->host->is_student() << " total_infections " << (int)this->host->get_total_number_of_infections();
     int income_mixing_group = -1;
