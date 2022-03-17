@@ -383,6 +383,8 @@ bool School::is_open(int day) {
   
   bool open = (day < this->close_date || this->open_date <= day);
   if(open == true) {
+    printf("SCHOOL %s CHECK in is_open and unsetting the closure dates on day %d, and is_open = %s\n",
+	   this->get_label(), day, open(day));
     this->closure_dates_have_been_set = false;
   }
   if(!open) {
@@ -446,7 +448,7 @@ bool School::should_be_open(int day, int disease_id) {
       return false;
     }
   }
-
+  
   // global school closure policy in effect
   if(strcmp(School::school_closure_policy, "global_schedule") == 0) {
     if(day > this->day_closure_dates_grades_set){
@@ -457,8 +459,8 @@ bool School::should_be_open(int day, int disease_id) {
   
   // stick to previously made decision to close
   if(this->closure_dates_have_been_set) {
-    printf("SCHOOL %s CHECK closure dates set on day %d\n",
-	   this->get_label(), day);
+    printf("SCHOOL %s CHECK closure dates set on day %d, and is_open = %s\n",
+	   this->get_label(), day, is_open(day));
     return is_open(day);
   }
 
@@ -470,8 +472,8 @@ bool School::should_be_open(int day, int disease_id) {
 
   // individual school closure policy in effect
   if(strcmp(School::school_closure_policy, "individual") == 0) {
-    printf("SCHOOL %s CHECK applying school closure policy on day %d\n",
-	   this->get_label(), day);
+    printf("SCHOOL %s CHECK applying school closure policy on day %d, and is_open = %s\n",
+	   this->get_label(), day, is_open(day));
     apply_individual_school_closure_policy(day, disease_id);
     return is_open(day);
   }  
