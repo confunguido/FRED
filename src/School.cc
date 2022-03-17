@@ -384,7 +384,7 @@ bool School::is_open(int day) {
   bool open = (day < this->close_date || this->open_date <= day);
   if(open == true) {
     printf("SCHOOL %s CHECK in is_open and unsetting the closure dates on day %d, and is_open = %s\n",
-	   this->get_label(), day, open(day));
+	   this->get_label(), day, open);
     this->closure_dates_have_been_set = false;
   }
   if(!open) {
