@@ -591,7 +591,9 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
   }
 
   bool close_this_school = false;
-
+  bool false_positive = false;
+  bool false_negative = false;
+  
   // If individual_school_closure_by_cases then close if the relevant threshold is met
   // if school_closure_cases > -1 then close if this number of cases occurs
   if(School::individual_school_closure_by_cases){
@@ -611,6 +613,8 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
 		      get_wastewater_rna(disease_id,day,school_wastewater_measurement_negbin_size) :
 		      wastewater_rna_actual);
     close_this_school = (School::individual_school_wastewater_threshold <= wastewater_rna);
+    false_negative = (!close_this_school && School::individual_school_wastewater_threshold <= wastewater_rna_actual);
+    false_positive = (close_this_school && School::individual_school_wastewater_threshold > wastewater_rna_actual);
   }
 
   if(close_this_school) {
@@ -631,6 +635,9 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
 	       get_size(), get_symptomatic_attack_rate(disease_id));
       }
     }
+  } else if (false_negative && Global::Verbose > 0) {
+    printf("FALSE NEGATIVE LOCAL SCHOOL CLOSURE WW conc: measurement = %d GC/l, actual = %d GC/l\n",
+	   wastewater_rna,wastewater_rna_actual);
   }
 }
 
