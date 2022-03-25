@@ -261,6 +261,7 @@ private:
   int county_index;
   int income_quartile;
   int wastewater_rna;
+  int wastewater_rna_actual;
   int close_grade_date[GRADES];
   int open_grade_date[GRADES];
   double open_capacity_grade[GRADES];

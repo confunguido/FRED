@@ -384,8 +384,6 @@ bool School::is_open(int day) {
   bool open = (day < this->close_date || this->open_date <= day);
   if(this->open_date <= day) {
     // if(open == true) {
-    // printf("SCHOOL %s CHECK in is_open and unsetting the closure dates on day %d, and is_open = %s\n",
-    // 	   this->get_label(), day, open);
     this->closure_dates_have_been_set = false;
   }
   if(!open) {
@@ -460,8 +458,6 @@ bool School::should_be_open(int day, int disease_id) {
   
   // stick to previously made decision to close
   if(this->closure_dates_have_been_set) {
-    // printf("SCHOOL %s CHECK closure dates set on day %d, and is_open = %s\n",
-    // 	   this->get_label(), day, is_open(day));
     return is_open(day);
   }
 
@@ -473,8 +469,6 @@ bool School::should_be_open(int day, int disease_id) {
 
   // individual school closure policy in effect
   if(strcmp(School::school_closure_policy, "individual") == 0) {
-    // printf("SCHOOL %s CHECK applying school closure policy on day %d, and is_open = %s\n",
-    // 	   this->get_label(), day, is_open(day));
     apply_individual_school_closure_policy(day, disease_id);
     return is_open(day);
   }  
@@ -612,9 +606,10 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
   // double wastewater_rna;
   // if individual_school_closure_by_wastewater then close if this threshold is met
   if(School::individual_school_closure_by_wastewater) {
+    wastewater_rna_actual = get_wastewater_rna(disease_id,day);
     wastewater_rna = (school_include_rna_measurement_variability ?
 		      get_wastewater_rna(disease_id,day,school_wastewater_measurement_negbin_size) :
-		      get_wastewater_rna(disease_id,day));
+		      wastewater_rna_actual);
     close_this_school = (School::individual_school_wastewater_threshold <= wastewater_rna);
   }
 
@@ -626,10 +621,10 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
     if(Global::Verbose > 0) {
       Disease* disease = Global::Diseases.get_disease(disease_id);
       if(School::individual_school_closure_by_wastewater) {
-	printf("LOCAL SCHOOL CLOSURE pop_ar %.3f local_cases = %d / %d (%.3f) WW conc = %d GC/l\n",
+	printf("LOCAL SCHOOL CLOSURE pop_ar %.3f local_cases = %d / %d (%.3f) WW conc: measurement = %d GC/l, actual = %d GC/l\n",
 	       disease->get_symptomatic_attack_rate(), get_total_cases(disease_id),
 	       get_size(), get_symptomatic_attack_rate(disease_id),
-	       wastewater_rna);
+	       wastewater_rna,wastewater_rna_actual);
       } else {
 	printf("LOCAL SCHOOL CLOSURE pop_ar %.3f local_cases = %d / %d (%.3f)\n",
 	       disease->get_symptomatic_attack_rate(), get_total_cases(disease_id),
