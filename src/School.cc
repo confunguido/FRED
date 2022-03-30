@@ -615,7 +615,7 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
     false_negative = (!close_this_school && get_current_infections(day,disease_id) > 0);
 
     if (get_number_of_infectious_people(disease_id) > get_current_infections(day,disease_id)) {
-      printf("ERROR!! School has more infectious people than infections...");
+      printf("ERROR!! School has more infectious people than infections...\n");
     }
   }
 
