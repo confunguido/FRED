@@ -614,8 +614,8 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
     close_this_school = (School::individual_school_wastewater_threshold <= wastewater_rna);
     false_negative = (!close_this_school && get_current_infections(day,disease_id) > 0);
 
-    if (get_number_of_infectious_people(disease_id)>0 && get_current_infections(day,disease_id)>0) {
-      printf("ERROR!! School has infectious people, but no infections...");
+    if (get_number_of_infectious_people(disease_id) > get_current_infections(day,disease_id)) {
+      printf("ERROR!! School has more infectious people than infections...");
     }
   }
 
