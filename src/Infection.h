@@ -139,6 +139,14 @@ public:
     }
   }
 
+  bool is_preinfectious(int day) {
+    if(this->infectious_start_date != Natural_History::NEVER) {
+      return (day < this->infectious_start_date);
+    } else {
+      return false;
+    }
+  }
+
   bool is_symptomatic(int day) {
     if(this->symptoms_start_date != Natural_History::NEVER) {
       return (this->symptoms_start_date <= day && day < this->symptoms_end_date);

@@ -625,12 +625,13 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
     if(Global::Verbose > 0) {
       Disease* disease = Global::Diseases.get_disease(disease_id);
       if(School::individual_school_closure_by_wastewater) {
-	printf("LOCAL SCHOOL CLOSURE pop_ar %.3f local_cases = %d / %d (%.3f) WW conc: measurement = %d GC/l, actual = %d GC/l preinfectious people = %d infectious people = %d\n",
+	printf("LOCAL SCHOOL CLOSURE pop_ar %.3f local_cases = %d / %d (%.3f) WW conc: measurement = %d GC/l, actual = %d GC/l preinfectious people = %d infectious people = %d infections = %d\n",
 	       disease->get_symptomatic_attack_rate(), get_total_cases(disease_id),
 	       get_size(), get_symptomatic_attack_rate(disease_id),
 	       wastewater_rna,wastewater_rna_actual,
 	       get_current_preinfectious_people(day,disease_id),
-	       get_number_of_infectious_people(disease_id));
+	       get_number_of_infectious_people(disease_id),
+	       get_current_infections(day,disease_id));
       } else {
 	printf("LOCAL SCHOOL CLOSURE pop_ar %.3f local_cases = %d / %d (%.3f)\n",
 	       disease->get_symptomatic_attack_rate(), get_total_cases(disease_id),
@@ -638,9 +639,10 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
       }
     }
   } else if (false_negative && Global::Verbose > 0) {
-    printf("FALSE NEGATIVE LOCAL SCHOOL CLOSURE WW conc: measurement = %d GC/l, actual = %d GC/l preinfectious people = %d infectious people = %d\n",
+    printf("FALSE NEGATIVE LOCAL SCHOOL CLOSURE WW conc: measurement = %d GC/l, actual = %d GC/l preinfectious people = %d infectious people = %d infections = %d\n",
 	   wastewater_rna,wastewater_rna_actual,get_current_preinfectious_people(day,disease_id),
-	   get_number_of_infectious_people(disease_id));
+	   get_number_of_infectious_people(disease_id),
+	   get_current_infections(day,disease_id));
   }
 }
 

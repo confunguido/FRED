@@ -51,6 +51,7 @@ Mixing_Group::Mixing_Group(const char* lab) {
   this->total_infections = new int[diseases];
   this->new_symptomatic_infections = new int[diseases];
   this->current_symptomatic_infections = new int[diseases];
+  this->current_preinfectious_people = new int[diseases];
   this->total_symptomatic_infections = new int[diseases];
   this->current_case_fatalities = new int[diseases];
   this->total_case_fatalities = new int[diseases];
@@ -60,6 +61,7 @@ Mixing_Group::Mixing_Group(const char* lab) {
   for(int d = 0; d < diseases; ++d) {
     this->new_infections[d] = 0;
     this->current_infections[d] = 0;
+    this->current_preinfectious_people[d] = 0;
     this->total_infections[d] = 0;
     this->new_symptomatic_infections[d] = 0;
     this->total_symptomatic_infections[d] = 0;
@@ -93,6 +95,9 @@ Mixing_Group::~Mixing_Group() {
   }
   if(this->current_symptomatic_infections != NULL) {
     delete this->current_symptomatic_infections;
+  }
+  if(this->current_preinfectious_people != NULL) {
+    delete this->current_preinfectious_people;
   }
   if(this->total_symptomatic_infections != NULL) {
     delete this->total_symptomatic_infections;

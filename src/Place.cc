@@ -87,6 +87,7 @@ Place::Place() : Mixing_Group("BLANK") {
 
   this->new_infections = new int[diseases];
   this->current_infections = new int[diseases];
+  this->current_preinfectious_people = new int[diseases];
   this->total_infections = new int[diseases];
   this->new_symptomatic_infections = new int[diseases];
   this->current_symptomatic_infections = new int[diseases];
@@ -96,6 +97,7 @@ Place::Place() : Mixing_Group("BLANK") {
   for(int d = 0; d < diseases; ++d) {
     this->new_infections[d] = 0;
     this->current_infections[d] = 0;
+    this->current_preinfectious_people[d] = 0;
     this->total_infections[d] = 0;
     this->new_symptomatic_infections[d] = 0;
     this->total_symptomatic_infections[d] = 0;
@@ -133,6 +135,7 @@ Place::Place(const char* lab, fred::geo lon, fred::geo lat) : Mixing_Group(lab) 
 
   this->new_infections = new int[diseases];
   this->current_infections = new int[diseases];
+  this->current_preinfectious_people = new int[diseases];
   this->total_infections = new int[diseases];
   this->new_symptomatic_infections = new int[diseases];
   this->current_symptomatic_infections = new int[diseases];
@@ -142,6 +145,7 @@ Place::Place(const char* lab, fred::geo lon, fred::geo lat) : Mixing_Group(lab) 
   for(int d = 0; d < diseases; ++d) {
     this->new_infections[d] = 0;
     this->current_infections[d] = 0;
+    this->current_preinfectious_people[d] = 0;
     this->total_infections[d] = 0;
     this->new_symptomatic_infections[d] = 0;
     this->total_symptomatic_infections[d] = 0;
@@ -158,6 +162,7 @@ void Place::prepare() {
   for(int d = 0; d < Global::Diseases.get_number_of_diseases(); ++d) {
     this->new_infections[d] = 0;
     this->current_infections[d] = 0;
+    this->current_preinfectious_people[d] = 0;
     this->new_symptomatic_infections[d] = 0;
   }
   this->open_date = 0;
