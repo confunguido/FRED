@@ -231,7 +231,7 @@ public:
   void increment_new_infections(int day, int disease_id) {
     if (this->last_update < day) {
       this->last_update = day;
-      this->new_infections[disease_id] = 0;
+      this->resets(disease_id);
     }
     this->new_infections[disease_id]++;
     this->total_infections[disease_id]++;
@@ -240,7 +240,7 @@ public:
   void increment_current_infections(int day, int disease_id) {
     if (this->last_update < day) {
       this->last_update = day;
-      this->current_infections[disease_id] = 0;
+      this->resets(disease_id);
     }
     this->current_infections[disease_id]++;
   }
@@ -248,7 +248,7 @@ public:
   void increment_new_symptomatic_infections(int day, int disease_id) {
     if (this->last_update < day) {
       this->last_update = day;
-      this->new_symptomatic_infections[disease_id] = 0;
+      this->resets(disease_id);
     }
     this->new_symptomatic_infections[disease_id]++;
     this->total_symptomatic_infections[disease_id]++;
@@ -257,7 +257,7 @@ public:
   void increment_current_symptomatic_infections(int day, int disease_id) {
     if (this->last_update < day) {
       this->last_update = day;
-      this->current_symptomatic_infections[disease_id] = 0;
+      this->resets(disease_id);
     }
     this->current_symptomatic_infections[disease_id]++;
   }
@@ -265,7 +265,7 @@ public:
   void increment_current_preinfectious_people(int day, int disease_id) {
     if (this->last_update < day) {
       this->last_update = day;
-      this->current_preinfectious_people[disease_id] = 0;
+      this->resets(disease_id);
     }
     this->current_preinfectious_people[disease_id]++;
   }
