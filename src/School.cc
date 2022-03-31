@@ -639,7 +639,8 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
       }
     }
   } else if (false_negative && Global::Verbose > 0) {
-    printf("FALSE NEGATIVE LOCAL SCHOOL CLOSURE WW conc: measurement = %d GC/l, actual = %d GC/l preinfectious people = %d infectious people = %d infections = %d\n",
+    printf("FALSE NEGATIVE LOCAL SCHOOL CLOSURE School: %s Day: %d WW conc measurement = %d GC/l, actual = %d GC/l preinfectious people = %d infectious people = %d infections = %d\n",
+	   this->get_label(),day,
 	   wastewater_rna,wastewater_rna_actual,get_current_preinfectious_people(day,disease_id),
 	   get_number_of_infectious_people(disease_id),
 	   get_current_infections(day,disease_id));
