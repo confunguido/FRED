@@ -1396,13 +1396,18 @@ void Health::update_mixing_group_counts(int day, int disease_id, Mixing_Group* m
     mixing_group->increment_new_infections(day, disease_id);
   }
   mixing_group->increment_current_infections(day, disease_id);
-
+  
   // update symptomatic infection counters
   if(is_symptomatic(disease_id)) {
     if(is_newly_symptomatic(day, disease_id)) {
       mixing_group->increment_new_symptomatic_infections(day, disease_id);
     }
     mixing_group->increment_current_symptomatic_infections(day, disease_id);
+  }
+
+  // update preinfectious counters
+  if (get_infectious_start_date(disease_id) > day) {
+    mixing_group->increment_current_preinfectious_people(day, disease_id);
   }
 }
 

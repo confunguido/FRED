@@ -612,11 +612,9 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
 		      get_wastewater_rna(disease_id,day,school_wastewater_measurement_negbin_size) :
 		      wastewater_rna_actual);
     close_this_school = (School::individual_school_wastewater_threshold <= wastewater_rna);
-    false_negative = (!close_this_school && get_current_infections(day,disease_id) > 0);
-
-    if (get_number_of_infectious_people(disease_id) > get_current_infections(day,disease_id)) {
-      printf("ERROR!! School has more infectious people than infections...\n");
-    }
+    false_negative = (!close_this_school
+		      && (get_number_of_infectious_people(disease_id) > 0
+			  || get_current_preinfectious_people(day,disease_id) > 0));
   }
 
   if(close_this_school) {
@@ -627,10 +625,11 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
     if(Global::Verbose > 0) {
       Disease* disease = Global::Diseases.get_disease(disease_id);
       if(School::individual_school_closure_by_wastewater) {
-	printf("LOCAL SCHOOL CLOSURE pop_ar %.3f local_cases = %d / %d (%.3f) WW conc: measurement = %d GC/l, actual = %d GC/l infections = %d infectious people = %d\n",
+	printf("LOCAL SCHOOL CLOSURE pop_ar %.3f local_cases = %d / %d (%.3f) WW conc: measurement = %d GC/l, actual = %d GC/l preinfectious people = %d infectious people = %d\n",
 	       disease->get_symptomatic_attack_rate(), get_total_cases(disease_id),
 	       get_size(), get_symptomatic_attack_rate(disease_id),
-	       wastewater_rna,wastewater_rna_actual,get_current_infections(day,disease_id),
+	       wastewater_rna,wastewater_rna_actual,
+	       get_current_preinfectious_people(day,disease_id),
 	       get_number_of_infectious_people(disease_id));
       } else {
 	printf("LOCAL SCHOOL CLOSURE pop_ar %.3f local_cases = %d / %d (%.3f)\n",
@@ -639,8 +638,8 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
       }
     }
   } else if (false_negative && Global::Verbose > 0) {
-    printf("FALSE NEGATIVE LOCAL SCHOOL CLOSURE WW conc: measurement = %d GC/l, actual = %d GC/l infections = %d infectious people = %d\n",
-	   wastewater_rna,wastewater_rna_actual,get_current_infections(day,disease_id),
+    printf("FALSE NEGATIVE LOCAL SCHOOL CLOSURE WW conc: measurement = %d GC/l, actual = %d GC/l preinfectious people = %d infectious people = %d\n",
+	   wastewater_rna,wastewater_rna_actual,get_current_preinfectious_people(day,disease_id),
 	   get_number_of_infectious_people(disease_id));
   }
 }
