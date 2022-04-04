@@ -439,6 +439,9 @@ individual_school_wastewater_threshold = 4210
 # Overdispersion in school wastewater measurements
 school_wastewater_measurement_negbin_size = 0.393
 
+# Frequency of school wastewater measurements
+school_wastewater_measurement_frequency = 1
+
 ##########################################################
 #
 # ANTIVIRALS (OPTIONAL)

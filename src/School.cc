@@ -45,6 +45,7 @@ bool School::individual_school_closure_by_wastewater = false;
 bool School::school_include_rna_measurement_variability = false;
 int School::individual_school_wastewater_threshold = 0;
 double School::school_wastewater_measurement_negbin_size = INFINITY;
+int School::school_wastewater_measurement_frequency = 0;
 int School::school_summer_schedule = 0;
 char School::school_summer_start[8];
 char School::school_summer_end[8];
@@ -225,6 +226,8 @@ void School::get_parameters() {
 				&School::individual_school_wastewater_threshold);
   Params::get_param_from_string("school_wastewater_measurement_negbin_size",
 				&School::school_wastewater_measurement_negbin_size);
+  Params::get_param_from_string("school_wastewater_measurement_frequency",
+				&School::school_wastewater_measurement_frequency);
 
   // if global_schedule_file is not none, then read it
   if(strcmp(School::school_closure_policy, "global_schedule") == 0) {
@@ -606,7 +609,9 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
   
   // double wastewater_rna;
   // if individual_school_closure_by_wastewater then close if this threshold is met
-  if(School::individual_school_closure_by_wastewater) {
+  if(School::individual_school_closure_by_wastewater &&
+     (day > last_wastewater_measurement_day + School::school_wastewater_measurement_frequency - 1)){
+    last_wastewater_measurement_day = day;
     wastewater_rna_actual = get_wastewater_rna(disease_id,day);
     wastewater_rna = (school_include_rna_measurement_variability ?
 		      get_wastewater_rna(disease_id,day,school_wastewater_measurement_negbin_size) :
