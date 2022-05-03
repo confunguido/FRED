@@ -229,6 +229,7 @@ private:
   static int individual_school_wastewater_threshold;
   static double school_wastewater_measurement_negbin_size;
   static int school_wastewater_measurement_frequency;
+  static int school_case_reporting_frequency;
   static int school_summer_schedule;
   static char school_summer_start[];
   static char school_summer_end[];
@@ -264,6 +265,7 @@ private:
   int wastewater_rna;
   int wastewater_rna_actual;
   int last_wastewater_measurement_day;
+  int last_case_reporting_day;
   int close_grade_date[GRADES];
   int open_grade_date[GRADES];
   double open_capacity_grade[GRADES];
