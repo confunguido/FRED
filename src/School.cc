@@ -37,10 +37,13 @@ int School::school_closure_day = 0;
 int School::min_school_closure_day = 0;
 double School::school_closure_threshold = 0.0;
 double School::individual_school_closure_threshold = 0.0;
+double School::individual_school_closure_current_case_rate_threshold = 0.0;
 int School::school_closure_cases = -1;
+int School::school_closure_current_cases = -1;
 int School::school_closure_duration = 0;
 int School::school_closure_delay = 0;
 bool School::individual_school_closure_by_cases = false;
+bool School::individual_school_closure_by_current_cases = false;
 bool School::individual_school_closure_by_wastewater = false;
 bool School::school_include_rna_measurement_variability = false;
 int School::individual_school_wastewater_threshold = 0;
@@ -212,11 +215,17 @@ void School::get_parameters() {
   Params::get_param_from_string("school_closure_ar_threshold", &School::school_closure_threshold);
   Params::get_param_from_string("individual_school_closure_ar_threshold",
 				&School::individual_school_closure_threshold);
+  Params::get_param_from_string("individual_school_closure_current_case_rate_threshold",
+				&School::individual_school_closure_current_case_rate_threshold);
   Params::get_param_from_string("school_closure_cases", &School::school_closure_cases);
+  Params::get_param_from_string("school_closure_current_cases", &School::school_closure_current_cases);
   int temp_integer = 0;
   Params::get_param_from_string("individual_school_closure_by_cases",
 				&temp_integer);
   School::individual_school_closure_by_cases = (temp_integer == 0 ? false : true);
+  Params::get_param_from_string("individual_school_closure_by_current_cases",
+				&temp_integer);
+  School::individual_school_closure_by_current_cases = (temp_integer == 0 ? false : true);
   Params::get_param_from_string("individual_school_closure_by_wastewater",
 				&temp_integer);
   School::individual_school_closure_by_wastewater = (temp_integer == 0 ? false : true);
@@ -611,7 +620,23 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
       close_this_school = (School::individual_school_closure_threshold <= get_symptomatic_attack_rate(disease_id));
     }
   }
-  
+
+  // If individual_school_closure_by_current_cases then close if the relevant threshold is met
+  // if school_closure_current_cases > -1 then close if this number of cases occurs
+  if(School::individual_school_closure_by_current_cases){
+    if(day > last_current_case_reporting_day + School::school_case_reporting_frequency - 1){
+      last_current_case_reporting_day = day;
+      if(School::school_closure_current_cases != -1) {
+	close_this_school = (School::school_closure_current_cases <= school_current_symptomatic_infections);
+      } else {
+	// close if incidence rate threshold is reached
+	close_this_school = (School::individual_school_closure_current_case_rate_threshold <= static_cast<double>(get_current_symptomatic_infection_rate(day,disease_id))/static_cast<double>(get_size()));
+      }
+      school_current_symptomatic_infections = 0;
+    } else {
+      school_current_symptomatic_infections += get_new_symptomatic_infections(day,disease_id);
+    }
+  }
   // double wastewater_rna;
   // if individual_school_closure_by_wastewater then close if this threshold is met
   if(School::individual_school_closure_by_wastewater &&

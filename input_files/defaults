@@ -427,6 +427,20 @@ Cases = -1
 # uses school_closure_cases if school_closure_cases != -1, else uses individual_school_closure_ar_threshold
 individual_school_closure_by_cases = 0
 
+# close schools based on local current cases (true/false)? (and only if school_closure_policy == individual)
+# uses school_closure_current_cases if school_closure_cases != -1, else uses individual_school_closure_ar_threshold
+individual_school_closure_by_current_cases = 0
+
+# individual school closure triggered when the school's attack rate >= threshold
+individual_school_closure_current_case_rate_threshold = 5.0 
+
+# number of cases within a given school that triggers individual school closure
+# If -1, use the school_closure_ar_threshold fraction
+school_closure_current_cases = -1
+
+# Frequency of school case reporting
+school_case_reporting_frequency = 1
+
 # close schools based on wastewater RNA measurement? (true/false)
 individual_school_closure_by_wastewater = 0
 

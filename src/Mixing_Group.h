@@ -365,6 +365,13 @@ public:
     return (100.0 * this->total_symptomatic_infections[disease_id]) / static_cast<double>(get_size());
   }
 
+  double get_current_symptomatic_infection_rate(int day, int disease_id) {
+    if (last_update < day) {
+      return 0;
+    }
+    return (100.0 * this->current_symptomatic_infections[disease_id]) / static_cast<double>(get_size());
+  }
+
   /**
    * Get the attack rate = 100 * number of infections thus far divided by the
    * number of agents in this place.

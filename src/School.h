@@ -220,10 +220,13 @@ private:
   static int min_school_closure_day;
   static double school_closure_threshold;
   static double individual_school_closure_threshold;
+  static double individual_school_closure_current_case_rate_threshold;
   static int school_closure_cases;
+  static int school_closure_current_cases;
   static int school_closure_duration;
   static int school_closure_delay;
   static bool individual_school_closure_by_cases;
+  static bool individual_school_closure_by_current_cases;
   static bool individual_school_closure_by_wastewater;
   static bool school_include_rna_measurement_variability;
   static int individual_school_wastewater_threshold;
@@ -264,8 +267,10 @@ private:
   int income_quartile;
   int wastewater_rna;
   int wastewater_rna_actual;
+  int school_current_symptomatic_infections;
   int last_wastewater_measurement_day;
   int last_case_reporting_day;
+  int last_current_case_reporting_day;
   int close_grade_date[GRADES];
   int open_grade_date[GRADES];
   double open_capacity_grade[GRADES];
