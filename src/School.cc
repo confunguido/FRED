@@ -630,7 +630,7 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
 	close_this_school = (School::school_closure_current_cases <= school_current_symptomatic_infections);
       } else {
 	// close if incidence rate threshold is reached
-	close_this_school = (School::individual_school_closure_current_case_rate_threshold <= static_cast<double>(get_current_symptomatic_infection_rate(day,disease_id))/static_cast<double>(get_size()));
+	close_this_school = (School::individual_school_closure_current_case_rate_threshold <= static_cast<double>(school_current_symptomatic_infections)/static_cast<double>(get_size()));
       }
       school_current_symptomatic_infections = 0;
     } else {
