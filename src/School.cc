@@ -624,7 +624,8 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
   // If individual_school_closure_by_current_cases then close if the relevant threshold is met
   // if school_closure_current_cases > -1 then close if this number of cases occurs
   if(School::individual_school_closure_by_current_cases){
-    if(day > last_current_case_reporting_day + School::school_case_reporting_frequency - 1){
+    //Check about start day, e.g. if school closed on Sunday and Sunday is day 0, then below inappropriate
+    if((day % School::school_case_reporting_frequency == 0) && (day > last_current_case_reporting_day)){
       last_current_case_reporting_day = day;
       if(School::school_closure_current_cases != -1) {
 	close_this_school = (School::school_closure_current_cases <= school_current_symptomatic_infections);
@@ -640,7 +641,8 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
   // double wastewater_rna;
   // if individual_school_closure_by_wastewater then close if this threshold is met
   if(School::individual_school_closure_by_wastewater &&
-     (day > last_wastewater_measurement_day + School::school_wastewater_measurement_frequency - 1)){
+     (day % School::school_wastewater_measurement_frequency == 0) &&
+     (day > last_wastewater_measurement_day)){
     last_wastewater_measurement_day = day;
     wastewater_rna_actual = get_wastewater_rna(disease_id,day);
     wastewater_rna = (school_include_rna_measurement_variability ?
