@@ -36,6 +36,7 @@ public:
   double gamma(double k, double theta);
   int poisson(double lambda);
   int negative_binomial(double mu, double r);
+  int binomial(int n, double p);
   int draw_from_distribution(int n, double *dist);
   double normal(double mu, double sigma);
   double lognormal(double mu, double sigma);
@@ -87,6 +88,9 @@ public:
   int negative_binomial(double mu, double r) {
     return thread_rng[fred::omp_get_thread_num()].negative_binomial(mu, r);
   }
+  int binomial(int n, double p) {
+    return thread_rng[fred::omp_get_thread_num()].binomial(n, p);
+  }
   double normal(double mu, double sigma) {
     return thread_rng[fred::omp_get_thread_num()].normal(mu, sigma);
   }
@@ -129,6 +133,9 @@ public:
   }
   static int draw_negative_binomial(double mu, double r) { 
     return Random_Number_Generator.negative_binomial(mu,r);
+  }
+  static int draw_binomial(int n, double p) { 
+    return Random_Number_Generator.binomial(n,p);
   }
   static double draw_normal(double mu, double sigma) { 
     return Random_Number_Generator.normal(mu,sigma);

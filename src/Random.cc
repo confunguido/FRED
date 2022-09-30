@@ -252,6 +252,12 @@ int RNG::negative_binomial(double mu, double r) {
   return (mu==0) ? 0 : poisson(gamma(r,mu/r));
 }
 
+int RNG::binomial(int n, double p) {
+  std::vector<double> cdf;
+  build_binomial_cdf(p,n,cdf);
+  return draw_from_cdf_vector(cdf);
+}
+
 double RNG::normal(double mu, double sigma) {
   return mu + sigma * normal_dist(mt_engine);
 }

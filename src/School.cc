@@ -48,6 +48,7 @@ bool School::individual_school_closure_by_wastewater = false;
 bool School::school_include_rna_measurement_variability = false;
 int School::individual_school_wastewater_threshold = 0;
 double School::school_wastewater_measurement_negbin_size = INFINITY;
+double School::school_underreporting_rate = 1;
 int School::school_wastewater_measurement_frequency = 0;
 int School::school_case_reporting_frequency = 0;
 int School::school_summer_schedule = 0;
@@ -236,6 +237,8 @@ void School::get_parameters() {
 				&School::individual_school_wastewater_threshold);
   Params::get_param_from_string("school_wastewater_measurement_negbin_size",
 				&School::school_wastewater_measurement_negbin_size);
+  Params::get_param_from_string("school_underreporting_rate",
+				&School::school_underreporting_rate);
   Params::get_param_from_string("school_wastewater_measurement_frequency",
 				&School::school_wastewater_measurement_frequency);
   Params::get_param_from_string("school_case_reporting_frequency",
@@ -626,20 +629,31 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
   if(School::individual_school_closure_by_current_cases){
     //Check about start day, e.g. if school closed on Sunday and Sunday is day 0, then below inappropriate
     if((day % School::school_case_reporting_frequency == 0) && (day > last_current_case_reporting_day)){
+      school_current_symptomatic_infections += get_new_symptomatic_infections(day,disease_id);
       last_current_case_reporting_day = day;
+      last_current_symptomatic_infections_update_day = day;
       if(School::school_closure_current_cases != -1) {
 	close_this_school = (School::school_closure_current_cases <= school_current_symptomatic_infections);
       } else {
 	// close if incidence rate threshold is reached
-	close_this_school = (School::individual_school_closure_current_case_rate_threshold <= static_cast<double>(school_current_symptomatic_infections)/static_cast<double>(get_size()));
+	// If want to reduce reporting, do it here, with a binomial draw on the cases
+	if (school_underreporting_rate < 1.0) {
+	  int observed_school_current_symptomatic_infections = Random::draw_binomial(school_current_symptomatic_infections,
+										     school_underreporting_rate);
+	  close_this_school = (School::individual_school_closure_current_case_rate_threshold <= static_cast<double>(observed_school_current_symptomatic_infections)/static_cast<double>(get_size()));
+	} else {
+	  close_this_school = (School::individual_school_closure_current_case_rate_threshold <= static_cast<double>(school_current_symptomatic_infections)/static_cast<double>(get_size()));
+	}
       }
       school_current_symptomatic_infections = 0;
-    } else {
+    } else if (last_current_symptomatic_infections_update_day < day) {
+      last_current_symptomatic_infections_update_day = day;
       school_current_symptomatic_infections += get_new_symptomatic_infections(day,disease_id);
     }
   }
   // double wastewater_rna;
   // if individual_school_closure_by_wastewater then close if this threshold is met
+  // If want to reduce peak shedding, just do it in the parameters
   if(School::individual_school_closure_by_wastewater &&
      (day % School::school_wastewater_measurement_frequency == 0) &&
      (day > last_wastewater_measurement_day)){
@@ -655,7 +669,6 @@ void School::apply_individual_school_closure_policy(int day, int disease_id) {
   false_negative = (!close_this_school
 		    && (get_number_of_infectious_people(disease_id) > 0
 			|| get_current_preinfectious_people(day,disease_id) > 0));
-
 
   if(close_this_school) {
     // set close and open dates for this school (only once)

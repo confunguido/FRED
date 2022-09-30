@@ -441,6 +441,9 @@ school_closure_current_cases = -1
 # Frequency of school case reporting
 school_case_reporting_frequency = 1
 
+# Frequency of school case reporting
+school_underreporting_rate = 0.2
+
 # close schools based on wastewater RNA measurement? (true/false)
 individual_school_closure_by_wastewater = 0
 
