@@ -102,7 +102,7 @@ public:
   // MAX_NUM_DISEASES sets the size of stl::bitsets and static arrays used throughout FRED
   // to store disease-specific flags and pointers; set to the visualizationest possible value 
   // for optimal performance and memory usage
-  static const int MAX_NUM_DISEASES = 5;
+  static const int MAX_NUM_DISEASES = 6;
   // Change this constant and recompile to allow more threads.  For efficiency should be
   // equal to OMP_NUM_THREADS value that will be used.  If OMP_NUM_THREADS greater than
   // MAX_NUM_THREADS is used, FRED will abort the run.
