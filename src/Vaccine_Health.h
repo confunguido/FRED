@@ -40,6 +40,8 @@ public:
   // Access Members
   int get_vaccination_day()              const { return vaccination_day; }
   int get_vaccination_effective_day()    const { return vaccination_effective_day; }
+  int get_vaccination_symp_effective_day()    const { return vaccination_effective_symp_day; }
+  int get_vaccination_hosp_effective_day()    const { return vaccination_effective_hosp_day; }
   int get_vaccination_any_effective_day() const {    
     if(vaccination_effective_day != -1){
       return vaccination_effective_day;
@@ -54,6 +56,7 @@ public:
   int is_effective_hospitalization()            const { if(vaccination_effective_hosp_day != -1) return 1; else return 0;}
   int is_effective_any() const { if( vaccination_effective_day != -1 || vaccination_effective_symp_day != -1 || vaccination_effective_hosp_day != -1) return 1; else return 0;}
   int get_vaccine_immunity_loss_day() const { return vaccination_immunity_loss_day;}
+  int get_vaccine_hosp_immunity_loss_day() const { return vaccination_hosp_immunity_loss_day;}
   Vaccine* get_vaccine()                 const { return vaccine; }
   int get_current_dose()                 const { return current_dose; }
   int get_days_to_next_dose()            const { return days_to_next_dose; }
@@ -83,6 +86,7 @@ private:
   int vaccination_effective_symp_day;    // On which day is the vaccine effective
   int vaccination_effective_hosp_day;    // On which day is the vaccine effective
   int vaccination_immunity_loss_day;  // On which day does the vaccine lose effectiveness
+  int vaccination_hosp_immunity_loss_day;  // On which day does the vaccine lose effectiveness against hospitalization
   Vaccine* vaccine;                 // Which vaccine did you take
   int current_dose;                 // Current Dose that the agent is on
   int days_to_next_dose;            // How long between doses

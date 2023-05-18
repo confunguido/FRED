@@ -958,9 +958,41 @@ int Health::get_vaccination_any_effective_day() const{
   }
 }
 
+int Health::get_vaccination_effective_day() const{
+  if(this->vaccine_health){
+    return (*this->vaccine_health)[0]->get_vaccination_effective_day();
+    }else{
+    return -1;
+  }
+}
+
+int Health::get_vaccination_symp_effective_day() const{
+  if(this->vaccine_health){
+    return (*this->vaccine_health)[0]->get_vaccination_symp_effective_day();
+    }else{
+    return -1;
+  }
+}
+
+int Health::get_vaccination_hosp_effective_day() const{
+  if(this->vaccine_health){
+    return (*this->vaccine_health)[0]->get_vaccination_hosp_effective_day();
+    }else{
+    return -1;
+  }
+}
+
 int Health::get_vaccination_immunity_loss_day() const {
   if(this->vaccine_health){
     return (*this->vaccine_health)[0]->get_vaccine_immunity_loss_day();
+  }else{
+    return -1;
+  }
+}
+
+int Health::get_vaccination_hosp_immunity_loss_day() const {
+  if(this->vaccine_health){
+    return (*this->vaccine_health)[0]->get_vaccine_hosp_immunity_loss_day();
   }else{
     return -1;
   }

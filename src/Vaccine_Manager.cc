@@ -811,7 +811,7 @@ int Vaccine_Manager::vaccinate(int day) {
 	// ADD VACCINE EVENTS TO QUEUE TO PROCESS LATER
 	int is_vax_effective = current_person->is_vaccine_effective_any();
 	if(is_vax_effective != -1){
-	  int eff_day = current_person->get_vaccination_any_effective_day();
+	  int eff_day = current_person->get_vaccination_effective_day();
 	  //printf("Day %d Vaccination is effective for person %d on day %d\n", day, current_person->get_id(), eff_day);
 	  if(eff_day > -1){
 	    this->vaccine_immunity_start_event_queue->add_event(eff_day, current_person);
@@ -824,7 +824,38 @@ int Vaccine_Manager::vaccinate(int day) {
 	      this->vaccine_immunity_end_event_queue->add_event(eff_end_day, current_person);
 	    }
 	  }
+	  int eff_symp_day = current_person->get_vaccination_symp_effective_day();
+	  //printf("Day %d Vaccination is effective for person %d on day %d\n", day, current_person->get_id(), eff_day);
+	  if(eff_symp_day > -1){
+	    if(eff_day == -1){
+	      this->vaccine_immunity_start_event_queue->add_event(eff_symp_day, current_person);
+	    }
+	    
+	    // Cancel immunity end events first
+	    int eff_symp_end_day = current_person->get_vaccination_immunity_loss_day();
+	    if(eff_symp_end_day > day){
+	      // Add new immunity start/end events
+	      // Make sure when ending immunity to check that the day is the immunity end day
+	      this->vaccine_immunity_end_event_queue->add_event(eff_symp_end_day, current_person);
+	    }
+	  }
+	  int eff_hosp_day = current_person->get_vaccination_hosp_effective_day();
+	  //printf("Day %d Vaccination is effective for person %d on day %d\n", day, current_person->get_id(), eff_day);
+	  if(eff_hosp_day > -1){
+	    if(eff_symp_day == -1){
+	      this->vaccine_immunity_start_event_queue->add_event(eff_hosp_day, current_person);
+	    }
+	    
+	    // Cancel immunity end events first
+	    int eff_hosp_end_day = current_person->get_vaccination_hosp_immunity_loss_day();
+	    if(eff_hosp_end_day > day){
+	      // Add new immunity start/end events
+	      // Make sure when ending immunity to check that the day is the immunity end day
+	      this->vaccine_immunity_end_event_queue->add_event(eff_hosp_end_day, current_person);
+	    }
+	  }
 	}
+
       } else {
         reject_count++;
         if(0) {
@@ -972,7 +1003,8 @@ int Vaccine_Manager::vaccinate(int day) {
 	// ADD VACCINE EVENTS TO QUEUE TO PROCESS LATER
 	int is_vax_effective = current_person->is_vaccine_effective_any();
 	if(is_vax_effective != -1){
-	  int eff_day = current_person->get_vaccination_any_effective_day();
+	  int eff_day = current_person->get_vaccination_effective_day();
+	  //printf("Day %d Vaccination is effective for person %d on day %d\n", day, current_person->get_id(), eff_day);
 	  if(eff_day > -1){
 	    this->vaccine_immunity_start_event_queue->add_event(eff_day, current_person);
 	    
@@ -982,6 +1014,36 @@ int Vaccine_Manager::vaccinate(int day) {
 	      // Add new immunity start/end events
 	      // Make sure when ending immunity to check that the day is the immunity end day
 	      this->vaccine_immunity_end_event_queue->add_event(eff_end_day, current_person);
+	    }
+	  }
+	  int eff_symp_day = current_person->get_vaccination_symp_effective_day();
+	  //printf("Day %d Vaccination is effective for person %d on day %d\n", day, current_person->get_id(), eff_day);
+	  if(eff_symp_day > -1){
+	    if(eff_day == -1){
+	      this->vaccine_immunity_start_event_queue->add_event(eff_symp_day, current_person);
+	    }
+	    
+	    // Cancel immunity end events first
+	    int eff_symp_end_day = current_person->get_vaccination_immunity_loss_day();
+	    if(eff_symp_end_day > day){
+	      // Add new immunity start/end events
+	      // Make sure when ending immunity to check that the day is the immunity end day
+	      this->vaccine_immunity_end_event_queue->add_event(eff_symp_end_day, current_person);
+	    }
+	  }
+	  int eff_hosp_day = current_person->get_vaccination_hosp_effective_day();
+	  //printf("Day %d Vaccination is effective for person %d on day %d\n", day, current_person->get_id(), eff_day);
+	  if(eff_hosp_day > -1){
+	    if(eff_symp_day == -1){
+	      this->vaccine_immunity_start_event_queue->add_event(eff_hosp_day, current_person);
+	    }
+	    
+	    // Cancel immunity end events first
+	    int eff_hosp_end_day = current_person->get_vaccination_hosp_immunity_loss_day();
+	    if(eff_hosp_end_day > day){
+	      // Add new immunity start/end events
+	      // Make sure when ending immunity to check that the day is the immunity end day
+	      this->vaccine_immunity_end_event_queue->add_event(eff_hosp_end_day, current_person);
 	    }
 	  }
 	}
@@ -1132,15 +1194,47 @@ int Vaccine_Manager::vaccinate(int day) {
 
 	int is_vax_effective = current_person->is_vaccine_effective_any();
 	if(is_vax_effective != -1){
-	  int eff_day = current_person->get_vaccination_any_effective_day();
+	  	  int eff_day = current_person->get_vaccination_effective_day();
+	  //printf("Day %d Vaccination is effective for person %d on day %d\n", day, current_person->get_id(), eff_day);
 	  if(eff_day > -1){
-	    this->vaccine_immunity_start_event_queue->add_event(eff_day, current_person);	    
+	    this->vaccine_immunity_start_event_queue->add_event(eff_day, current_person);
+	    
 	    // Cancel immunity end events first
 	    int eff_end_day = current_person->get_vaccination_immunity_loss_day();
 	    if(eff_end_day > day){
 	      // Add new immunity start/end events
 	      // Make sure when ending immunity to check that the day is the immunity end day
 	      this->vaccine_immunity_end_event_queue->add_event(eff_end_day, current_person);
+	    }
+	  }
+	  int eff_symp_day = current_person->get_vaccination_symp_effective_day();
+	  //printf("Day %d Vaccination is effective for person %d on day %d\n", day, current_person->get_id(), eff_day);
+	  if(eff_symp_day > -1){
+	    if(eff_day == -1){
+	      this->vaccine_immunity_start_event_queue->add_event(eff_symp_day, current_person);
+	    }
+	    
+	    // Cancel immunity end events first
+	    int eff_symp_end_day = current_person->get_vaccination_immunity_loss_day();
+	    if(eff_symp_end_day > day){
+	      // Add new immunity start/end events
+	      // Make sure when ending immunity to check that the day is the immunity end day
+	      this->vaccine_immunity_end_event_queue->add_event(eff_symp_end_day, current_person);
+	    }
+	  }
+	  int eff_hosp_day = current_person->get_vaccination_hosp_effective_day();
+	  //printf("Day %d Vaccination is effective for person %d on day %d\n", day, current_person->get_id(), eff_day);
+	  if(eff_hosp_day > -1){
+	    if(eff_symp_day == -1){
+	      this->vaccine_immunity_start_event_queue->add_event(eff_hosp_day, current_person);
+	    }
+	    
+	    // Cancel immunity end events first
+	    int eff_hosp_end_day = current_person->get_vaccination_hosp_immunity_loss_day();
+	    if(eff_hosp_end_day > day){
+	      // Add new immunity start/end events
+	      // Make sure when ending immunity to check that the day is the immunity end day
+	      this->vaccine_immunity_end_event_queue->add_event(eff_hosp_end_day, current_person);
 	    }
 	  }
 	}

@@ -25,7 +25,7 @@ class Vaccine_Dose {
   // for a vaccine.  A vaccine may have as many doses as it needs.
 public:
   // Creation Operators
-  Vaccine_Dose(Age_Map* _efficacy, Age_Map* _efficacy_symp, Age_Map* _efficacy_hosp, Age_Map* _efficacy_delay, Age_Map* _efficacy_duration, int _days_between_doses, int _mix_match);
+  Vaccine_Dose(Age_Map* _efficacy, Age_Map* _efficacy_symp, Age_Map* _efficacy_hosp, Age_Map* _efficacy_delay, Age_Map* _efficacy_duration, Age_Map* _efficacy_hosp_duration, int _days_between_doses, int _mix_match);
   ~Vaccine_Dose();
   
   //Parameter Access
@@ -39,6 +39,7 @@ public:
   double  get_efficacy_hosp(double real_age) const { return efficacy_hosp->find_value(real_age);  }
   double  get_efficacy_delay(double real_age)   const { return efficacy_delay->find_value(real_age); }
   double  get_duration_of_immunity(double real_age);
+  double  get_duration_of_hosp_immunity(double real_age);
   int     get_days_between_doses()  const { return days_between_doses; }
   int     get_next_dose_mix_match() const { return mix_and_match_next_dose; }
   bool    is_within_age(double real_age) const;
@@ -54,6 +55,7 @@ private:
   Age_Map* efficacy_hosp;            // Age specific efficacy of vaccine against symptoms, does the dose provide immunity
   Age_Map* efficacy_delay;      // Age specific delay to efficacy, how long does it take to develop immunity
   Age_Map* efficacy_duration;  // Age specific duration of immunity
+  Age_Map* efficacy_hosp_duration;  // Age specific duration of immunity
   
 protected:
   Vaccine_Dose() { }

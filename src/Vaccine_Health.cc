@@ -39,6 +39,7 @@ Vaccine_Health::Vaccine_Health(int _vaccination_day, Vaccine* _vaccine, double _
   double efficacy_hosp = vaccine->get_dose(0)->get_efficacy_hosp(_age);  
   double efficacy_delay = vaccine->get_dose(0)->get_efficacy_delay(_age);
   double efficacy_duration = vaccine->get_dose(0)->get_duration_of_immunity(_age);
+  double efficacy_hosp_duration = vaccine->get_dose(0)->get_duration_of_hosp_immunity(_age);
 
   /*
     Boosters 
@@ -59,6 +60,7 @@ Vaccine_Health::Vaccine_Health(int _vaccination_day, Vaccine* _vaccine, double _
   
   vaccine_manager = _vaccine_manager;
   vaccination_immunity_loss_day = -1;
+  vaccination_hosp_immunity_loss_day = -1;
   vaccination_effective_day = -1;
   vaccination_effective_symp_day = -1;
   vaccination_effective_hosp_day = -1;
@@ -69,22 +71,27 @@ Vaccine_Health::Vaccine_Health(int _vaccination_day, Vaccine* _vaccine, double _
   effective_hospitalization = false;
 
   // decide on efficacy
+  /*
+if is effective against infection, add immunity loss day,
+if is not effective against infection, try against symptoms
+if it's not effective against symptoms, try against hospitalization
+a person could have protection against infection and hospitalization, as long as it's not effective against symptoms
+   */
+  /*
+We are gonna get rid of if statements so that everyone can be protected against infection, against symptoms, and against hospitalization
+   */
   if(Random::draw_random() < efficacy) {
     vaccination_effective_day = vaccination_day + efficacy_delay;
     vaccination_immunity_loss_day = vaccination_effective_day + 1 + efficacy_duration;
   }
 
-  if(vaccination_effective_day == -1){
-    if(Random::draw_random() < efficacy_symp) {
-      vaccination_effective_symp_day = vaccination_day + efficacy_delay;
-      vaccination_immunity_loss_day = vaccination_effective_symp_day + 1 + efficacy_duration;
-    }
+  if(Random::draw_random() < efficacy_symp) {
+    vaccination_effective_symp_day = vaccination_day + efficacy_delay;
+    vaccination_immunity_loss_day = vaccination_effective_symp_day + 1 + efficacy_duration;
   }
-  if(vaccination_effective_symp_day == -1){
-    if(Random::draw_random() < efficacy_hosp) {
-      vaccination_effective_hosp_day = vaccination_day + efficacy_delay;
-      vaccination_immunity_loss_day = vaccination_effective_hosp_day + 1 + efficacy_duration;
-    }
+  if(Random::draw_random() < efficacy_hosp) {
+    vaccination_effective_hosp_day = vaccination_day + efficacy_delay;
+    vaccination_hosp_immunity_loss_day = vaccination_effective_hosp_day + 1 + efficacy_hosp_duration;
   }
   
   current_dose = 0;
@@ -268,7 +275,7 @@ void Vaccine_Health::update(int day, double age){
 	}
       }
     }
-    if (day == vaccination_immunity_loss_day) {
+    if (day == vaccination_hosp_immunity_loss_day) {
       if(Global::Verbose > 0) {
 	cout << "Agent " << person->get_id() 
 	     << " became immune on day "<< vaccination_effective_hosp_day
@@ -279,12 +286,10 @@ void Vaccine_Health::update(int day, double age){
       */
       if(Global::Enable_Disease_Cross_Protection == true && Global::Diseases.get_number_of_diseases() > 1){
 	for(int dis_id = 0; dis_id < Global::Diseases.get_number_of_diseases(); ++dis_id){
-	  // TODO: Become susceptible to symptoms due to vaccine waning
 	  person->become_susceptible_to_hospitalization_by_vaccine_waning(dis_id);
 	}
       }else{
 	int disease_id = 0;
-	// TODO: Become susceptible to symptoms due to vaccine waning
 	person->become_susceptible_to_hospitalization_by_vaccine_waning(disease_id);
       }
       effective_hospitalization = false;
@@ -343,22 +348,23 @@ In reality, Not just efficacy can be boosted by a new dose but maybe the duratio
     double efficacy_hosp = vaccine->get_dose(current_dose)->get_efficacy_hosp(age);
     double efficacy_delay = vaccine->get_dose(current_dose)->get_efficacy_delay(age);
     double efficacy_duration = vaccine->get_dose(current_dose)->get_duration_of_immunity(age);
+    double efficacy_hosp_duration = vaccine->get_dose(current_dose)->get_duration_of_hosp_immunity(age);
     if(vaccination_effective_day == -1){
       if (Random::draw_random() < efficacy){
 	vaccination_effective_day = day + efficacy_delay;
 	vaccination_immunity_loss_day = vaccination_effective_symp_day + 1 + efficacy_duration;      
       }
     }
-    if(vaccination_effective_day == -1 && vaccination_effective_symp_day == -1){
+    if(vaccination_effective_symp_day == -1){
       if(Random::draw_random() < efficacy_symp) {
 	vaccination_effective_symp_day = vaccination_day + efficacy_delay;
 	vaccination_immunity_loss_day = vaccination_effective_symp_day + 1 + efficacy_duration;      
       }
     }
-    if(vaccination_effective_day == -1 && vaccination_effective_symp_day == -1 && vaccination_effective_hosp_day == -1){
+    if(vaccination_effective_hosp_day == -1){
       if(Random::draw_random() < efficacy_hosp) {
 	vaccination_effective_hosp_day = vaccination_day + efficacy_delay;
-	vaccination_immunity_loss_day = vaccination_effective_hosp_day + 1 + efficacy_duration;      
+	vaccination_hosp_immunity_loss_day = vaccination_effective_hosp_day + 1 + efficacy_hosp_duration;      
       }
     }
     /*

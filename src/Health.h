@@ -324,8 +324,12 @@ public:
   
   int is_vaccine_effective_any() const;
   int get_vaccination_any_effective_day() const;
+  int get_vaccination_effective_day() const;
+  int get_vaccination_symp_effective_day() const;
+  int get_vaccination_hosp_effective_day() const;
 
   int get_vaccination_immunity_loss_day() const;
+  int get_vaccination_hosp_immunity_loss_day() const;
   /**
    * @return the number of vaccines this agent has taken
    */

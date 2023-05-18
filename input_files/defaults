@@ -493,6 +493,9 @@ vaccine_starting_day[0] = 0
 vaccine_efficacy_duration_age_groups[0] = 1 120
 vaccine_efficacy_duration_values[0] = 1 99999
 
+vaccine_efficacy_hosp_duration_age_groups[0] = 1 120
+vaccine_efficacy_hosp_duration_values[0] = 1 99999
+
 #### Sample Vaccine #0 Dose #0
 vaccine_next_dosage_day[0][0] = 0
 vaccine_dose_efficacy_age_groups[0][0] = 1 100

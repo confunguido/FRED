@@ -97,10 +97,26 @@ public:
     return (this->health.get_vaccination_any_effective_day());
   }
 
+  int get_vaccination_effective_day(){
+    return (this->health.get_vaccination_effective_day());
+  }
+
+  int get_vaccination_symp_effective_day(){
+    return (this->health.get_vaccination_symp_effective_day());
+  }
+
+  int get_vaccination_hosp_effective_day(){
+    return (this->health.get_vaccination_hosp_effective_day());
+  }
+
   int get_vaccination_immunity_loss_day(){
     return (this->health.get_vaccination_immunity_loss_day());
   }
 
+  int get_vaccination_hosp_immunity_loss_day(){
+    return (this->health.get_vaccination_hosp_immunity_loss_day());
+  }
+  
   void update_vaccine_interventions(int day) {
     this->health.update_vaccine_interventions(day);
   }

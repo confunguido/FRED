@@ -51,6 +51,9 @@ void Vaccines::setup(void) {
     
     Age_Map* efficacy_duration_map = new Age_Map("Vaccine Efficacy Duration");
     efficacy_duration_map->read_from_input("vaccine_efficacy_duration",iv);
+
+    Age_Map* efficacy_hosp_duration_map = new Age_Map("Vaccine Efficacy Hosp Duration");
+    efficacy_hosp_duration_map->read_from_input("vaccine_efficacy_hosp_duration",iv);
     
     int nstrains;
     Params::get_indexed_param((char *)"vaccine_strains", iv, &nstrains);
@@ -118,7 +121,11 @@ void Vaccines::setup(void) {
       efficacy_symp_map->read_from_input("vaccine_dose_efficacy_symptoms",iv,id);
       efficacy_hosp_map->read_from_input("vaccine_dose_efficacy_hospitalization",iv,id);
       efficacy_delay_map->read_from_input("vaccine_dose_efficacy_delay",iv,id);
-      vaccines[iv]->add_dose(new Vaccine_Dose(efficacy_map,efficacy_symp_map,efficacy_hosp_map,efficacy_delay_map,efficacy_duration_map,tbd,vax_mix_match));
+      vaccines[iv]->add_dose(new Vaccine_Dose(efficacy_map,efficacy_symp_map,efficacy_hosp_map,efficacy_delay_map,efficacy_duration_map,efficacy_hosp_duration_map, tbd,vax_mix_match));
+      
+      //vaccines[iv]->add_dose(new Vaccine_Dose(efficacy_map,efficacy_symp_map,efficacy_hosp_map,efficacy_delay_map,efficacy_duration_map,tbd,vax_mix_match));
+      
+      
     }
     /*
     // If boosters are enabled, then
